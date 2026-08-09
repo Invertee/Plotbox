@@ -189,11 +189,11 @@ disposable; source assets and `project.json` are not.
 The repository root is an installable Home Assistant app folder. Copy it beneath the local
 `/addons` directory, reload the app store, install **Plotbox**, and use **Open Web UI** or its
 sidebar entry. The multi-stage [Dockerfile](Dockerfile) builds the Vite frontend and Python service
-for `amd64` and `aarch64`, serving both on internal port 8099.
+for `amd64` and `aarch64`, serving both on internal port 5616.
 
 Ingress handles authentication and your existing Home Assistant reverse proxy handles SSL. The
 frontend uses relative asset, API, and event-stream URLs so the changing Ingress session prefix is
-preserved. Host port 8099 stays disabled, and the packaged app accepts HTTP clients only from the
+preserved. Host port 5616 stays disabled, and the packaged app accepts HTTP clients only from the
 Ingress gateway or container loopback.
 
 Persistent state lives under Home Assistant's `/data` volume:

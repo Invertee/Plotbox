@@ -22,6 +22,7 @@ def test_home_assistant_entry_points_use_plotbox_brand() -> None:
     assert "name: Plotbox" in addon_config
     assert "slug: plotbox" in addon_config
     assert "panel_title: Plotbox" in addon_config
+    assert "ingress_port: 5616" in addon_config
     assert create_app().title == "Plotbox API"
 
 

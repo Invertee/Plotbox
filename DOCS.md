@@ -5,7 +5,7 @@ For local development, copy this repository into a named directory under Home As
 root is the app folder because its Docker build needs the frontend, backend, and shared packages.
 
 The build supports `amd64` and `aarch64`. It compiles the Vite frontend, installs the Python package,
-and serves both on internal port 8099.
+and serves both on internal port 5616.
 
 ## Storage and backups
 
@@ -23,7 +23,7 @@ Use **Open Web UI** or the Plotbox sidebar item. Ingress is enabled and streams 
 container intentionally serves HTTP; TLS belongs at Home Assistant's reverse proxy. Static assets,
 API requests, and event streams use the current Ingress prefix.
 
-Direct host port 8099 is disabled and the Home Assistant package restricts clients to the Ingress
+Direct host port 5616 is disabled and the Home Assistant package restricts clients to the Ingress
 gateway and container loopback. Do not expose the port. For a standalone container behind another
 trusted proxy, omit or set `PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` to that proxy's network and keep the
 application unreachable directly.
@@ -41,4 +41,3 @@ configuration writes.
 
 Axis calibration calculates a suggested steps/mm value only. Apply it manually to the FluidNC
 configuration after reviewing the controller documentation, restart, and measure again.
-

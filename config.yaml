@@ -10,16 +10,16 @@ boot: auto
 init: false
 stage: experimental
 ingress: true
-ingress_port: 8099
+ingress_port: 5616
 ingress_stream: true
 panel_icon: mdi:draw-pen
 panel_title: Plotbox
 panel_admin: true
 ports:
-  8099/tcp: null
+  5616/tcp: null
 ports_description:
-  8099/tcp: Reserved for authenticated Home Assistant Ingress; do not expose
-watchdog: http://[HOST]:[PORT:8099]/api/health
+  5616/tcp: Reserved for authenticated Home Assistant Ingress; do not expose
+watchdog: http://[HOST]:[PORT:5616]/api/health
 backup: cold
 environment:
   PLOTTERAPP_PROJECTS_ROOT: /data/projects
