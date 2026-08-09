@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotterapp"
+version = "0.1.0"
+description = "Local artwork-to-G-code application"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "pillow>=11.3,<12",
+  "pydantic>=2.11,<3",
+  "uvicorn[standard]>=0.35,<1",
+  "websockets>=16,<17",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28,<1",
+  "hypothesis>=6.136,<7",
+  "mypy>=1.17,<2",
+  "pytest>=8.4,<9",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+]
+
+[tool.setuptools.packages.find]
+where = ["packages/plotter_core", "services/api"]
+
+[tool.setuptools.package-data]
+"plotter_core.modes.presets" = ["*.json"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["packages/plotter_core/tests", "services/api/tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".plotterapp-data", ".e2e-data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["packages/plotter_core/plotter_core", "services/api/plotterapp_api"]
+mypy_path = ["packages/plotter_core", "services/api"]
+explicit_package_bases = true
+exclude = "(^|/)(\\.plotterapp-data|\\.e2e-data)/"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false

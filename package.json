@@ -1,0 +1,17 @@
+{
+  "name": "Plotbox",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev": "pnpm exec concurrently -k -n api,web -c blue,cyan \"uv run python -m uvicorn plotterapp_api.main:app --reload --host 127.0.0.1 --port 8000\" \"pnpm --filter @plotterapp/web dev\"",
+    "lint": "pnpm --filter @plotterapp/web lint",
+    "format:check": "pnpm --filter @plotterapp/web format:check",
+    "typecheck": "pnpm --filter @plotterapp/web typecheck",
+    "test": "pnpm --filter @plotterapp/web test",
+    "e2e": "pnpm --filter @plotterapp/web e2e",
+    "verify": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm e2e"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

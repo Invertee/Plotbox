@@ -1,0 +1,13 @@
+fastapi<1,>=0.116
+pillow<12,>=11.3
+pydantic<3,>=2.11
+uvicorn[standard]<1,>=0.35
+websockets<17,>=16
+
+[dev]
+httpx<1,>=0.28
+hypothesis<7,>=6.136
+mypy<2,>=1.17
+pytest<9,>=8.4
+pytest-cov<7,>=6.2
+ruff<1,>=0.12

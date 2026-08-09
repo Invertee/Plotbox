@@ -1,0 +1,20 @@
+[
+  {
+    "schema_version": 1,
+    "preset_id": "banknote-lattice",
+    "version": 1,
+    "mode_id": "builtin.guilloche",
+    "mode_version": "1.0.0",
+    "name": "Banknote lattice",
+    "description": "Layered Lissajous curves suitable for two pens.",
+    "parameter_schema_version": 1,
+    "seed": "guilloche-banknote-01",
+    "parameters": {
+      "family": "lissajous",
+      "frequency": 3.0,
+      "phase_degrees": 30.0,
+      "repetitions": 12,
+      "samples": 500
+    }
+  }
+]

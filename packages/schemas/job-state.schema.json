@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "JobTiming": {
+      "additionalProperties": false,
+      "properties": {
+        "queued_ms": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Queued Ms",
+          "type": "number"
+        },
+        "run_ms": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Run Ms",
+          "type": "number"
+        }
+      },
+      "title": "JobTiming",
+      "type": "object"
+    },
+    "JobWarning": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "JobWarning",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "cache_hit": {
+      "default": false,
+      "title": "Cache Hit",
+      "type": "boolean"
+    },
+    "cancel_requested": {
+      "default": false,
+      "title": "Cancel Requested",
+      "type": "boolean"
+    },
+    "completed_items": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completed Items"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "input_hash": {
+      "title": "Input Hash",
+      "type": "string"
+    },
+    "job_id": {
+      "title": "Job Id",
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "generate",
+        "generate_map",
+        "import_svg",
+        "preprocess_raster",
+        "vectorize_raster"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "progress": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Progress",
+      "type": "number"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "project_revision": {
+      "minimum": 1,
+      "title": "Project Revision",
+      "type": "integer"
+    },
+    "quality": {
+      "enum": [
+        "draft",
+        "standard",
+        "export"
+      ],
+      "title": "Quality",
+      "type": "string"
+    },
+    "result_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result Hash"
+    },
+    "result_project_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result Project Revision"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "stage": {
+      "title": "Stage",
+      "type": "string"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "cancelled",
+        "failed",
+        "stale"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "timing": {
+      "$ref": "#/$defs/JobTiming"
+    },
+    "total_items": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total Items"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/JobWarning"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "job_id",
+    "project_id",
+    "project_revision",
+    "operation",
+    "stage",
+    "status",
+    "quality",
+    "progress",
+    "input_hash",
+    "created_at"
+  ],
+  "title": "JobState",
+  "type": "object"
+}

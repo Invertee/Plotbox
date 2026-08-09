@@ -1,0 +1,173 @@
+{
+  "assets": [],
+  "export": {
+    "combined_file": true,
+    "dry_run": true,
+    "page_boundary": true,
+    "profile_id": "fluidnc-z-axis-a3",
+    "separate_pass_files": true
+  },
+  "geometry": {
+    "curve_tolerance_mm": 0.05,
+    "endpoint_snap_tolerance_mm": 0.05,
+    "minimum_path_length_mm": 0.2,
+    "ordering_quality": "standard",
+    "simplification_tolerance_mm": 0.02
+  },
+  "mode": {
+    "mode_id": "builtin.test-pattern",
+    "parameter_schema_version": 1,
+    "parameters": {},
+    "quality": "export",
+    "seed": "codex-vertical-slice-1",
+    "version": "1.0.0"
+  },
+  "name": "A3 vertical slice acceptance",
+  "osm": {
+    "features": {
+      "buildings": true,
+      "parks": true,
+      "rail": true,
+      "roads": true,
+      "water": true
+    },
+    "render": {
+      "building_treatment": "outline",
+      "minimum_feature_mm": 0.3,
+      "park_treatment": "outline",
+      "polygon_hatch_angle_degrees": 45.0,
+      "polygon_hatch_spacing_mm": 2.0,
+      "road_line_treatment": "centerline",
+      "road_width_mm": 0.8,
+      "simplification_tolerance_mm": 0.08,
+      "water_treatment": "hatch"
+    },
+    "selection": {
+      "bounds": {
+        "east": -0.1235,
+        "north": 51.507,
+        "south": 51.503,
+        "west": -0.1305
+      },
+      "lock_mode": "extent",
+      "rotation_degrees": 0.0
+    },
+    "snapshot": null
+  },
+  "page": {
+    "height_mm": 297.0,
+    "margin_mm": 10.0,
+    "orientation": "landscape",
+    "preset": "A3",
+    "schema_version": 1,
+    "width_mm": 420.0
+  },
+  "passes": [
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Black",
+      "pass_id": "pass-black",
+      "pen_profile_id": "black-05",
+      "preview_color": "#171717",
+      "semantic_role": "structure",
+      "visible": true
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Cyan",
+      "pass_id": "pass-cyan",
+      "pen_profile_id": "cyan-05",
+      "preview_color": "#00a6c8",
+      "semantic_role": "accent",
+      "visible": true
+    }
+  ],
+  "pen_palette": [
+    {
+      "display_color": "#171717",
+      "draw_feed_mm_min": 1800.0,
+      "name": "Black 0.5 mm",
+      "notes": "",
+      "pen_down_override": null,
+      "pen_id": "black-05",
+      "tip_width_mm": 0.5,
+      "x_offset_mm": 0.0,
+      "y_offset_mm": 0.0
+    },
+    {
+      "display_color": "#00a6c8",
+      "draw_feed_mm_min": 1800.0,
+      "name": "Cyan 0.5 mm",
+      "notes": "",
+      "pen_down_override": null,
+      "pen_id": "cyan-05",
+      "tip_width_mm": 0.5,
+      "x_offset_mm": 0.0,
+      "y_offset_mm": 0.0
+    }
+  ],
+  "project_id": "vertical-slice-a3",
+  "raster_preprocess": {
+    "adaptive_offset": 5,
+    "adaptive_window_px": 15,
+    "blur_radius_px": 0.0,
+    "channel": "luminance",
+    "contrast": 1.0,
+    "crop": {
+      "height": 1.0,
+      "width": 1.0,
+      "x": 0.0,
+      "y": 0.0
+    },
+    "fit_mode": "contain",
+    "gamma": 1.0,
+    "invert": false,
+    "maximum_megapixels": 8.0,
+    "morphology": "none",
+    "morphology_radius_px": 0,
+    "rotation_degrees": 0,
+    "sampling_pixels_per_pen_width": 3.0,
+    "scale_percent": 100.0,
+    "sharpen_amount": 0.0,
+    "threshold": 128,
+    "threshold_mode": "none"
+  },
+  "raster_vectorize": {
+    "algorithm": "edge",
+    "centerline_prune_length_mm": 1.5,
+    "centerline_threshold": 160,
+    "color_background_threshold": 248,
+    "color_count": 2,
+    "contour_levels": 6,
+    "crosshatch_angle_step_degrees": 45.0,
+    "crosshatch_thresholds": [
+      210,
+      160,
+      110,
+      60
+    ],
+    "edge_min_component_length_mm": 1.0,
+    "edge_threshold": 12,
+    "hatch_angle_degrees": 45.0,
+    "hatch_spacing_mm": 1.2,
+    "hatch_tone_threshold": 210,
+    "minimum_segment_length_mm": 0.6,
+    "squiggle_amplitude_mm": 1.0,
+    "squiggle_min_darkness": 0.03,
+    "squiggle_modulation": "both",
+    "squiggle_spacing_mm": 1.5,
+    "squiggle_wavelength_mm": 5.0
+  },
+  "revision": 1,
+  "schema_version": 1,
+  "source_asset_id": null,
+  "svg_import": {
+    "fill_mode": "outline",
+    "fit_to_page": true,
+    "hatch_angle_degrees": 45.0,
+    "hatch_spacing_mm": 2.0,
+    "stroke_mode": "centerline"
+  }
+}

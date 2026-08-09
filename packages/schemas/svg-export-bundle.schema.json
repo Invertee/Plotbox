@@ -1,0 +1,79 @@
+{
+  "$defs": {
+    "SvgExportManifestEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_count": {
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "pass",
+            "combined"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "pass_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pass Id"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filename",
+        "sha256",
+        "byte_count",
+        "kind"
+      ],
+      "title": "SvgExportManifestEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "archive_base64": {
+      "title": "Archive Base64",
+      "type": "string"
+    },
+    "design_sha256": {
+      "title": "Design Sha256",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/SvgExportManifestEntry"
+      },
+      "title": "Entries",
+      "type": "array"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "design_sha256",
+    "entries",
+    "archive_base64"
+  ],
+  "title": "SvgExportBundle",
+  "type": "object"
+}

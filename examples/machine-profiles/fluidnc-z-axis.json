@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "profile_id": "fluidnc-z-axis-a3",
+  "name": "FluidNC/Grbl A3 - Z-axis pen",
+  "dialect": "fluidnc-grbl",
+  "work_area_mm": {
+    "width": 430.0,
+    "height": 310.0
+  },
+  "origin_corner": "lower-left",
+  "invert_x": false,
+  "invert_y": false,
+  "precision_decimals": 3,
+  "motion": {
+    "travel_command": "G0",
+    "draw_command": "G1",
+    "draw_feed_mm_min": 1800.0,
+    "travel_feed_mm_min": 6000.0
+  },
+  "pen_actuator": {
+    "kind": "z_axis",
+    "up_mm": 5.0,
+    "down_mm": 0.0,
+    "lift_feed_mm_min": 900.0,
+    "lower_feed_mm_min": 400.0,
+    "dwell_after_up_ms": 80,
+    "dwell_after_down_ms": 120
+  },
+  "park": {
+    "enabled": false,
+    "x_mm": 0.0,
+    "y_mm": 0.0
+  },
+  "macros": {
+    "header": ["G21", "G90", "G17", "G94"],
+    "pause": ["M0 ({message})"],
+    "footer": ["M2"]
+  },
+  "allowed_commands": ["G0", "G1", "G4", "G17", "G21", "G90", "G94", "M0", "M2"]
+}

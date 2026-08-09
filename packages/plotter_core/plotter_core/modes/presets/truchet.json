@@ -1,0 +1,14 @@
+[
+  {
+    "schema_version": 1,
+    "preset_id": "metro-weave",
+    "version": 1,
+    "mode_id": "builtin.truchet",
+    "mode_version": "1.0.0",
+    "name": "Metro weave",
+    "description": "Medium tiles with occasional deterministic mutation.",
+    "parameter_schema_version": 1,
+    "seed": "truchet-metro-01",
+    "parameters": {"tile_size_mm": 18.0, "mutation": 0.18}
+  }
+]

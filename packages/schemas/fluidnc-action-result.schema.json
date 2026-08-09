@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "identify",
+        "status",
+        "modal",
+        "config",
+        "limits",
+        "hold",
+        "home",
+        "jog",
+        "pen_test"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "command_summary": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Command Summary",
+      "type": "array"
+    },
+    "controller_state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Controller State"
+    },
+    "response_lines": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Response Lines",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "success": {
+      "title": "Success",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "action",
+    "success",
+    "command_summary",
+    "response_lines"
+  ],
+  "title": "FluidNCActionResult",
+  "type": "object"
+}

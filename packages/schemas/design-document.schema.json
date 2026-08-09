@@ -1,0 +1,489 @@
+{
+  "$defs": {
+    "CloseCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "close",
+          "default": "close",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "CloseCommand",
+      "type": "object"
+    },
+    "CubicCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "control1": {
+          "$ref": "#/$defs/Point"
+        },
+        "control2": {
+          "$ref": "#/$defs/Point"
+        },
+        "kind": {
+          "const": "cubic",
+          "default": "cubic",
+          "title": "Kind",
+          "type": "string"
+        },
+        "point": {
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "control1",
+        "control2",
+        "point"
+      ],
+      "title": "CubicCommand",
+      "type": "object"
+    },
+    "DesignDiagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "element_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element Id"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "default": "warning",
+          "enum": [
+            "warning",
+            "error"
+          ],
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "DesignDiagnostic",
+      "type": "object"
+    },
+    "DesignLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "layer_id": {
+          "title": "Layer Id",
+          "type": "string"
+        },
+        "locked": {
+          "default": false,
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "paths": {
+          "items": {
+            "$ref": "#/$defs/DesignPath"
+          },
+          "title": "Paths",
+          "type": "array"
+        },
+        "preview_color": {
+          "title": "Preview Color",
+          "type": "string"
+        },
+        "semantic_role": {
+          "title": "Semantic Role",
+          "type": "string"
+        },
+        "visible": {
+          "default": true,
+          "title": "Visible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "layer_id",
+        "name",
+        "semantic_role",
+        "preview_color",
+        "paths"
+      ],
+      "title": "DesignLayer",
+      "type": "object"
+    },
+    "DesignMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "diagnostics": {
+          "items": {
+            "$ref": "#/$defs/DesignDiagnostic"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        },
+        "generator_id": {
+          "title": "Generator Id",
+          "type": "string"
+        },
+        "generator_version": {
+          "title": "Generator Version",
+          "type": "string"
+        },
+        "normalized_sha256": {
+          "default": "",
+          "title": "Normalized Sha256",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "draft",
+            "standard",
+            "export"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "string"
+        },
+        "source_asset_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Asset Sha256"
+        },
+        "source_attribution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Attribution"
+        },
+        "source_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Date"
+        },
+        "source_snapshot_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Snapshot Sha256"
+        }
+      },
+      "required": [
+        "generator_id",
+        "generator_version",
+        "seed",
+        "quality"
+      ],
+      "title": "DesignMetadata",
+      "type": "object"
+    },
+    "DesignPath": {
+      "additionalProperties": false,
+      "properties": {
+        "closed": {
+          "default": false,
+          "title": "Closed",
+          "type": "boolean"
+        },
+        "commands": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "close": "#/$defs/CloseCommand",
+                "cubic": "#/$defs/CubicCommand",
+                "line": "#/$defs/LineCommand",
+                "move": "#/$defs/MoveCommand",
+                "quadratic": "#/$defs/QuadraticCommand"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/MoveCommand"
+              },
+              {
+                "$ref": "#/$defs/LineCommand"
+              },
+              {
+                "$ref": "#/$defs/QuadraticCommand"
+              },
+              {
+                "$ref": "#/$defs/CubicCommand"
+              },
+              {
+                "$ref": "#/$defs/CloseCommand"
+              }
+            ]
+          },
+          "minItems": 2,
+          "title": "Commands",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "path_id": {
+          "minLength": 1,
+          "title": "Path Id",
+          "type": "string"
+        },
+        "reversible": {
+          "default": true,
+          "title": "Reversible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path_id",
+        "commands"
+      ],
+      "title": "DesignPath",
+      "type": "object"
+    },
+    "LineCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "line",
+          "default": "line",
+          "title": "Kind",
+          "type": "string"
+        },
+        "point": {
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "point"
+      ],
+      "title": "LineCommand",
+      "type": "object"
+    },
+    "MoveCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "move",
+          "default": "move",
+          "title": "Kind",
+          "type": "string"
+        },
+        "point": {
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "point"
+      ],
+      "title": "MoveCommand",
+      "type": "object"
+    },
+    "PageSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "height_mm": {
+          "default": 297.0,
+          "exclusiveMinimum": 0,
+          "title": "Height Mm",
+          "type": "number"
+        },
+        "margin_mm": {
+          "default": 10.0,
+          "minimum": 0,
+          "title": "Margin Mm",
+          "type": "number"
+        },
+        "orientation": {
+          "default": "landscape",
+          "enum": [
+            "landscape",
+            "portrait"
+          ],
+          "title": "Orientation",
+          "type": "string"
+        },
+        "preset": {
+          "default": "A3",
+          "enum": [
+            "A3",
+            "A4",
+            "custom"
+          ],
+          "title": "Preset",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "width_mm": {
+          "default": 420.0,
+          "exclusiveMinimum": 0,
+          "title": "Width Mm",
+          "type": "number"
+        }
+      },
+      "title": "PageSettings",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "QuadraticCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "control": {
+          "$ref": "#/$defs/Point"
+        },
+        "kind": {
+          "const": "quadratic",
+          "default": "quadratic",
+          "title": "Kind",
+          "type": "string"
+        },
+        "point": {
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "control",
+        "point"
+      ],
+      "title": "QuadraticCommand",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "title": "Document Id",
+      "type": "string"
+    },
+    "layers": {
+      "items": {
+        "$ref": "#/$defs/DesignLayer"
+      },
+      "title": "Layers",
+      "type": "array"
+    },
+    "metadata": {
+      "$ref": "#/$defs/DesignMetadata"
+    },
+    "page": {
+      "$ref": "#/$defs/PageSettings"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "document_id",
+    "page",
+    "layers",
+    "metadata"
+  ],
+  "title": "DesignDocument",
+  "type": "object"
+}

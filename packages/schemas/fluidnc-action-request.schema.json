@@ -1,0 +1,96 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "identify",
+        "status",
+        "modal",
+        "config",
+        "limits",
+        "hold",
+        "home",
+        "jog",
+        "pen_test"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "axis": {
+      "anyOf": [
+        {
+          "enum": [
+            "X",
+            "Y",
+            "Z",
+            "ALL"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Axis"
+    },
+    "confirmed": {
+      "default": false,
+      "title": "Confirmed",
+      "type": "boolean"
+    },
+    "distance_mm": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Distance Mm"
+    },
+    "feed_mm_min": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Feed Mm Min"
+    },
+    "pen_down_mm": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pen Down Mm"
+    },
+    "pen_up_mm": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pen Up Mm"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "title": "FluidNCActionRequest",
+  "type": "object"
+}

@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "CompactGeometryLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "first_path": {
+          "minimum": 0,
+          "title": "First Path",
+          "type": "integer"
+        },
+        "layer_id": {
+          "title": "Layer Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "path_count": {
+          "minimum": 0,
+          "title": "Path Count",
+          "type": "integer"
+        },
+        "preview_color": {
+          "title": "Preview Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "layer_id",
+        "name",
+        "preview_color",
+        "first_path",
+        "path_count"
+      ],
+      "title": "CompactGeometryLayer",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "coordinate_type": {
+      "const": "float32",
+      "default": "float32",
+      "title": "Coordinate Type",
+      "type": "string"
+    },
+    "layers": {
+      "items": {
+        "$ref": "#/$defs/CompactGeometryLayer"
+      },
+      "title": "Layers",
+      "type": "array"
+    },
+    "path_flags": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Path Flags",
+      "type": "array"
+    },
+    "path_offsets": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Path Offsets",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_design_sha256": {
+      "title": "Source Design Sha256",
+      "type": "string"
+    },
+    "vertices_xy": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Vertices Xy",
+      "type": "array"
+    }
+  },
+  "required": [
+    "vertices_xy",
+    "path_offsets",
+    "path_flags",
+    "layers",
+    "source_design_sha256"
+  ],
+  "title": "CompactGeometry",
+  "type": "object"
+}

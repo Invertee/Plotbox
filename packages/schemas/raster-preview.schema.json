@@ -1,0 +1,169 @@
+{
+  "$defs": {
+    "RasterPlacement": {
+      "additionalProperties": false,
+      "description": "Processed raster placement in lower-left-origin page millimetres.",
+      "properties": {
+        "height_mm": {
+          "exclusiveMinimum": 0,
+          "title": "Height Mm",
+          "type": "number"
+        },
+        "width_mm": {
+          "exclusiveMinimum": 0,
+          "title": "Width Mm",
+          "type": "number"
+        },
+        "x_mm": {
+          "title": "X Mm",
+          "type": "number"
+        },
+        "y_mm": {
+          "title": "Y Mm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_mm",
+        "y_mm",
+        "width_mm",
+        "height_mm"
+      ],
+      "title": "RasterPlacement",
+      "type": "object"
+    },
+    "RasterPreviewWarning": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "RasterPreviewWarning",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "crop_box_px": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        }
+      ],
+      "title": "Crop Box Px",
+      "type": "array"
+    },
+    "frame_count": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Frame Count",
+      "type": "integer"
+    },
+    "mm_per_pixel_x": {
+      "exclusiveMinimum": 0,
+      "title": "Mm Per Pixel X",
+      "type": "number"
+    },
+    "mm_per_pixel_y": {
+      "exclusiveMinimum": 0,
+      "title": "Mm Per Pixel Y",
+      "type": "number"
+    },
+    "pen_width_mm": {
+      "exclusiveMinimum": 0,
+      "title": "Pen Width Mm",
+      "type": "number"
+    },
+    "placement": {
+      "$ref": "#/$defs/RasterPlacement"
+    },
+    "preview_png_base64": {
+      "title": "Preview Png Base64",
+      "type": "string"
+    },
+    "preview_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Preview Sha256",
+      "type": "string"
+    },
+    "processed_height_px": {
+      "exclusiveMinimum": 0,
+      "title": "Processed Height Px",
+      "type": "integer"
+    },
+    "processed_width_px": {
+      "exclusiveMinimum": 0,
+      "title": "Processed Width Px",
+      "type": "integer"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_asset_sha256": {
+      "title": "Source Asset Sha256",
+      "type": "string"
+    },
+    "source_height_px": {
+      "exclusiveMinimum": 0,
+      "title": "Source Height Px",
+      "type": "integer"
+    },
+    "source_width_px": {
+      "exclusiveMinimum": 0,
+      "title": "Source Width Px",
+      "type": "integer"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/RasterPreviewWarning"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "project_id",
+    "source_asset_sha256",
+    "source_width_px",
+    "source_height_px",
+    "crop_box_px",
+    "processed_width_px",
+    "processed_height_px",
+    "mm_per_pixel_x",
+    "mm_per_pixel_y",
+    "pen_width_mm",
+    "placement",
+    "preview_png_base64",
+    "preview_sha256"
+  ],
+  "title": "RasterPreview",
+  "type": "object"
+}

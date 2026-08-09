@@ -1,0 +1,14 @@
+[
+  {
+    "schema_version": 1,
+    "preset_id": "weathered-basin",
+    "version": 1,
+    "mode_id": "builtin.topographic-contours",
+    "mode_version": "1.0.0",
+    "name": "Weathered basin",
+    "description": "Eighteen gently warped terrain rings.",
+    "parameter_schema_version": 1,
+    "seed": "topo-basin-01",
+    "parameters": {"levels": 18, "warp": 0.65}
+  }
+]

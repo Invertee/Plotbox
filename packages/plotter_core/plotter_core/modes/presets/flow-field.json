@@ -1,0 +1,14 @@
+[
+  {
+    "schema_version": 1,
+    "preset_id": "curl-ribbons",
+    "version": 1,
+    "mode_id": "builtin.flow-field",
+    "mode_version": "1.0.0",
+    "name": "Curl ribbons",
+    "description": "Dense curling streamlines with comfortable plot spacing.",
+    "parameter_schema_version": 1,
+    "seed": "flow-curl-01",
+    "parameters": {"field": "curl", "density": 1.0, "step_mm": 2.0, "spacing_mm": 2.5}
+  }
+]

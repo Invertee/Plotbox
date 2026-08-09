@@ -1,0 +1,35 @@
+{
+  "version": 0.6,
+  "generator": "Plotbox offline fixture",
+  "osm3s": {
+    "timestamp_osm_base": "2026-07-01T12:00:00Z"
+  },
+  "elements": [
+    {"type": "node", "id": 1, "lat": 51.5034, "lon": -0.1298},
+    {"type": "node", "id": 2, "lat": 51.5050, "lon": -0.1270},
+    {"type": "node", "id": 3, "lat": 51.5065, "lon": -0.1242},
+    {"type": "node", "id": 4, "lat": 51.5037, "lon": -0.1265},
+    {"type": "node", "id": 5, "lat": 51.5045, "lon": -0.1252},
+    {"type": "node", "id": 6, "lat": 51.5054, "lon": -0.1239},
+    {"type": "node", "id": 7, "lat": 51.5041, "lon": -0.1290},
+    {"type": "node", "id": 8, "lat": 51.5041, "lon": -0.1280},
+    {"type": "node", "id": 9, "lat": 51.5048, "lon": -0.1280},
+    {"type": "node", "id": 10, "lat": 51.5048, "lon": -0.1290},
+    {"type": "node", "id": 11, "lat": 51.5054, "lon": -0.1264},
+    {"type": "node", "id": 12, "lat": 51.5054, "lon": -0.1254},
+    {"type": "node", "id": 13, "lat": 51.5061, "lon": -0.1254},
+    {"type": "node", "id": 14, "lat": 51.5061, "lon": -0.1264},
+    {"type": "node", "id": 15, "lat": 51.5036, "lon": -0.1249},
+    {"type": "node", "id": 16, "lat": 51.5036, "lon": -0.1238},
+    {"type": "node", "id": 17, "lat": 51.5044, "lon": -0.1238},
+    {"type": "node", "id": 18, "lat": 51.5044, "lon": -0.1249},
+    {"type": "node", "id": 19, "lat": 51.5057, "lon": -0.1284, "tags": {"amenity": "theatre", "name": "Fixture Theatre"}},
+    {"type": "node", "id": 20, "lat": 51.5049, "lon": -0.1246, "tags": {"tourism": "attraction", "name": "Fixture Attraction"}},
+    {"type": "way", "id": 101, "nodes": [1, 2, 3], "tags": {"highway": "primary", "name": "Fixture Avenue"}},
+    {"type": "way", "id": 102, "nodes": [4, 5, 6], "tags": {"highway": "residential", "name": "Local Street"}},
+    {"type": "way", "id": 103, "nodes": [7, 8, 9, 10, 7], "tags": {"building": "yes"}},
+    {"type": "way", "id": 104, "nodes": [11, 12, 13, 14, 11], "tags": {"natural": "water", "name": "Fixture Pond"}},
+    {"type": "way", "id": 105, "nodes": [1, 4, 15], "tags": {"railway": "rail"}},
+    {"type": "way", "id": 106, "nodes": [15, 16, 17, 18, 15], "tags": {"leisure": "park", "name": "Fixture Green"}}
+  ]
+}

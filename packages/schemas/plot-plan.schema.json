@@ -1,0 +1,463 @@
+{
+  "$defs": {
+    "PageSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "height_mm": {
+          "default": 297.0,
+          "exclusiveMinimum": 0,
+          "title": "Height Mm",
+          "type": "number"
+        },
+        "margin_mm": {
+          "default": 10.0,
+          "minimum": 0,
+          "title": "Margin Mm",
+          "type": "number"
+        },
+        "orientation": {
+          "default": "landscape",
+          "enum": [
+            "landscape",
+            "portrait"
+          ],
+          "title": "Orientation",
+          "type": "string"
+        },
+        "preset": {
+          "default": "A3",
+          "enum": [
+            "A3",
+            "A4",
+            "custom"
+          ],
+          "title": "Preset",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "width_mm": {
+          "default": 420.0,
+          "exclusiveMinimum": 0,
+          "title": "Width Mm",
+          "type": "number"
+        }
+      },
+      "title": "PageSettings",
+      "type": "object"
+    },
+    "PlanWarning": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking": {
+          "default": false,
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "PlanWarning",
+      "type": "object"
+    },
+    "PlannedPath": {
+      "additionalProperties": false,
+      "properties": {
+        "closed": {
+          "title": "Closed",
+          "type": "boolean"
+        },
+        "path_id": {
+          "title": "Path Id",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "minItems": 2,
+          "title": "Points",
+          "type": "array"
+        },
+        "reversible": {
+          "title": "Reversible",
+          "type": "boolean"
+        },
+        "source_layer_id": {
+          "title": "Source Layer Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path_id",
+        "source_layer_id",
+        "points",
+        "reversible",
+        "closed"
+      ],
+      "title": "PlannedPath",
+      "type": "object"
+    },
+    "PlotAction": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "enum": [
+            "pen_up",
+            "travel",
+            "pen_down",
+            "draw",
+            "pause_for_pen"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        },
+        "pass_id": {
+          "title": "Pass Id",
+          "type": "string"
+        },
+        "path_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path Id"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "pass_id"
+      ],
+      "title": "PlotAction",
+      "type": "object"
+    },
+    "PlotPass": {
+      "additionalProperties": false,
+      "properties": {
+        "draw_feed_mm_min": {
+          "title": "Draw Feed Mm Min",
+          "type": "number"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ordered_paths": {
+          "items": {
+            "$ref": "#/$defs/PlannedPath"
+          },
+          "title": "Ordered Paths",
+          "type": "array"
+        },
+        "pass_id": {
+          "title": "Pass Id",
+          "type": "string"
+        },
+        "pen_down_override": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pen Down Override"
+        },
+        "pen_profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pen Profile Id"
+        },
+        "preview_color": {
+          "title": "Preview Color",
+          "type": "string"
+        },
+        "semantic_role": {
+          "title": "Semantic Role",
+          "type": "string"
+        },
+        "source_layer_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Layer Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "pass_id",
+        "name",
+        "semantic_role",
+        "preview_color",
+        "pen_profile_id",
+        "draw_feed_mm_min",
+        "enabled",
+        "ordered_paths"
+      ],
+      "title": "PlotPass",
+      "type": "object"
+    },
+    "PlotStatistics": {
+      "additionalProperties": false,
+      "properties": {
+        "draw_length_mm": {
+          "minimum": 0,
+          "title": "Draw Length Mm",
+          "type": "number"
+        },
+        "estimated_seconds": {
+          "minimum": 0,
+          "title": "Estimated Seconds",
+          "type": "number"
+        },
+        "layer_count": {
+          "minimum": 0,
+          "title": "Layer Count",
+          "type": "integer"
+        },
+        "lift_count": {
+          "minimum": 0,
+          "title": "Lift Count",
+          "type": "integer"
+        },
+        "pass_count": {
+          "minimum": 0,
+          "title": "Pass Count",
+          "type": "integer"
+        },
+        "path_count": {
+          "minimum": 0,
+          "title": "Path Count",
+          "type": "integer"
+        },
+        "travel_length_mm": {
+          "minimum": 0,
+          "title": "Travel Length Mm",
+          "type": "number"
+        },
+        "vertex_count": {
+          "minimum": 0,
+          "title": "Vertex Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "layer_count",
+        "pass_count",
+        "path_count",
+        "vertex_count",
+        "draw_length_mm",
+        "travel_length_mm",
+        "lift_count",
+        "estimated_seconds"
+      ],
+      "title": "PlotStatistics",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "RemovedGeometryReport": {
+      "additionalProperties": false,
+      "properties": {
+        "clipped_paths": {
+          "default": 0,
+          "title": "Clipped Paths",
+          "type": "integer"
+        },
+        "degenerate_paths": {
+          "default": 0,
+          "title": "Degenerate Paths",
+          "type": "integer"
+        },
+        "non_finite_paths": {
+          "default": 0,
+          "title": "Non Finite Paths",
+          "type": "integer"
+        },
+        "short_paths": {
+          "default": 0,
+          "title": "Short Paths",
+          "type": "integer"
+        }
+      },
+      "title": "RemovedGeometryReport",
+      "type": "object"
+    },
+    "TravelSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "$ref": "#/$defs/Point"
+        },
+        "pass_id": {
+          "title": "Pass Id",
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "pass_id"
+      ],
+      "title": "TravelSegment",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": {
+        "$ref": "#/$defs/PlotAction"
+      },
+      "title": "Actions",
+      "type": "array"
+    },
+    "normalized_sha256": {
+      "default": "",
+      "title": "Normalized Sha256",
+      "type": "string"
+    },
+    "page": {
+      "$ref": "#/$defs/PageSettings"
+    },
+    "passes": {
+      "items": {
+        "$ref": "#/$defs/PlotPass"
+      },
+      "title": "Passes",
+      "type": "array"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "removed_geometry": {
+      "$ref": "#/$defs/RemovedGeometryReport"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_design_sha256": {
+      "title": "Source Design Sha256",
+      "type": "string"
+    },
+    "statistics": {
+      "$ref": "#/$defs/PlotStatistics"
+    },
+    "travel_segments": {
+      "items": {
+        "$ref": "#/$defs/TravelSegment"
+      },
+      "title": "Travel Segments",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/PlanWarning"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "project_id",
+    "page",
+    "passes",
+    "travel_segments",
+    "actions",
+    "statistics",
+    "warnings",
+    "removed_geometry",
+    "source_design_sha256"
+  ],
+  "title": "PlotPlan",
+  "type": "object"
+}

@@ -1,0 +1,30 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "commanded_distance_mm": {
+      "exclusiveMinimum": 0,
+      "maximum": 1000,
+      "title": "Commanded Distance Mm",
+      "type": "number"
+    },
+    "current_steps_per_mm": {
+      "exclusiveMinimum": 0,
+      "maximum": 100000,
+      "title": "Current Steps Per Mm",
+      "type": "number"
+    },
+    "measured_distance_mm": {
+      "exclusiveMinimum": 0,
+      "maximum": 1000,
+      "title": "Measured Distance Mm",
+      "type": "number"
+    }
+  },
+  "required": [
+    "current_steps_per_mm",
+    "commanded_distance_mm",
+    "measured_distance_mm"
+  ],
+  "title": "AxisCalibrationRequest",
+  "type": "object"
+}

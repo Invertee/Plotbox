@@ -1,0 +1,1121 @@
+{
+  "$defs": {
+    "ExportSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "combined_file": {
+          "default": true,
+          "title": "Combined File",
+          "type": "boolean"
+        },
+        "dry_run": {
+          "default": true,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "page_boundary": {
+          "default": true,
+          "title": "Page Boundary",
+          "type": "boolean"
+        },
+        "profile_id": {
+          "default": "fluidnc-z-axis-a3",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "separate_pass_files": {
+          "default": true,
+          "title": "Separate Pass Files",
+          "type": "boolean"
+        }
+      },
+      "title": "ExportSelection",
+      "type": "object"
+    },
+    "GeometrySettings": {
+      "additionalProperties": false,
+      "properties": {
+        "curve_tolerance_mm": {
+          "default": 0.05,
+          "exclusiveMinimum": 0,
+          "title": "Curve Tolerance Mm",
+          "type": "number"
+        },
+        "endpoint_snap_tolerance_mm": {
+          "default": 0.05,
+          "minimum": 0,
+          "title": "Endpoint Snap Tolerance Mm",
+          "type": "number"
+        },
+        "minimum_path_length_mm": {
+          "default": 0.2,
+          "minimum": 0,
+          "title": "Minimum Path Length Mm",
+          "type": "number"
+        },
+        "ordering_quality": {
+          "default": "standard",
+          "enum": [
+            "draft",
+            "standard"
+          ],
+          "title": "Ordering Quality",
+          "type": "string"
+        },
+        "simplification_tolerance_mm": {
+          "default": 0.02,
+          "minimum": 0,
+          "title": "Simplification Tolerance Mm",
+          "type": "number"
+        }
+      },
+      "title": "GeometrySettings",
+      "type": "object"
+    },
+    "ModeParameterValue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        }
+      ]
+    },
+    "ModeSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "mode_id": {
+          "default": "builtin.test-pattern",
+          "title": "Mode Id",
+          "type": "string"
+        },
+        "parameter_schema_version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Parameter Schema Version",
+          "type": "integer"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ModeParameterValue"
+          },
+          "title": "Parameters",
+          "type": "object"
+        },
+        "quality": {
+          "default": "export",
+          "enum": [
+            "draft",
+            "standard",
+            "export"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "seed": {
+          "default": "codex-vertical-slice-1",
+          "title": "Seed",
+          "type": "string"
+        },
+        "version": {
+          "default": "1.0.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "ModeSettings",
+      "type": "object"
+    },
+    "NormalizedCrop": {
+      "additionalProperties": false,
+      "description": "Source crop in normalized image coordinates with a top-left origin.",
+      "properties": {
+        "height": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Height",
+          "type": "number"
+        },
+        "width": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width",
+          "type": "number"
+        },
+        "x": {
+          "default": 0.0,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "default": 0.0,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "title": "NormalizedCrop",
+      "type": "object"
+    },
+    "OsmBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "east": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "East",
+          "type": "number"
+        },
+        "north": {
+          "maximum": 85,
+          "minimum": -85,
+          "title": "North",
+          "type": "number"
+        },
+        "south": {
+          "maximum": 85,
+          "minimum": -85,
+          "title": "South",
+          "type": "number"
+        },
+        "west": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "West",
+          "type": "number"
+        }
+      },
+      "required": [
+        "south",
+        "west",
+        "north",
+        "east"
+      ],
+      "title": "OsmBounds",
+      "type": "object"
+    },
+    "OsmFeatureToggles": {
+      "additionalProperties": false,
+      "properties": {
+        "buildings": {
+          "default": true,
+          "title": "Buildings",
+          "type": "boolean"
+        },
+        "parks": {
+          "default": true,
+          "title": "Parks",
+          "type": "boolean"
+        },
+        "rail": {
+          "default": true,
+          "title": "Rail",
+          "type": "boolean"
+        },
+        "roads": {
+          "default": true,
+          "title": "Roads",
+          "type": "boolean"
+        },
+        "water": {
+          "default": true,
+          "title": "Water",
+          "type": "boolean"
+        }
+      },
+      "title": "OsmFeatureToggles",
+      "type": "object"
+    },
+    "OsmRenderRules": {
+      "additionalProperties": false,
+      "properties": {
+        "building_treatment": {
+          "default": "outline",
+          "enum": [
+            "outline",
+            "hatch"
+          ],
+          "title": "Building Treatment",
+          "type": "string"
+        },
+        "minimum_feature_mm": {
+          "default": 0.3,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Minimum Feature Mm",
+          "type": "number"
+        },
+        "park_treatment": {
+          "default": "outline",
+          "enum": [
+            "outline",
+            "hatch"
+          ],
+          "title": "Park Treatment",
+          "type": "string"
+        },
+        "polygon_hatch_angle_degrees": {
+          "default": 45,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Polygon Hatch Angle Degrees",
+          "type": "number"
+        },
+        "polygon_hatch_spacing_mm": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "title": "Polygon Hatch Spacing Mm",
+          "type": "number"
+        },
+        "road_line_treatment": {
+          "default": "centerline",
+          "enum": [
+            "centerline",
+            "casing",
+            "parallel"
+          ],
+          "title": "Road Line Treatment",
+          "type": "string"
+        },
+        "road_width_mm": {
+          "default": 0.8,
+          "exclusiveMinimum": 0,
+          "maximum": 10,
+          "title": "Road Width Mm",
+          "type": "number"
+        },
+        "simplification_tolerance_mm": {
+          "default": 0.08,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Simplification Tolerance Mm",
+          "type": "number"
+        },
+        "water_treatment": {
+          "default": "hatch",
+          "enum": [
+            "outline",
+            "hatch"
+          ],
+          "title": "Water Treatment",
+          "type": "string"
+        }
+      },
+      "title": "OsmRenderRules",
+      "type": "object"
+    },
+    "OsmSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "bounds": {
+          "$ref": "#/$defs/OsmBounds"
+        },
+        "lock_mode": {
+          "default": "extent",
+          "enum": [
+            "extent",
+            "scale"
+          ],
+          "title": "Lock Mode",
+          "type": "string"
+        },
+        "rotation_degrees": {
+          "default": 0,
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Rotation Degrees",
+          "type": "number"
+        }
+      },
+      "title": "OsmSelection",
+      "type": "object"
+    },
+    "OsmSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "$ref": "#/$defs/OsmFeatureToggles"
+        },
+        "render": {
+          "$ref": "#/$defs/OsmRenderRules"
+        },
+        "selection": {
+          "$ref": "#/$defs/OsmSelection"
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OsmSnapshotMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "OsmSettings",
+      "type": "object"
+    },
+    "OsmSnapshotMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "attribution": {
+          "default": "\u00a9 OpenStreetMap contributors",
+          "title": "Attribution",
+          "type": "string"
+        },
+        "bounds": {
+          "$ref": "#/$defs/OsmBounds"
+        },
+        "byte_count": {
+          "exclusiveMinimum": 0,
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "element_count": {
+          "minimum": 0,
+          "title": "Element Count",
+          "type": "integer"
+        },
+        "fetched_at": {
+          "title": "Fetched At",
+          "type": "string"
+        },
+        "provider": {
+          "default": "OpenStreetMap Overpass API",
+          "title": "Provider",
+          "type": "string"
+        },
+        "query_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Query Sha256",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "source_date": {
+          "title": "Source Date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "sha256",
+        "query_sha256",
+        "fetched_at",
+        "source_date",
+        "element_count",
+        "byte_count",
+        "bounds"
+      ],
+      "title": "OsmSnapshotMetadata",
+      "type": "object"
+    },
+    "PageSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "height_mm": {
+          "default": 297.0,
+          "exclusiveMinimum": 0,
+          "title": "Height Mm",
+          "type": "number"
+        },
+        "margin_mm": {
+          "default": 10.0,
+          "minimum": 0,
+          "title": "Margin Mm",
+          "type": "number"
+        },
+        "orientation": {
+          "default": "landscape",
+          "enum": [
+            "landscape",
+            "portrait"
+          ],
+          "title": "Orientation",
+          "type": "string"
+        },
+        "preset": {
+          "default": "A3",
+          "enum": [
+            "A3",
+            "A4",
+            "custom"
+          ],
+          "title": "Preset",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "width_mm": {
+          "default": 420.0,
+          "exclusiveMinimum": 0,
+          "title": "Width Mm",
+          "type": "number"
+        }
+      },
+      "title": "PageSettings",
+      "type": "object"
+    },
+    "PassSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "draw_feed_mm_min": {
+          "default": 1800.0,
+          "exclusiveMinimum": 0,
+          "title": "Draw Feed Mm Min",
+          "type": "number"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "pass_id": {
+          "title": "Pass Id",
+          "type": "string"
+        },
+        "pen_down_override": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pen Down Override"
+        },
+        "pen_profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pen Profile Id"
+        },
+        "preview_color": {
+          "title": "Preview Color",
+          "type": "string"
+        },
+        "semantic_role": {
+          "title": "Semantic Role",
+          "type": "string"
+        },
+        "source_layer_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Layer Ids",
+          "type": "array"
+        },
+        "visible": {
+          "default": true,
+          "title": "Visible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pass_id",
+        "name",
+        "semantic_role",
+        "preview_color"
+      ],
+      "title": "PassSettings",
+      "type": "object"
+    },
+    "PenProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "display_color": {
+          "title": "Display Color",
+          "type": "string"
+        },
+        "draw_feed_mm_min": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Draw Feed Mm Min"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        },
+        "pen_down_override": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pen Down Override"
+        },
+        "pen_id": {
+          "title": "Pen Id",
+          "type": "string"
+        },
+        "tip_width_mm": {
+          "exclusiveMinimum": 0,
+          "title": "Tip Width Mm",
+          "type": "number"
+        },
+        "x_offset_mm": {
+          "default": 0,
+          "title": "X Offset Mm",
+          "type": "number"
+        },
+        "y_offset_mm": {
+          "default": 0,
+          "title": "Y Offset Mm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "pen_id",
+        "name",
+        "display_color",
+        "tip_width_mm"
+      ],
+      "title": "PenProfile",
+      "type": "object"
+    },
+    "RasterPreprocessSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "adaptive_offset": {
+          "default": 5,
+          "maximum": 64,
+          "minimum": -64,
+          "title": "Adaptive Offset",
+          "type": "integer"
+        },
+        "adaptive_window_px": {
+          "default": 15,
+          "maximum": 101,
+          "minimum": 3,
+          "title": "Adaptive Window Px",
+          "type": "integer"
+        },
+        "blur_radius_px": {
+          "default": 0.0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Blur Radius Px",
+          "type": "number"
+        },
+        "channel": {
+          "default": "luminance",
+          "enum": [
+            "luminance",
+            "red",
+            "green",
+            "blue"
+          ],
+          "title": "Channel",
+          "type": "string"
+        },
+        "contrast": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 4,
+          "title": "Contrast",
+          "type": "number"
+        },
+        "crop": {
+          "$ref": "#/$defs/NormalizedCrop"
+        },
+        "fit_mode": {
+          "default": "contain",
+          "enum": [
+            "contain",
+            "cover",
+            "stretch"
+          ],
+          "title": "Fit Mode",
+          "type": "string"
+        },
+        "gamma": {
+          "default": 1.0,
+          "maximum": 5,
+          "minimum": 0.1,
+          "title": "Gamma",
+          "type": "number"
+        },
+        "invert": {
+          "default": false,
+          "title": "Invert",
+          "type": "boolean"
+        },
+        "maximum_megapixels": {
+          "default": 8.0,
+          "maximum": 25,
+          "minimum": 0.1,
+          "title": "Maximum Megapixels",
+          "type": "number"
+        },
+        "morphology": {
+          "default": "none",
+          "enum": [
+            "none",
+            "open",
+            "close"
+          ],
+          "title": "Morphology",
+          "type": "string"
+        },
+        "morphology_radius_px": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Morphology Radius Px",
+          "type": "integer"
+        },
+        "rotation_degrees": {
+          "default": 0,
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Rotation Degrees",
+          "type": "integer"
+        },
+        "sampling_pixels_per_pen_width": {
+          "default": 3.0,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Sampling Pixels Per Pen Width",
+          "type": "number"
+        },
+        "scale_percent": {
+          "default": 100.0,
+          "exclusiveMinimum": 0,
+          "maximum": 400,
+          "title": "Scale Percent",
+          "type": "number"
+        },
+        "sharpen_amount": {
+          "default": 0.0,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Sharpen Amount",
+          "type": "number"
+        },
+        "threshold": {
+          "default": 128,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "integer"
+        },
+        "threshold_mode": {
+          "default": "none",
+          "enum": [
+            "none",
+            "global",
+            "adaptive"
+          ],
+          "title": "Threshold Mode",
+          "type": "string"
+        }
+      },
+      "title": "RasterPreprocessSettings",
+      "type": "object"
+    },
+    "RasterVectorizeSettings": {
+      "additionalProperties": false,
+      "description": "Physically meaningful controls shared by the raster-to-vector algorithms.",
+      "properties": {
+        "algorithm": {
+          "default": "edge",
+          "enum": [
+            "edge",
+            "centerline",
+            "hatch",
+            "crosshatch",
+            "squiggle",
+            "tone-contour",
+            "color-outline",
+            "color-hatch"
+          ],
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "centerline_prune_length_mm": {
+          "default": 1.5,
+          "minimum": 0,
+          "title": "Centerline Prune Length Mm",
+          "type": "number"
+        },
+        "centerline_threshold": {
+          "default": 160,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Centerline Threshold",
+          "type": "integer"
+        },
+        "color_background_threshold": {
+          "default": 248,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Color Background Threshold",
+          "type": "integer"
+        },
+        "color_count": {
+          "default": 2,
+          "maximum": 8,
+          "minimum": 2,
+          "title": "Color Count",
+          "type": "integer"
+        },
+        "contour_levels": {
+          "default": 6,
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Contour Levels",
+          "type": "integer"
+        },
+        "crosshatch_angle_step_degrees": {
+          "default": 45.0,
+          "exclusiveMinimum": 0,
+          "maximum": 180,
+          "title": "Crosshatch Angle Step Degrees",
+          "type": "number"
+        },
+        "crosshatch_thresholds": {
+          "default": [
+            210,
+            160,
+            110,
+            60
+          ],
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Crosshatch Thresholds",
+          "type": "array"
+        },
+        "edge_min_component_length_mm": {
+          "default": 1.0,
+          "minimum": 0,
+          "title": "Edge Min Component Length Mm",
+          "type": "number"
+        },
+        "edge_threshold": {
+          "default": 12,
+          "maximum": 255,
+          "minimum": 1,
+          "title": "Edge Threshold",
+          "type": "integer"
+        },
+        "hatch_angle_degrees": {
+          "default": 45.0,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Hatch Angle Degrees",
+          "type": "number"
+        },
+        "hatch_spacing_mm": {
+          "default": 1.2,
+          "exclusiveMinimum": 0,
+          "maximum": 50,
+          "title": "Hatch Spacing Mm",
+          "type": "number"
+        },
+        "hatch_tone_threshold": {
+          "default": 210,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Hatch Tone Threshold",
+          "type": "integer"
+        },
+        "minimum_segment_length_mm": {
+          "default": 0.6,
+          "minimum": 0,
+          "title": "Minimum Segment Length Mm",
+          "type": "number"
+        },
+        "squiggle_amplitude_mm": {
+          "default": 1.0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Squiggle Amplitude Mm",
+          "type": "number"
+        },
+        "squiggle_min_darkness": {
+          "default": 0.03,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Squiggle Min Darkness",
+          "type": "number"
+        },
+        "squiggle_modulation": {
+          "default": "both",
+          "enum": [
+            "amplitude",
+            "frequency",
+            "both"
+          ],
+          "title": "Squiggle Modulation",
+          "type": "string"
+        },
+        "squiggle_spacing_mm": {
+          "default": 1.5,
+          "exclusiveMinimum": 0,
+          "maximum": 50,
+          "title": "Squiggle Spacing Mm",
+          "type": "number"
+        },
+        "squiggle_wavelength_mm": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Squiggle Wavelength Mm",
+          "type": "number"
+        }
+      },
+      "title": "RasterVectorizeSettings",
+      "type": "object"
+    },
+    "SourceAsset": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "byte_count": {
+          "minimum": 1,
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "media_type": {
+          "enum": [
+            "image/svg+xml",
+            "image/png",
+            "image/jpeg"
+          ],
+          "title": "Media Type",
+          "type": "string"
+        },
+        "original_filename": {
+          "title": "Original Filename",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "original_filename",
+        "media_type",
+        "sha256",
+        "byte_count"
+      ],
+      "title": "SourceAsset",
+      "type": "object"
+    },
+    "SvgImportSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "fill_mode": {
+          "default": "outline",
+          "enum": [
+            "ignore",
+            "outline",
+            "hatch",
+            "crosshatch"
+          ],
+          "title": "Fill Mode",
+          "type": "string"
+        },
+        "fit_to_page": {
+          "default": true,
+          "title": "Fit To Page",
+          "type": "boolean"
+        },
+        "hatch_angle_degrees": {
+          "default": 45.0,
+          "title": "Hatch Angle Degrees",
+          "type": "number"
+        },
+        "hatch_spacing_mm": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "title": "Hatch Spacing Mm",
+          "type": "number"
+        },
+        "stroke_mode": {
+          "default": "centerline",
+          "enum": [
+            "centerline",
+            "outline",
+            "parallel"
+          ],
+          "title": "Stroke Mode",
+          "type": "string"
+        }
+      },
+      "title": "SvgImportSettings",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/SourceAsset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "export": {
+      "$ref": "#/$defs/ExportSelection"
+    },
+    "geometry": {
+      "$ref": "#/$defs/GeometrySettings"
+    },
+    "mode": {
+      "$ref": "#/$defs/ModeSettings"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "osm": {
+      "$ref": "#/$defs/OsmSettings"
+    },
+    "page": {
+      "$ref": "#/$defs/PageSettings"
+    },
+    "passes": {
+      "items": {
+        "$ref": "#/$defs/PassSettings"
+      },
+      "title": "Passes",
+      "type": "array"
+    },
+    "pen_palette": {
+      "items": {
+        "$ref": "#/$defs/PenProfile"
+      },
+      "title": "Pen Palette",
+      "type": "array"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "raster_preprocess": {
+      "$ref": "#/$defs/RasterPreprocessSettings"
+    },
+    "raster_vectorize": {
+      "$ref": "#/$defs/RasterVectorizeSettings"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_asset_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Asset Id"
+    },
+    "svg_import": {
+      "$ref": "#/$defs/SvgImportSettings"
+    }
+  },
+  "required": [
+    "project_id",
+    "name"
+  ],
+  "title": "ProjectRecipe",
+  "type": "object"
+}

@@ -1,0 +1,387 @@
+{
+  "$defs": {
+    "ExportManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "design_sha256": {
+          "title": "Design Sha256",
+          "type": "string"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/ExportManifestEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        },
+        "manifest_sha256": {
+          "default": "",
+          "title": "Manifest Sha256",
+          "type": "string"
+        },
+        "plot_plan_sha256": {
+          "title": "Plot Plan Sha256",
+          "type": "string"
+        },
+        "profile_id": {
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "project_id": {
+          "title": "Project Id",
+          "type": "string"
+        },
+        "round_trip_tolerance_mm": {
+          "title": "Round Trip Tolerance Mm",
+          "type": "number"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "valid": {
+          "title": "Valid",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "project_id",
+        "design_sha256",
+        "plot_plan_sha256",
+        "profile_id",
+        "round_trip_tolerance_mm",
+        "valid",
+        "entries"
+      ],
+      "title": "ExportManifest",
+      "type": "object"
+    },
+    "ExportManifestEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_count": {
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "pass",
+            "combined",
+            "dry-run",
+            "page-boundary"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "pass_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pass Id"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filename",
+        "sha256",
+        "byte_count",
+        "kind"
+      ],
+      "title": "ExportManifestEntry",
+      "type": "object"
+    },
+    "GcodeInstruction": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "title": "Command",
+          "type": "string"
+        },
+        "line_number": {
+          "title": "Line Number",
+          "type": "integer"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Parameters",
+          "type": "object"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "line_number",
+        "command",
+        "source"
+      ],
+      "title": "GcodeInstruction",
+      "type": "object"
+    },
+    "GcodeProgram": {
+      "additionalProperties": false,
+      "properties": {
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "parsed_instructions": {
+          "items": {
+            "$ref": "#/$defs/GcodeInstruction"
+          },
+          "title": "Parsed Instructions",
+          "type": "array"
+        },
+        "reconstructed_toolpath": {
+          "$ref": "#/$defs/ReconstructedToolpath"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "statistics": {
+          "$ref": "#/$defs/GcodeStatistics"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "validation": {
+          "$ref": "#/$defs/GcodeValidationReport"
+        }
+      },
+      "required": [
+        "filename",
+        "text",
+        "parsed_instructions",
+        "reconstructed_toolpath",
+        "validation",
+        "statistics",
+        "sha256"
+      ],
+      "title": "GcodeProgram",
+      "type": "object"
+    },
+    "GcodeStatistics": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_count": {
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "draw_segment_count": {
+          "title": "Draw Segment Count",
+          "type": "integer"
+        },
+        "instruction_count": {
+          "title": "Instruction Count",
+          "type": "integer"
+        },
+        "pause_count": {
+          "title": "Pause Count",
+          "type": "integer"
+        },
+        "travel_segment_count": {
+          "title": "Travel Segment Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "instruction_count",
+        "draw_segment_count",
+        "travel_segment_count",
+        "pause_count",
+        "byte_count"
+      ],
+      "title": "GcodeStatistics",
+      "type": "object"
+    },
+    "GcodeValidationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/ValidationIssue"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "max_xy_error_mm": {
+          "title": "Max Xy Error Mm",
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "title": "Tolerance Mm",
+          "type": "number"
+        },
+        "valid": {
+          "title": "Valid",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "valid",
+        "tolerance_mm",
+        "max_xy_error_mm",
+        "issues"
+      ],
+      "title": "GcodeValidationReport",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "ReconstructedSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "$ref": "#/$defs/Point"
+        },
+        "pen_down": {
+          "title": "Pen Down",
+          "type": "boolean"
+        },
+        "start": {
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "pen_down"
+      ],
+      "title": "ReconstructedSegment",
+      "type": "object"
+    },
+    "ReconstructedToolpath": {
+      "additionalProperties": false,
+      "properties": {
+        "draw_paths": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/Point"
+            },
+            "type": "array"
+          },
+          "title": "Draw Paths",
+          "type": "array"
+        },
+        "final_position": {
+          "$ref": "#/$defs/Point"
+        },
+        "final_z_mm": {
+          "title": "Final Z Mm",
+          "type": "number"
+        },
+        "pause_count": {
+          "title": "Pause Count",
+          "type": "integer"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/ReconstructedSegment"
+          },
+          "title": "Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "segments",
+        "draw_paths",
+        "final_position",
+        "final_z_mm",
+        "pause_count"
+      ],
+      "title": "ReconstructedToolpath",
+      "type": "object"
+    },
+    "ValidationIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "blocking"
+      ],
+      "title": "ValidationIssue",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "archive_base64": {
+      "title": "Archive Base64",
+      "type": "string"
+    },
+    "manifest": {
+      "$ref": "#/$defs/ExportManifest"
+    },
+    "programs": {
+      "items": {
+        "$ref": "#/$defs/GcodeProgram"
+      },
+      "title": "Programs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "manifest",
+    "programs",
+    "archive_base64"
+  ],
+  "title": "ExportBundle",
+  "type": "object"
+}

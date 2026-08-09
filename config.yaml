@@ -1,0 +1,30 @@
+name: Plotbox
+version: "0.3.0"
+slug: plotbox
+description: Artwork generation, validated G-code export, and guarded FluidNC commissioning
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+stage: experimental
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+panel_icon: mdi:draw-pen
+panel_title: Plotbox
+panel_admin: true
+ports:
+  8099/tcp: null
+ports_description:
+  8099/tcp: Reserved for authenticated Home Assistant Ingress; do not expose
+watchdog: http://[HOST]:[PORT:8099]/api/health
+backup: cold
+environment:
+  PLOTTERAPP_PROJECTS_ROOT: /data/projects
+  PLOTTERAPP_FLUIDNC_CONFIG: /data/fluidnc.json
+  PLOTTERAPP_WEB_ROOT: /app/web
+  PLOTTERAPP_ALLOWED_CLIENT_NETWORKS: 172.30.32.2/32,127.0.0.0/8
+options: {}
+schema: {}

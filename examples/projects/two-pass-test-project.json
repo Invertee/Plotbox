@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "project_id": "two-pass-test",
+  "name": "Two-pass vertical slice",
+  "mode": {
+    "id": "builtin.test-pattern",
+    "version": "1.0.0",
+    "seed": "codex-vertical-slice-1",
+    "parameters": {
+      "density": 0.55,
+      "rounded_corners": true
+    }
+  },
+  "page": {
+    "width_mm": 297.0,
+    "height_mm": 210.0,
+    "margin_mm": 10.0,
+    "orientation": "landscape"
+  },
+  "role_to_pass": {
+    "structure": "pass-black",
+    "accent": "pass-cyan"
+  },
+  "passes": [
+    {
+      "pass_id": "pass-black",
+      "name": "Black",
+      "preview_color": "#111111",
+      "pen_profile_id": "black-05",
+      "enabled": true
+    },
+    {
+      "pass_id": "pass-cyan",
+      "name": "Cyan",
+      "preview_color": "#00a6c8",
+      "pen_profile_id": "cyan-05",
+      "enabled": true
+    }
+  ],
+  "geometry": {
+    "curve_tolerance_mm": 0.05,
+    "simplification_tolerance_mm": 0.02,
+    "minimum_path_length_mm": 0.2,
+    "endpoint_snap_tolerance_mm": 0.05,
+    "ordering_quality": "standard"
+  },
+  "export": {
+    "profile_id": "fluidnc-z-axis-a3",
+    "separate_pass_files": true,
+    "combined_file": true,
+    "dry_run": true,
+    "page_boundary": true
+  }
+}

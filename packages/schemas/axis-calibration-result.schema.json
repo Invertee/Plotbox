@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "corrected_steps_per_mm": {
+      "title": "Corrected Steps Per Mm",
+      "type": "number"
+    },
+    "distance_error_percent": {
+      "title": "Distance Error Percent",
+      "type": "number"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "corrected_steps_per_mm",
+    "distance_error_percent"
+  ],
+  "title": "AxisCalibrationResult",
+  "type": "object"
+}

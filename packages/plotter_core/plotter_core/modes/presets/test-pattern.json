@@ -1,0 +1,41 @@
+[
+  {
+    "schema_version": 1,
+    "preset_id": "balanced",
+    "version": 1,
+    "mode_id": "builtin.test-pattern",
+    "mode_version": "1.0.0",
+    "name": "Balanced",
+    "description": "The established two-layer acceptance composition.",
+    "parameter_schema_version": 1,
+    "seed": "codex-vertical-slice-1",
+    "parameters": {
+      "density": 1.0,
+      "frame_count": 4,
+      "include_waves": true,
+      "accent_style": "both",
+      "orbit_band_mm": [-38.0, 38.0],
+      "accent_color": "#00a6c8",
+      "accent_role": "accent"
+    }
+  },
+  {
+    "schema_version": 1,
+    "preset_id": "quiet-signals",
+    "version": 1,
+    "mode_id": "builtin.test-pattern",
+    "mode_version": "1.0.0",
+    "name": "Quiet signals",
+    "description": "A lighter signal-led composition with fewer structural paths.",
+    "parameter_schema_version": 1,
+    "parameters": {
+      "density": 0.6,
+      "frame_count": 2,
+      "include_waves": true,
+      "accent_style": "signals",
+      "orbit_band_mm": [-24.0, 24.0],
+      "accent_color": "#d4512a",
+      "accent_role": "detail"
+    }
+  }
+]

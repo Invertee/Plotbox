@@ -1,0 +1,8 @@
+{
+  "draw_path_count": 21,
+  "draw_segment_count": 688,
+  "final_z_mm": 5.0,
+  "max_xy_error_mm": 0.0007071067811899238,
+  "pause_count": 1,
+  "travel_segment_count": 21
+}

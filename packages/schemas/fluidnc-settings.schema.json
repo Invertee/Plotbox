@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "command_timeout_seconds": {
+      "default": 15.0,
+      "maximum": 120.0,
+      "minimum": 1.0,
+      "title": "Command Timeout Seconds",
+      "type": "number"
+    },
+    "host": {
+      "default": "fluidnc.local",
+      "maxLength": 253,
+      "minLength": 1,
+      "title": "Host",
+      "type": "string"
+    },
+    "port": {
+      "default": 81,
+      "maximum": 65535,
+      "minimum": 1,
+      "title": "Port",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "tls": {
+      "default": false,
+      "title": "Tls",
+      "type": "boolean"
+    }
+  },
+  "title": "FluidNCSettings",
+  "type": "object"
+}

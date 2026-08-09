@@ -1,0 +1,20 @@
+{
+  "preset_id": "circuit-metropolis",
+  "seed": "hybrid-circuit-1",
+  "statistics": {
+    "attachment_count": 1,
+    "blocked_water_edge_count": 1,
+    "building_cell_count": 1,
+    "geometry_sha256": "a856f13c585fd252b521d36b3feebce755c9f9544890c7640620ca44539ced19",
+    "junction_count": 0,
+    "landscape_region_count": 2,
+    "locked_edge_count": 1,
+    "path_count": 45,
+    "poi_candidate_count": 2,
+    "poi_landmark_count": 2,
+    "replaced_building_count": 1,
+    "secondary_connector_count": 2,
+    "topology_sha256": "bd91adae1ee5f4c420a2f786469c43d295314139ef7a9920cf1f79ba8be53201",
+    "vertex_count": 118
+  }
+}

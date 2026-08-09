@@ -1,0 +1,211 @@
+{
+  "$defs": {
+    "MacroSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "footer": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Footer",
+          "type": "array"
+        },
+        "header": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Header",
+          "type": "array"
+        },
+        "pause": {
+          "default": "M0 ({message})",
+          "title": "Pause",
+          "type": "string"
+        }
+      },
+      "title": "MacroSettings",
+      "type": "object"
+    },
+    "MotionSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "draw_command": {
+          "const": "G1",
+          "default": "G1",
+          "title": "Draw Command",
+          "type": "string"
+        },
+        "draw_feed_mm_min": {
+          "default": 1800.0,
+          "exclusiveMinimum": 0,
+          "title": "Draw Feed Mm Min",
+          "type": "number"
+        },
+        "travel_command": {
+          "const": "G0",
+          "default": "G0",
+          "title": "Travel Command",
+          "type": "string"
+        },
+        "travel_feed_mm_min": {
+          "default": 6000.0,
+          "exclusiveMinimum": 0,
+          "title": "Travel Feed Mm Min",
+          "type": "number"
+        }
+      },
+      "title": "MotionSettings",
+      "type": "object"
+    },
+    "ParkSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "x_mm": {
+          "default": 0.0,
+          "title": "X Mm",
+          "type": "number"
+        },
+        "y_mm": {
+          "default": 0.0,
+          "title": "Y Mm",
+          "type": "number"
+        }
+      },
+      "title": "ParkSettings",
+      "type": "object"
+    },
+    "ZAxisActuator": {
+      "additionalProperties": false,
+      "properties": {
+        "down_mm": {
+          "default": 0.0,
+          "title": "Down Mm",
+          "type": "number"
+        },
+        "dwell_after_down_ms": {
+          "default": 120,
+          "minimum": 0,
+          "title": "Dwell After Down Ms",
+          "type": "integer"
+        },
+        "dwell_after_up_ms": {
+          "default": 80,
+          "minimum": 0,
+          "title": "Dwell After Up Ms",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "z_axis",
+          "default": "z_axis",
+          "title": "Kind",
+          "type": "string"
+        },
+        "lift_feed_mm_min": {
+          "default": 900.0,
+          "exclusiveMinimum": 0,
+          "title": "Lift Feed Mm Min",
+          "type": "number"
+        },
+        "lower_feed_mm_min": {
+          "default": 400.0,
+          "exclusiveMinimum": 0,
+          "title": "Lower Feed Mm Min",
+          "type": "number"
+        },
+        "up_mm": {
+          "default": 5.0,
+          "title": "Up Mm",
+          "type": "number"
+        }
+      },
+      "title": "ZAxisActuator",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "allowed_commands": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Allowed Commands",
+      "type": "array"
+    },
+    "dialect": {
+      "const": "fluidnc-grbl",
+      "default": "fluidnc-grbl",
+      "title": "Dialect",
+      "type": "string"
+    },
+    "invert_x": {
+      "default": false,
+      "title": "Invert X",
+      "type": "boolean"
+    },
+    "invert_y": {
+      "default": false,
+      "title": "Invert Y",
+      "type": "boolean"
+    },
+    "macros": {
+      "$ref": "#/$defs/MacroSettings"
+    },
+    "motion": {
+      "$ref": "#/$defs/MotionSettings"
+    },
+    "name": {
+      "default": "FluidNC/Grbl A3 - Z-axis pen",
+      "title": "Name",
+      "type": "string"
+    },
+    "origin_corner": {
+      "const": "lower-left",
+      "default": "lower-left",
+      "title": "Origin Corner",
+      "type": "string"
+    },
+    "park": {
+      "$ref": "#/$defs/ParkSettings"
+    },
+    "pen_actuator": {
+      "$ref": "#/$defs/ZAxisActuator"
+    },
+    "precision_decimals": {
+      "default": 3,
+      "maximum": 6,
+      "minimum": 0,
+      "title": "Precision Decimals",
+      "type": "integer"
+    },
+    "profile_id": {
+      "default": "fluidnc-z-axis-a3",
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "work_height_mm": {
+      "default": 310.0,
+      "exclusiveMinimum": 0,
+      "title": "Work Height Mm",
+      "type": "number"
+    },
+    "work_width_mm": {
+      "default": 430.0,
+      "exclusiveMinimum": 0,
+      "title": "Work Width Mm",
+      "type": "number"
+    }
+  },
+  "title": "MachineProfile",
+  "type": "object"
+}

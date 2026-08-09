@@ -1,0 +1,22 @@
+{
+  "candidate_count": 116,
+  "crossing_count": 0,
+  "draw_length_mm": 2493.8644068656263,
+  "edge_count": 22,
+  "failed_route_count": 0,
+  "family_counts": {
+    "city-bridge": 9,
+    "city-building": 7,
+    "city-tower": 3
+  },
+  "filler_count": 24,
+  "geometry_sha256": "1ae11f9f55af88fb3c9c402e865dbfbb53f3b036ab0d828d4f6c48f10d11b4bb",
+  "glyph_count": 19,
+  "landmark_count": 3,
+  "layout_sha256": "7d7009ea1c04110afa780dca6b0b5d08e4038a4bcbe4bc6837a31403093b3166",
+  "loop_count": 4,
+  "occupied_area_ratio": 0.2723478105942602,
+  "path_count": 314,
+  "routed_count": 22,
+  "vertex_count": 837
+}
