@@ -1,4 +1,144 @@
 {
+  "$defs": {
+    "FluidNCCommissioningTestRequest": {
+      "additionalProperties": false,
+      "description": "Validated parameters for one fixed, bounded machine calibration pattern.",
+      "properties": {
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        },
+        "delay_step_ms": {
+          "default": 100,
+          "maximum": 2000,
+          "minimum": 0,
+          "title": "Delay Step Ms",
+          "type": "integer"
+        },
+        "depth_end_mm": {
+          "default": -1.0,
+          "maximum": 20.0,
+          "minimum": -20.0,
+          "title": "Depth End Mm",
+          "type": "number"
+        },
+        "depth_start_mm": {
+          "default": 0.0,
+          "maximum": 20.0,
+          "minimum": -20.0,
+          "title": "Depth Start Mm",
+          "type": "number"
+        },
+        "feed_mm_min": {
+          "default": 600.0,
+          "maximum": 3000.0,
+          "minimum": 60.0,
+          "title": "Feed Mm Min",
+          "type": "number"
+        },
+        "height_mm": {
+          "default": 100.0,
+          "exclusiveMinimum": 1.0,
+          "maximum": 180.0,
+          "title": "Height Mm",
+          "type": "number"
+        },
+        "origin_x_mm": {
+          "default": 20.0,
+          "maximum": 500.0,
+          "minimum": -500.0,
+          "title": "Origin X Mm",
+          "type": "number"
+        },
+        "origin_y_mm": {
+          "default": 20.0,
+          "maximum": 500.0,
+          "minimum": -500.0,
+          "title": "Origin Y Mm",
+          "type": "number"
+        },
+        "spacing_mm": {
+          "default": 8.0,
+          "maximum": 20.0,
+          "minimum": 0.5,
+          "title": "Spacing Mm",
+          "type": "number"
+        },
+        "speed_end_mm_min": {
+          "default": 1800.0,
+          "maximum": 3000.0,
+          "minimum": 60.0,
+          "title": "Speed End Mm Min",
+          "type": "number"
+        },
+        "speed_start_mm_min": {
+          "default": 300.0,
+          "maximum": 3000.0,
+          "minimum": 60.0,
+          "title": "Speed Start Mm Min",
+          "type": "number"
+        },
+        "step_mm": {
+          "default": 5.0,
+          "maximum": 25.0,
+          "minimum": 0.1,
+          "title": "Step Mm",
+          "type": "number"
+        },
+        "steps": {
+          "default": 5,
+          "maximum": 12,
+          "minimum": 2,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "test_id": {
+          "enum": [
+            "scale_grid",
+            "circle_arc",
+            "diagonal_skew",
+            "backlash_ladder",
+            "speed_test",
+            "z_depth_ladder",
+            "lift_delay",
+            "registration",
+            "pen_swatch",
+            "line_spacing",
+            "hatch_density"
+          ],
+          "title": "Test Id",
+          "type": "string"
+        },
+        "width_mm": {
+          "default": 100.0,
+          "exclusiveMinimum": 1.0,
+          "maximum": 180.0,
+          "title": "Width Mm",
+          "type": "number"
+        },
+        "z_down_mm": {
+          "default": 0.0,
+          "maximum": 20.0,
+          "minimum": -20.0,
+          "title": "Z Down Mm",
+          "type": "number"
+        },
+        "z_up_mm": {
+          "default": 5.0,
+          "maximum": 20.0,
+          "minimum": -20.0,
+          "title": "Z Up Mm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "test_id"
+      ],
+      "title": "FluidNCCommissioningTestRequest",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "action": {
@@ -11,7 +151,8 @@
         "hold",
         "home",
         "jog",
-        "pen_test"
+        "pen_test",
+        "commissioning_test"
       ],
       "title": "Action",
       "type": "string"
@@ -86,6 +227,17 @@
       ],
       "default": null,
       "title": "Pen Up Mm"
+    },
+    "test": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FluidNCCommissioningTestRequest"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

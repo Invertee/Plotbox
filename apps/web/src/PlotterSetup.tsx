@@ -4,6 +4,8 @@ import { api } from "./api";
 import type {
   AxisCalibrationResult,
   FluidNCActionRequest,
+  FluidNCCommissioningTestId,
+  FluidNCCommissioningTestRequest,
   FluidNCActionResult,
   FluidNCSettings,
 } from "./types";
@@ -14,6 +16,86 @@ const DEFAULT_SETTINGS: FluidNCSettings = {
   port: 81,
   tls: false,
   command_timeout_seconds: 15,
+};
+
+const COMMISSIONING_TEST_DEFINITIONS: Record<
+  FluidNCCommissioningTestId,
+  { label: string; description: string; field: string }
+> = {
+  scale_grid: {
+    label: "Scale grid",
+    description: "Square grid for checking commanded distances on both axes.",
+    field: "spacing",
+  },
+  circle_arc: {
+    label: "Circle and arc",
+    description: "Full circle plus quarter arcs for roundness and interpolation checks.",
+    field: "none",
+  },
+  diagonal_skew: {
+    label: "Diagonal / skew",
+    description: "Crossing diagonals and reference edges for squareness and skew.",
+    field: "none",
+  },
+  backlash_ladder: {
+    label: "Backlash ladder",
+    description: "Alternating-direction ladders to reveal lost motion on X and Y.",
+    field: "step",
+  },
+  speed_test: {
+    label: "Speed test",
+    description: "Repeated lines at a feed-rate range for finish and missed-step checks.",
+    field: "speed",
+  },
+  z_depth_ladder: {
+    label: "Pen pressure / Z-depth ladder",
+    description: "Repeated lines at progressively different absolute Z depths.",
+    field: "depth",
+  },
+  lift_delay: {
+    label: "Lift-delay test",
+    description: "Repeated strokes with increasing dwell after lifting before the next mark.",
+    field: "delay",
+  },
+  registration: {
+    label: "Registration test",
+    description: "Corner and centre crosshairs for repeatability and alignment checks.",
+    field: "none",
+  },
+  pen_swatch: {
+    label: "Pen swatch sheet",
+    description: "Repeated outlined swatches to compare ink flow with the current pen.",
+    field: "none",
+  },
+  line_spacing: {
+    label: "Line-spacing test",
+    description: "Groups of parallel lines with progressively wider spacing.",
+    field: "spacing",
+  },
+  hatch_density: {
+    label: "Hatch-density test",
+    description: "Outlined blocks with progressively denser hatch lines.",
+    field: "spacing",
+  },
+};
+
+const DEFAULT_COMMISSIONING_TEST: FluidNCCommissioningTestRequest = {
+  test_id: "scale_grid",
+  origin_x_mm: 20,
+  origin_y_mm: 20,
+  width_mm: 100,
+  height_mm: 100,
+  feed_mm_min: 600,
+  speed_start_mm_min: 300,
+  speed_end_mm_min: 1800,
+  spacing_mm: 8,
+  step_mm: 5,
+  steps: 5,
+  z_up_mm: 5,
+  z_down_mm: 0,
+  depth_start_mm: 0,
+  depth_end_mm: -1,
+  delay_step_ms: 100,
 };
 
 function messageFor(error: unknown): string {
@@ -35,6 +117,10 @@ export function PlotterSetup() {
   const [penDown, setPenDown] = useState(0);
   const [penFeed, setPenFeed] = useState(400);
   const [penConfirmed, setPenConfirmed] = useState(false);
+  const [commissioningTest, setCommissioningTest] = useState<FluidNCCommissioningTestRequest>(
+    DEFAULT_COMMISSIONING_TEST,
+  );
+  const [commissioningTestConfirmed, setCommissioningTestConfirmed] = useState(false);
   const [currentSteps, setCurrentSteps] = useState(80);
   const [commandedDistance, setCommandedDistance] = useState(100);
   const [measuredDistance, setMeasuredDistance] = useState(100);
@@ -61,11 +147,17 @@ export function PlotterSetup() {
       if (request.action === "home") setHomeConfirmed(false);
       if (request.action === "jog") setJogConfirmed(false);
       if (request.action === "pen_test") setPenConfirmed(false);
+      if (request.action === "commissioning_test") setCommissioningTestConfirmed(false);
     } catch (reason) {
       setError(messageFor(reason));
     } finally {
       setBusy(null);
     }
+  };
+
+  const selectedCommissioningTest = COMMISSIONING_TEST_DEFINITIONS[commissioningTest.test_id];
+  const updateCommissioningTest = (changes: Partial<FluidNCCommissioningTestRequest>): void => {
+    setCommissioningTest((current) => ({ ...current, ...changes }));
   };
 
   const saveSettings = async () => {
@@ -108,7 +200,7 @@ export function PlotterSetup() {
         <button
           className="hold-button"
           type="button"
-          disabled={busy !== null}
+          disabled={busy === "loading" || busy === "hold"}
           onClick={() => void runAction("hold", { action: "hold" })}
         >
           Feed hold (!)
@@ -408,6 +500,281 @@ export function PlotterSetup() {
           </button>
         </section>
 
+        <section className="setup-card motion-card commissioning-card">
+          <p className="eyebrow">CALIBRATION TEST LIBRARY</p>
+          <h3>Run a named test pattern</h3>
+          <p>
+            These patterns are generated and sent by the server as one bounded, allowlisted motion
+            sequence. They never write FluidNC settings or send project G-code.
+          </p>
+          <label>
+            Calibration test
+            <select
+              aria-label="Calibration test"
+              value={commissioningTest.test_id}
+              onChange={(event) => {
+                updateCommissioningTest({
+                  test_id: event.target.value as FluidNCCommissioningTestId,
+                });
+                setCommissioningTestConfirmed(false);
+              }}
+            >
+              {Object.entries(COMMISSIONING_TEST_DEFINITIONS).map(([testId, definition]) => (
+                <option key={testId} value={testId}>
+                  {definition.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="field-help">{selectedCommissioningTest.description}</p>
+          <div className="field-row three">
+            <label>
+              Origin X mm
+              <input
+                aria-label="Test origin X"
+                type="number"
+                min="-500"
+                max="500"
+                step="0.1"
+                value={commissioningTest.origin_x_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ origin_x_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Origin Y mm
+              <input
+                aria-label="Test origin Y"
+                type="number"
+                min="-500"
+                max="500"
+                step="0.1"
+                value={commissioningTest.origin_y_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ origin_y_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Width mm
+              <input
+                aria-label="Test width"
+                type="number"
+                min="1"
+                max="180"
+                step="1"
+                value={commissioningTest.width_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ width_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          <div className="field-row three">
+            <label>
+              Height mm
+              <input
+                aria-label="Test height"
+                type="number"
+                min="1"
+                max="180"
+                step="1"
+                value={commissioningTest.height_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ height_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Drawing feed mm/min
+              <input
+                aria-label="Test drawing feed"
+                type="number"
+                min="60"
+                max="3000"
+                value={commissioningTest.feed_mm_min}
+                onChange={(event) =>
+                  updateCommissioningTest({ feed_mm_min: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Rows / steps
+              <input
+                aria-label="Test rows or steps"
+                type="number"
+                min="2"
+                max="12"
+                step="1"
+                value={commissioningTest.steps}
+                onChange={(event) => updateCommissioningTest({ steps: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="field-row three">
+            <label>
+              Pen up Z
+              <input
+                aria-label="Calibration pen up Z"
+                type="number"
+                min="-20"
+                max="20"
+                step="0.1"
+                value={commissioningTest.z_up_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ z_up_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Pen down Z
+              <input
+                aria-label="Calibration pen down Z"
+                type="number"
+                min="-20"
+                max="20"
+                step="0.1"
+                value={commissioningTest.z_down_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ z_down_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Base spacing mm
+              <input
+                aria-label="Calibration base spacing"
+                type="number"
+                min="0.5"
+                max="20"
+                step="0.1"
+                value={commissioningTest.spacing_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ spacing_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          {selectedCommissioningTest.field === "step" && (
+            <label>
+              Direction step mm
+              <input
+                aria-label="Backlash direction step"
+                type="number"
+                min="0.1"
+                max="25"
+                step="0.1"
+                value={commissioningTest.step_mm}
+                onChange={(event) =>
+                  updateCommissioningTest({ step_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          )}
+          {selectedCommissioningTest.field === "speed" && (
+            <div className="field-row two">
+              <label>
+                Slow feed mm/min
+                <input
+                  aria-label="Speed test starting feed"
+                  type="number"
+                  min="60"
+                  max="3000"
+                  value={commissioningTest.speed_start_mm_min}
+                  onChange={(event) =>
+                    updateCommissioningTest({ speed_start_mm_min: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Fast feed mm/min
+                <input
+                  aria-label="Speed test ending feed"
+                  type="number"
+                  min="60"
+                  max="3000"
+                  value={commissioningTest.speed_end_mm_min}
+                  onChange={(event) =>
+                    updateCommissioningTest({ speed_end_mm_min: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          )}
+          {selectedCommissioningTest.field === "depth" && (
+            <div className="field-row two">
+              <label>
+                First depth Z
+                <input
+                  aria-label="Z-depth ladder starting Z"
+                  type="number"
+                  min="-20"
+                  max="20"
+                  step="0.1"
+                  value={commissioningTest.depth_start_mm}
+                  onChange={(event) =>
+                    updateCommissioningTest({ depth_start_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Last depth Z
+                <input
+                  aria-label="Z-depth ladder ending Z"
+                  type="number"
+                  min="-20"
+                  max="20"
+                  step="0.1"
+                  value={commissioningTest.depth_end_mm}
+                  onChange={(event) =>
+                    updateCommissioningTest({ depth_end_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          )}
+          {selectedCommissioningTest.field === "delay" && (
+            <label>
+              Additional lift delay per row ms
+              <input
+                aria-label="Lift delay step"
+                type="number"
+                min="0"
+                max="2000"
+                step="10"
+                value={commissioningTest.delay_step_ms}
+                onChange={(event) =>
+                  updateCommissioningTest({ delay_step_ms: Number(event.target.value) })
+                }
+              />
+            </label>
+          )}
+          <label className="checkbox-row safety-confirmation">
+            <input
+              type="checkbox"
+              checked={commissioningTestConfirmed}
+              onChange={(event) => setCommissioningTestConfirmed(event.target.checked)}
+            />
+            I have cleared this test area, verified the origin and Z values, and can stop the
+            machine.
+          </label>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={busy !== null || !commissioningTestConfirmed}
+            onClick={() =>
+              void runAction("commissioning-test", {
+                action: "commissioning_test",
+                confirmed: true,
+                test: { ...commissioningTest, confirmed: true },
+              })
+            }
+          >
+            Run {selectedCommissioningTest.label.toLowerCase()}
+          </button>
+        </section>
+
         <section className="setup-card">
           <p className="eyebrow">AXIS CALIBRATION</p>
           <h3>Calculate corrected steps/mm</h3>
@@ -465,7 +832,11 @@ export function PlotterSetup() {
         <section className={`controller-result ${result.success ? "success" : "failed"}`}>
           <div>
             <p className="eyebrow">LATEST CONTROLLER RESPONSE</p>
-            <h3>{result.action.replace("_", " ")}</h3>
+            <h3>
+              {result.test_id
+                ? COMMISSIONING_TEST_DEFINITIONS[result.test_id].label
+                : result.action.replace("_", " ")}
+            </h3>
           </div>
           {result.controller_state && <span className="state-pill">{result.controller_state}</span>}
           <code>{result.command_summary.join(" · ")}</code>

@@ -23,6 +23,7 @@ def test_home_assistant_entry_points_use_plotbox_brand() -> None:
     assert "slug: plotbox" in addon_config
     assert "panel_title: Plotbox" in addon_config
     assert "ingress_port: 5616" in addon_config
+    assert "5616/tcp: 5616" in addon_config
     assert create_app().title == "Plotbox API"
 
 
@@ -113,6 +114,7 @@ def test_modes_expose_versioned_generator_controls_presets_and_raster_schema() -
         "tone-contour",
         "color-outline",
         "color-hatch",
+        "dither",
     ]
     assert raster["parameter_schema"]["properties"]["algorithm"]["enum"] == raster["algorithms"]
     hybrid = next(item for item in modes if item["id"] == "builtin.map-glyphscape")
@@ -363,6 +365,40 @@ def test_raster_asset_preprocess_job_preview_and_separate_cache(
         exported = client.post(f"/api/projects/{project_id}/export/gcode", json={})
         assert exported.status_code == 200, exported.text
         assert exported.json()["manifest"]["valid"] is True
+
+        dither_settings = client.patch(
+            f"/api/projects/{project_id}",
+            json={
+                "changes": {
+                    "raster_vectorize": {
+                        "algorithm": "dither",
+                        "dither_mark": "crosses",
+                        "dither_pass_mode": "contrast-bands",
+                        "dither_pass_count": 3,
+                        "dither_spacing_mm": 20,
+                    }
+                }
+            },
+        )
+        assert dither_settings.status_code == 200, dither_settings.text
+        dither_job = client.post(
+            f"/api/projects/{project_id}/generate",
+            json={"quality": "draft", "background": True},
+        )
+        assert dither_job.status_code == 202
+        assert _wait_for_job(client, dither_job.json()["job_id"])["status"] == "succeeded"
+        dither_design = client.get(f"/api/projects/{project_id}/design").json()
+        assert [layer["semantic_role"] for layer in dither_design["layers"]] == [
+            "dither-tone-1",
+            "dither-tone-2",
+            "dither-tone-3",
+        ]
+        dither_plan = client.post(f"/api/projects/{project_id}/plan")
+        assert dither_plan.status_code == 200, dither_plan.text
+        assert len(dither_plan.json()["passes"]) == 3
+        dither_export = client.post(f"/api/projects/{project_id}/export/gcode", json={})
+        assert dither_export.status_code == 200, dither_export.text
+        assert dither_export.json()["manifest"]["valid"] is True
 
         vector_settings = client.patch(
             f"/api/projects/{project_id}",

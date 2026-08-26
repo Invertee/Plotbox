@@ -15,6 +15,12 @@ from pydantic import Field, field_validator
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import WebSocketException
 
+from plotterapp_api.fluidnc_tests import (
+    FluidNCCommissioningTestId,
+    FluidNCCommissioningTestRequest,
+    build_commissioning_test_frames,
+)
+
 FLUIDNC_CONFIG_ENV = "PLOTTERAPP_FLUIDNC_CONFIG"
 MAX_RESPONSE_BYTES = 64 * 1024
 MAX_RESPONSE_LINES = 500
@@ -30,6 +36,7 @@ FluidNCAction = Literal[
     "home",
     "jog",
     "pen_test",
+    "commissioning_test",
 ]
 
 
@@ -67,6 +74,7 @@ class FluidNCActionRequest(StrictModel):
     feed_mm_min: float | None = None
     pen_up_mm: float | None = None
     pen_down_mm: float | None = None
+    test: FluidNCCommissioningTestRequest | None = None
 
 
 class FluidNCActionResult(StrictModel):
@@ -76,6 +84,7 @@ class FluidNCActionResult(StrictModel):
     command_summary: list[str]
     response_lines: list[str]
     controller_state: str | None = None
+    test_id: FluidNCCommissioningTestId | None = None
 
 
 class AxisCalibrationRequest(StrictModel):
@@ -179,6 +188,11 @@ def build_action_frames(request: FluidNCActionRequest) -> tuple[list[str], list[
             f"G1 Z{_number(up)} F{_number(feed)}",
         ]
         return [f"{command}\n" for command in commands], commands
+    if request.action == "commissioning_test":
+        _require_confirmation(request)
+        if request.test is None:
+            raise ValueError("commissioning_test requires a named test definition")
+        return build_commissioning_test_frames(request.test)
     raise ValueError(f"unsupported FluidNC action: {request.action}")
 
 
@@ -255,6 +269,7 @@ class FluidNCGateway:
             command_summary=summaries,
             response_lines=lines,
             controller_state=_parse_controller_state(lines),
+            test_id=request.test.test_id if request.test is not None else None,
         )
 
     async def _exchange(
@@ -278,13 +293,24 @@ class FluidNCGateway:
         ) as connection:
             for frame in frames:
                 await connection.send(frame)
-                lines.extend(
-                    await self._receive_response(
-                        connection,
-                        settings.command_timeout_seconds,
-                        allow_empty=realtime,
-                    )
+                response = await self._receive_response(
+                    connection,
+                    settings.command_timeout_seconds,
+                    allow_empty=realtime,
                 )
+                lines.extend(response[: max(0, MAX_RESPONSE_LINES - len(lines))])
+                if any(
+                    line.lower().startswith("error") or line.upper().startswith("ALARM")
+                    for line in response
+                ):
+                    await connection.send("!")
+                    hold_response = await self._receive_response(
+                        connection,
+                        1.0,
+                        allow_empty=True,
+                    )
+                    lines.extend(hold_response[: MAX_RESPONSE_LINES - len(lines)])
+                    break
         return lines
 
     async def _limit_check(self, settings: FluidNCSettings) -> list[str]:
@@ -302,23 +328,21 @@ class FluidNCGateway:
         ) as connection:
             await connection.send("$Limits\n")
             try:
-                lines.extend(
-                    await self._receive_response(
-                        connection,
-                        min(settings.command_timeout_seconds, 3.0),
-                        allow_empty=False,
-                        stop_on_terminal=False,
-                    )
+                limit_response = await self._receive_response(
+                    connection,
+                    min(settings.command_timeout_seconds, 3.0),
+                    allow_empty=False,
+                    stop_on_terminal=False,
                 )
+                lines.extend(limit_response[:MAX_RESPONSE_LINES])
             finally:
                 await connection.send("!")
-                lines.extend(
-                    await self._receive_response(
-                        connection,
-                        1.0,
-                        allow_empty=True,
-                    )
+                hold_response = await self._receive_response(
+                    connection,
+                    1.0,
+                    allow_empty=True,
                 )
+                lines.extend(hold_response[: MAX_RESPONSE_LINES - len(lines)])
         return lines
 
     async def _receive_response(

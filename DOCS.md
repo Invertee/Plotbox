@@ -23,10 +23,10 @@ Use **Open Web UI** or the Plotbox sidebar item. Ingress is enabled and streams 
 container intentionally serves HTTP; TLS belongs at Home Assistant's reverse proxy. Static assets,
 API requests, and event streams use the current Ingress prefix.
 
-Direct host port 5616 is disabled and the Home Assistant package restricts clients to the Ingress
-gateway and container loopback. Do not expose the port. For a standalone container behind another
-trusted proxy, omit or set `PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` to that proxy's network and keep the
-application unreachable directly.
+Host port 5616 is published for a trusted reverse proxy such as Nginx Proxy Manager. The Home
+Assistant package restricts clients to the Ingress gateway, container loopback, and any explicitly
+configured `PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` proxy networks. Add the proxy's source network to
+that setting and keep the application unreachable directly from the public internet.
 
 The FluidNC connection originates from the app container. Ensure Home Assistant can route to the
 configured hostname/IP and FluidNC WebSocket port (normally 81). Do not enable `wss` unless the
@@ -38,6 +38,12 @@ Open **Plotter setup** and run read-only checks first. Homing, jog, and pen-actu
 fresh confirmation and are bounded by the API. Feed hold is available at the top of the setup page.
 Plotbox does not expose arbitrary G-code, unlock/reset, work-zero changes, or automatic FluidNC
 configuration writes.
+
+The calibration test menu provides eleven named patterns: scale grid, circle/arc, diagonal/skew,
+backlash ladder, speed, Z-depth/pen pressure, lift delay, registration, pen swatches, line spacing,
+and hatch density. Each pattern has bounded area, feed, Z, and complexity controls and is generated
+server-side as an allowlisted sequence. A swatch sheet is for the currently mounted pen; repeat it
+after changing pens.
 
 Axis calibration calculates a suggested steps/mm value only. Apply it manually to the FluidNC
 configuration after reviewing the controller documentation, restart, and measure again.

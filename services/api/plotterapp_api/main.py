@@ -400,6 +400,7 @@ def create_app(
                     "tone-contour",
                     "color-outline",
                     "color-hatch",
+                    "dither",
                 ],
                 parameter_schema=RasterVectorizeSettings.model_json_schema(),
             ),

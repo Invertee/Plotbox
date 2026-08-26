@@ -11,7 +11,8 @@
         "hold",
         "home",
         "jog",
-        "pen_test"
+        "pen_test",
+        "commissioning_test"
       ],
       "title": "Action",
       "type": "string"
@@ -51,6 +52,31 @@
     "success": {
       "title": "Success",
       "type": "boolean"
+    },
+    "test_id": {
+      "anyOf": [
+        {
+          "enum": [
+            "scale_grid",
+            "circle_arc",
+            "diagonal_skew",
+            "backlash_ladder",
+            "speed_test",
+            "z_depth_ladder",
+            "lift_delay",
+            "registration",
+            "pen_swatch",
+            "line_spacing",
+            "hatch_density"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Test Id"
     }
   },
   "required": [

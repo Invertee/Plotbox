@@ -23,6 +23,10 @@ COLOR_GOLDEN_HASHES = {
     "color-outline": "7c83a76f51836e9ce81756c5493bfd067a51487c174c281151ecaf4f82cefd65",
     "color-hatch": "82dab3cce114c999d9e58f8c6fdb05a27c5eda22bc072e77584cf12251679206",
 }
+DITHER_GOLDEN_HASHES = {
+    "dots": "ad25e0d181086ea06d8d6a792830348840d3d339cbb1e86e57c2a0bebd18cbf4",
+    "contrast-bands": "b1f9b2fd5485371fa330ee3b19d56b3c5408df10eee9e83b74a5704a75cb568b",
+}
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -158,6 +162,83 @@ def test_crosshatch_activates_additional_angles_for_darker_tones() -> None:
         source_sha256="d" * 64,
     )
     assert len(crosshatch.layers[0].paths) > len(hatch.layers[0].paths)
+
+
+def test_dither_dots_are_ordered_closed_marks_and_settings_change_geometry() -> None:
+    recipe = _recipe("dither")
+    recipe.raster_vectorize.dither_spacing_mm = 3
+    recipe.raster_vectorize.dither_max_mark_size_mm = 2
+    dots = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="6" * 64,
+    )
+    recipe.raster_vectorize.dither_contrast = 2
+    higher_contrast = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="6" * 64,
+    )
+    assert dots.metadata.normalized_sha256 != higher_contrast.metadata.normalized_sha256
+    assert dots.metadata.normalized_sha256 == DITHER_GOLDEN_HASHES["dots"]
+    assert dots.layers[0].metadata["dither_mark"] == "dots"
+    assert dots.layers[0].paths
+    assert all(path.closed and path.commands[0].kind == "move" for path in dots.layers[0].paths)
+    assert all(
+        recipe.page.margin_mm <= command.point.x <= recipe.page.width_mm - recipe.page.margin_mm
+        and recipe.page.margin_mm
+        <= command.point.y
+        <= recipe.page.height_mm - recipe.page.margin_mm
+        and math.isfinite(command.point.x)
+        and math.isfinite(command.point.y)
+        for path in dots.layers[0].paths
+        for command in path.commands
+        if isinstance(command, MoveCommand | LineCommand)
+    )
+
+
+def test_dither_crosses_emit_two_strokes_per_ordered_mark() -> None:
+    recipe = _recipe("dither")
+    recipe.raster_vectorize.dither_mark = "crosses"
+    recipe.raster_vectorize.dither_spacing_mm = 4
+    document = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="7" * 64,
+    )
+    assert document.layers[0].metadata["dither_mark"] == "crosses"
+    assert document.layers[0].paths
+    assert all(not path.closed and len(path.commands) == 2 for path in document.layers[0].paths)
+
+
+def test_dither_contrast_bands_emit_stable_layers_for_pen_mapping() -> None:
+    recipe = _recipe("dither")
+    recipe.raster_vectorize.dither_pass_mode = "contrast-bands"
+    recipe.raster_vectorize.dither_pass_count = 3
+    first = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="8" * 64,
+    )
+    second = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="8" * 64,
+    )
+    assert first.metadata.normalized_sha256 == second.metadata.normalized_sha256
+    assert len(first.layers) == 3
+    assert [layer.semantic_role for layer in first.layers] == [
+        "dither-tone-1",
+        "dither-tone-2",
+        "dither-tone-3",
+    ]
+    assert all(layer.metadata["tone_band_count"] == 3 for layer in first.layers)
+    assert first.metadata.normalized_sha256 == DITHER_GOLDEN_HASHES["contrast-bands"]
 
 
 def test_squiggles_are_long_continuous_scanline_paths() -> None:

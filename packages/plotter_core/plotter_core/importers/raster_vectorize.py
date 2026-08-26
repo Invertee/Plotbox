@@ -34,6 +34,7 @@ FloatPoint = tuple[float, float]
 
 RASTER_VECTORIZER_ID = "import.raster"
 RASTER_VECTORIZER_VERSION = "1.1.0"
+DITHER_VECTORIZER_VERSION = "1.0.0"
 WORKING_PIXEL_LIMITS = {"draft": 250_000, "standard": 750_000, "export": 1_500_000}
 NEIGHBOURS_8: tuple[Pixel, ...] = (
     (-1, -1),
@@ -855,6 +856,127 @@ def _color_paths(
     return results
 
 
+_BAYER_4X4: tuple[tuple[int, ...], ...] = (
+    (0, 8, 2, 10),
+    (12, 4, 14, 6),
+    (3, 11, 1, 9),
+    (15, 7, 13, 5),
+)
+
+
+def _bounded_darkness(luminance: int, contrast: float, gamma: float) -> float:
+    darkness = 1.0 - luminance / 255.0
+    darkness = max(0.0, min(1.0, (darkness - 0.5) * contrast + 0.5))
+    return float(darkness**gamma)
+
+
+def _dot_mark(center: FloatPoint, diameter_mm: float) -> list[FloatPoint]:
+    radius = diameter_mm / 2
+    # Twelve segments keep small marks light while preserving a visibly round loop at plot scale.
+    return [
+        (
+            center[0] + radius * math.cos(2 * math.pi * index / 12),
+            center[1] + radius * math.sin(2 * math.pi * index / 12),
+        )
+        for index in range(13)
+    ]
+
+
+def _cross_mark(
+    center: FloatPoint,
+    size_mm: float,
+    angle_degrees: float,
+) -> list[list[FloatPoint]]:
+    half = size_mm / 2
+    angle = math.radians(angle_degrees)
+    direction = (math.cos(angle) * half, math.sin(angle) * half)
+    perpendicular = (-direction[1], direction[0])
+    return [
+        [
+            (center[0] - direction[0], center[1] - direction[1]),
+            (center[0] + direction[0], center[1] + direction[1]),
+        ],
+        [
+            (center[0] - perpendicular[0], center[1] - perpendicular[1]),
+            (center[0] + perpendicular[0], center[1] + perpendicular[1]),
+        ],
+    ]
+
+
+def _dither_paths(
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    preview: RasterPreview,
+    checkpoint: ProgressCallback | None,
+) -> list[VectorizationResult]:
+    settings = recipe.raster_vectorize
+    placement = preview.placement
+    spacing = settings.dither_spacing_mm
+    columns = max(1, math.floor(placement.width_mm / spacing))
+    rows = max(1, math.floor(placement.height_mm / spacing))
+    x_positions = [
+        placement.x_mm + placement.width_mm / 2
+        if columns == 1
+        else placement.x_mm + spacing / 2 + column * spacing
+        for column in range(columns)
+    ]
+    y_positions = [
+        placement.y_mm + placement.height_mm / 2
+        if rows == 1
+        else placement.y_mm + spacing / 2 + row * spacing
+        for row in range(rows)
+    ]
+    band_count = settings.dither_pass_count if settings.dither_pass_mode == "contrast-bands" else 1
+    maximum_size = min(settings.dither_max_mark_size_mm, spacing)
+    minimum_size = min(settings.dither_min_mark_size_mm, maximum_size)
+    pixels = cast(Any, image.load())
+    paths_by_band: list[list[list[FloatPoint]]] = [[] for _ in range(band_count)]
+    removed_by_band = [0 for _ in range(band_count)]
+    total_rows = len(y_positions)
+
+    for row, y in enumerate(y_positions):
+        _checkpoint(checkpoint, "dither-grid", row, total_rows)
+        for column, x in enumerate(x_positions):
+            luminance = _sample_luminance(
+                pixels,
+                image.width,
+                image.height,
+                placement,
+                (x, y),
+            )
+            darkness = _bounded_darkness(
+                luminance,
+                settings.dither_contrast,
+                settings.dither_gamma,
+            )
+            if darkness < settings.dither_threshold:
+                continue
+            ordered_threshold = (_BAYER_4X4[row % 4][column % 4] + 0.5) / 16
+            for band in range(band_count):
+                intensity = min(1.0, max(0.0, darkness * band_count - band))
+                if intensity <= ordered_threshold:
+                    continue
+                size = minimum_size + (maximum_size - minimum_size) * intensity
+                if size < max(settings.minimum_segment_length_mm, 1e-9):
+                    removed_by_band[band] += 1
+                    continue
+                center = (x, y)
+                if settings.dither_mark == "dots":
+                    paths_by_band[band].append(_dot_mark(center, size))
+                else:
+                    paths_by_band[band].extend(
+                        _cross_mark(center, size, settings.dither_angle_degrees)
+                    )
+    _checkpoint(checkpoint, "dither-grid", total_rows, total_rows)
+    return [
+        VectorizationResult(
+            paths=paths,
+            removed_segments=removed_by_band[index],
+        )
+        for index, paths in enumerate(paths_by_band)
+    ]
+
+
 def _design_paths(
     algorithm: str,
     paths: Sequence[Sequence[FloatPoint]],
@@ -895,6 +1017,7 @@ def vectorize_raster(
     algorithm = recipe.raster_vectorize.algorithm
     _checkpoint(checkpoint, f"vectorize-{algorithm}", 0, 1)
     color_results: list[ColorVectorizationResult] | None = None
+    dither_results: list[VectorizationResult] | None = None
     color_warnings: list[RasterPreviewWarning] = []
     if algorithm in {"color-outline", "color-hatch"}:
         color_image, placement, color_warnings = preprocess_color_image(content, media_type, recipe)
@@ -922,6 +1045,12 @@ def vectorize_raster(
             result = _hatch_paths(image, recipe, preview, checkpoint, crosshatch=True)
         elif algorithm == "squiggle":
             result = _squiggle_paths(image, recipe, preview, checkpoint)
+        elif algorithm == "dither":
+            dither_results = _dither_paths(image, recipe, preview, checkpoint)
+            result = VectorizationResult(
+                paths=[path for item in dither_results for path in item.paths],
+                removed_segments=sum(item.removed_segments for item in dither_results),
+            )
         else:
             result = _tone_contour_paths(image, recipe, preview, checkpoint)
 
@@ -957,7 +1086,35 @@ def vectorize_raster(
             for diagnostic in diagnostics
         }.values()
     )
-    if color_results is None:
+    if dither_results is not None and recipe.raster_vectorize.dither_pass_mode == "contrast-bands":
+        layers = []
+        band_count = len(dither_results)
+        for index, band_result in enumerate(dither_results):
+            band_fraction = index / max(1, band_count - 1)
+            tone = round(23 + 145 * band_fraction)
+            color_hex = f"#{tone:02x}{tone:02x}{tone:02x}"
+            layer_algorithm = f"dither-tone-{index + 1:02d}"
+            layers.append(
+                DesignLayer(
+                    layer_id=f"layer-raster-{layer_algorithm}",
+                    name=f"Dither tone {index + 1}/{band_count}",
+                    semantic_role=f"dither-tone-{index + 1}",
+                    preview_color=color_hex,
+                    paths=_design_paths(layer_algorithm, band_result.paths),
+                    metadata={
+                        "source": "raster",
+                        "algorithm": algorithm,
+                        "dither_mark": recipe.raster_vectorize.dither_mark,
+                        "tone_band": index + 1,
+                        "tone_band_count": band_count,
+                        "path_count": len(band_result.paths),
+                        "removed_segments": band_result.removed_segments,
+                        "working_width_px": image.width,
+                        "working_height_px": image.height,
+                    },
+                )
+            )
+    elif color_results is None:
         layers = [
             DesignLayer(
                 layer_id=f"layer-raster-{algorithm}",
@@ -968,6 +1125,15 @@ def vectorize_raster(
                 metadata={
                     "source": "raster",
                     "algorithm": algorithm,
+                    **(
+                        {
+                            "dither_mark": recipe.raster_vectorize.dither_mark,
+                            "dither_pass_mode": recipe.raster_vectorize.dither_pass_mode,
+                            "dither_pass_count": recipe.raster_vectorize.dither_pass_count,
+                        }
+                        if algorithm == "dither"
+                        else {}
+                    ),
                     "path_count": len(result.paths),
                     "removed_components": result.removed_components,
                     "removed_segments": result.removed_segments,
@@ -1015,7 +1181,9 @@ def vectorize_raster(
         metadata=DesignMetadata(
             generator_id=RASTER_VECTORIZER_ID,
             generator_version=(
-                RASTER_VECTORIZER_VERSION
+                DITHER_VECTORIZER_VERSION
+                if algorithm == "dither"
+                else RASTER_VECTORIZER_VERSION
                 if algorithm in {"color-outline", "color-hatch"}
                 else "1.0.0"
             ),

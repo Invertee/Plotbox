@@ -792,7 +792,8 @@
             "squiggle",
             "tone-contour",
             "color-outline",
-            "color-hatch"
+            "color-hatch",
+            "dither"
           ],
           "title": "Algorithm",
           "type": "string"
@@ -863,6 +864,80 @@
           ],
           "title": "Crosshatch Thresholds",
           "type": "array"
+        },
+        "dither_angle_degrees": {
+          "default": 45.0,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Dither Angle Degrees",
+          "type": "number"
+        },
+        "dither_contrast": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 4,
+          "title": "Dither Contrast",
+          "type": "number"
+        },
+        "dither_gamma": {
+          "default": 1.0,
+          "maximum": 5,
+          "minimum": 0.1,
+          "title": "Dither Gamma",
+          "type": "number"
+        },
+        "dither_mark": {
+          "default": "dots",
+          "enum": [
+            "dots",
+            "crosses"
+          ],
+          "title": "Dither Mark",
+          "type": "string"
+        },
+        "dither_max_mark_size_mm": {
+          "default": 1.8,
+          "exclusiveMinimum": 0,
+          "maximum": 25,
+          "title": "Dither Max Mark Size Mm",
+          "type": "number"
+        },
+        "dither_min_mark_size_mm": {
+          "default": 0.25,
+          "maximum": 25,
+          "minimum": 0,
+          "title": "Dither Min Mark Size Mm",
+          "type": "number"
+        },
+        "dither_pass_count": {
+          "default": 4,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Dither Pass Count",
+          "type": "integer"
+        },
+        "dither_pass_mode": {
+          "default": "single",
+          "enum": [
+            "single",
+            "contrast-bands"
+          ],
+          "title": "Dither Pass Mode",
+          "type": "string"
+        },
+        "dither_spacing_mm": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "maximum": 50,
+          "title": "Dither Spacing Mm",
+          "type": "number"
+        },
+        "dither_threshold": {
+          "default": 0.02,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Dither Threshold",
+          "type": "number"
         },
         "edge_min_component_length_mm": {
           "default": 1.0,

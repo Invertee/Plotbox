@@ -16,9 +16,9 @@ panel_icon: mdi:draw-pen
 panel_title: Plotbox
 panel_admin: true
 ports:
-  5616/tcp: null
+  5616/tcp: 5616
 ports_description:
-  5616/tcp: Reserved for authenticated Home Assistant Ingress; do not expose
+  5616/tcp: HTTP service for Home Assistant Ingress or a trusted reverse proxy
 watchdog: http://[HOST]:[PORT:5616]/api/health
 backup: cold
 environment:

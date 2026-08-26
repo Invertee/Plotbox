@@ -83,6 +83,16 @@ const project: ProjectRecipe = {
     contour_levels: 6,
     color_count: 2,
     color_background_threshold: 248,
+    dither_mark: "dots",
+    dither_pass_mode: "single",
+    dither_pass_count: 4,
+    dither_spacing_mm: 2,
+    dither_min_mark_size_mm: 0.25,
+    dither_max_mark_size_mm: 1.8,
+    dither_contrast: 1,
+    dither_gamma: 1,
+    dither_threshold: 0.02,
+    dither_angle_degrees: 45,
   },
   osm: {
     selection: {
@@ -321,6 +331,12 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("Raster vectorization algorithm")).toHaveValue("edge");
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "squiggle");
     expect(screen.getByLabelText("Raster squiggle wavelength")).toHaveValue(5);
+    await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "dither");
+    expect(screen.getByLabelText("Dither mark shape")).toHaveValue("dots");
+    await user.selectOptions(screen.getByLabelText("Dither mark shape"), "crosses");
+    await user.selectOptions(screen.getByLabelText("Dither pass split"), "contrast-bands");
+    expect(screen.getByLabelText("Dither tone passes")).toHaveValue(4);
+    expect(screen.getByLabelText("Dither cross angle")).toBeVisible();
     expect(screen.getByRole("button", { name: "Preview raster preprocessing" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Vectorize and plan" })).toBeEnabled();
   });

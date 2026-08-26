@@ -299,7 +299,23 @@ def _merge_compatible_paths(paths: list[PlannedPath], tolerance: float) -> list[
     return merged
 
 
-def _order_paths(paths: list[PlannedPath], start: Point) -> list[PlannedPath]:
+def _order_paths(
+    paths: list[PlannedPath],
+    start: Point,
+    *,
+    grid_order: bool = False,
+) -> list[PlannedPath]:
+    if grid_order:
+        # Halftone marks are already emitted in a stable physical grid. A spatial sort avoids
+        # quadratic nearest-neighbour work for dense raster pages while preserving every mark.
+        return sorted(
+            paths,
+            key=lambda path: (
+                round(path.points[0].y, 6),
+                round(path.points[0].x, 6),
+                path.path_id,
+            ),
+        )
     remaining = list(paths)
     ordered: list[PlannedPath] = []
     current = start
@@ -394,7 +410,13 @@ def build_plot_plan(recipe: ProjectRecipe, design: DesignDocument) -> PlotPlan:
                     )
         snapped = _snap_endpoints(planned, recipe.geometry.endpoint_snap_tolerance_mm)
         merged = _merge_compatible_paths(snapped, recipe.geometry.endpoint_snap_tolerance_mm)
-        ordered = _order_paths(merged, Point(x=0.0, y=0.0))
+        ordered = _order_paths(
+            merged,
+            Point(x=0.0, y=0.0),
+            grid_order=all(
+                layer.metadata.get("algorithm") == "dither" for layer in selected_layers
+            ),
+        )
         passes.append(
             PlotPass(
                 pass_id=pass_settings.pass_id,

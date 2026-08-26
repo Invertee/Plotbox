@@ -118,7 +118,7 @@ quality, then bounded by the configured megapixel budget. Preprocessing has its 
 cache and does not create or replace `DesignDocument`.
 
 Raster vectorization converts that physical preview into a normal `DesignDocument` using one of
-eight deterministic algorithms:
+nine deterministic algorithms:
 
 - edge drawing with response threshold and small-component removal;
 - thresholded centerline skeleton tracing with short-branch pruning;
@@ -127,6 +127,13 @@ eight deterministic algorithms:
 - multi-level marching-squares tone contours.
 - quantized color-region outlines;
 - quantized color-region hatching.
+- ordered-dithered halftone marks with selectable dots or crosses.
+
+The halftone controls use physical millimetres: grid spacing, minimum and maximum mark size,
+mark contrast, gamma, and a highlight threshold. Choose **Contrast bands** to emit separate stable
+tone layers; each layer appears in **Pen passes** and can be assigned to a different physical pen.
+The converter uses a deterministic ordered pattern, so the same source and settings reproduce the
+same design hash. Preprocessing contrast and gamma remain available for broader image correction.
 
 All output coordinates are lower-left-origin page millimetres. The conversion report records path,
 removed-component, and removed-segment counts. Changing only vectorizer settings reuses
@@ -193,8 +200,9 @@ for `amd64` and `aarch64`, serving both on internal port 5616.
 
 Ingress handles authentication and your existing Home Assistant reverse proxy handles SSL. The
 frontend uses relative asset, API, and event-stream URLs so the changing Ingress session prefix is
-preserved. Host port 5616 stays disabled, and the packaged app accepts HTTP clients only from the
-Ingress gateway or container loopback.
+preserved. Host port 5616 is published for a trusted reverse proxy such as Nginx Proxy Manager.
+The packaged app still accepts HTTP clients only from the configured Ingress gateway, container
+loopback, and any explicitly configured `PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` proxy networks.
 
 Persistent state lives under Home Assistant's `/data` volume:
 
@@ -218,10 +226,15 @@ The current allowlisted actions are:
 - explicitly confirmed all-axis or single-axis homing;
 - explicitly confirmed relative X/Y/Z jogs, limited to 25 mm and 3000 mm/min per action;
 - an explicitly confirmed absolute-Z pen up/down/up cycle with bounded positions and feed.
+- named, explicitly confirmed calibration patterns: scale grid, circle/arc, diagonal/skew,
+  backlash ladder, speed, Z-depth/pen pressure, lift delay, registration, pen swatches,
+  line spacing, and hatch density. Each pattern has a bounded test area and is constructed
+  server-side; there is no raw G-code entry.
 
 The axis calculator uses `corrected = current × commanded / measured`. It only suggests a value;
-Plotbox never writes FluidNC firmware settings. Clear the machine, verify limit inputs and homing
-direction, and keep a physical emergency stop available before any motion test.
+Plotbox never writes FluidNC firmware settings. Calibration patterns also finish with the pen up and
+cannot change work zero. Clear the machine, verify limit inputs and homing direction, and keep a
+physical emergency stop available before any motion test.
 
 ## Development commands
 
@@ -256,4 +269,4 @@ serial/Telnet transport, arbitrary command console, work-zero editor, firmware c
 G-code upload/streaming, unattended plotting, or hardware job recovery. Validated G-code remains a
 file export; a project Print button is deferred until the commissioning boundary is proven.
 See [AGENTS.md](AGENTS.md), [architecture decisions](docs/DECISIONS.md), and the
-[active ExecPlan](docs/exec-plans/0009-home-assistant-projects-fluidnc.md).
+[dithered-halftone ExecPlan](docs/exec-plans/0010-raster-dithered-halftone.md).

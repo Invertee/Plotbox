@@ -23,6 +23,7 @@ from plotterapp_api.fluidnc import (
     FluidNCActionResult,
     FluidNCSettings,
 )
+from plotterapp_api.fluidnc_tests import FluidNCCommissioningTestRequest
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "packages" / "schemas"
@@ -39,6 +40,7 @@ MODELS = {
     "svg-export-bundle": SvgExportBundle,
     "mode-manifest": ModeManifest,
     "fluidnc-settings": FluidNCSettings,
+    "fluidnc-commissioning-test-request": FluidNCCommissioningTestRequest,
     "fluidnc-action-request": FluidNCActionRequest,
     "fluidnc-action-result": FluidNCActionResult,
     "axis-calibration-request": AxisCalibrationRequest,

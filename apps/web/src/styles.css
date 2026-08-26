@@ -1174,6 +1174,10 @@ code {
   border-top: 4px solid var(--orange);
 }
 
+.commissioning-card {
+  grid-column: 1 / -1;
+}
+
 .safety-confirmation {
   padding: 10px;
   border: 1px solid #d1a18f;

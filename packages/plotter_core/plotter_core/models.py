@@ -250,6 +250,7 @@ class RasterVectorizeSettings(StrictModel):
         "tone-contour",
         "color-outline",
         "color-hatch",
+        "dither",
     ] = "edge"
     minimum_segment_length_mm: float = Field(default=0.6, ge=0)
     edge_threshold: int = Field(default=12, ge=1, le=255)
@@ -269,6 +270,16 @@ class RasterVectorizeSettings(StrictModel):
     contour_levels: int = Field(default=6, ge=1, le=32)
     color_count: int = Field(default=2, ge=2, le=8)
     color_background_threshold: int = Field(default=248, ge=0, le=255)
+    dither_mark: Literal["dots", "crosses"] = "dots"
+    dither_pass_mode: Literal["single", "contrast-bands"] = "single"
+    dither_pass_count: int = Field(default=4, ge=1, le=8)
+    dither_spacing_mm: float = Field(default=2.0, gt=0, le=50)
+    dither_min_mark_size_mm: float = Field(default=0.25, ge=0, le=25)
+    dither_max_mark_size_mm: float = Field(default=1.8, gt=0, le=25)
+    dither_contrast: float = Field(default=1.0, gt=0, le=4)
+    dither_gamma: float = Field(default=1.0, ge=0.1, le=5)
+    dither_threshold: float = Field(default=0.02, ge=0, le=1)
+    dither_angle_degrees: float = Field(default=45.0, ge=-360, le=360)
 
     @model_validator(mode="after")
     def crosshatch_thresholds_descend(self) -> RasterVectorizeSettings:
@@ -281,6 +292,8 @@ class RasterVectorizeSettings(StrictModel):
             )
         ):
             raise ValueError("crosshatch thresholds must be strictly descending")
+        if self.dither_min_mark_size_mm > self.dither_max_mark_size_mm:
+            raise ValueError("dither minimum mark size must not exceed maximum mark size")
         return self
 
 

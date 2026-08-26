@@ -414,6 +414,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="tone-contour">Tone contours</option>
           <option value="color-outline">Color region outline</option>
           <option value="color-hatch">Color region hatch</option>
+          <option value="dither">Dithered halftone</option>
         </select>
       </label>
       <label>
@@ -629,6 +630,155 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             onChange={(event) => update({ contour_levels: Number(event.target.value) })}
           />
         </label>
+      )}
+      {settings.algorithm === "dither" && (
+        <>
+          <div className="field-row">
+            <label>
+              Mark shape
+              <select
+                aria-label="Dither mark shape"
+                value={settings.dither_mark}
+                onChange={(event) =>
+                  update({
+                    dither_mark: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["dither_mark"],
+                  })
+                }
+              >
+                <option value="dots">Dots</option>
+                <option value="crosses">Crosses</option>
+              </select>
+            </label>
+            <label>
+              Pass split
+              <select
+                aria-label="Dither pass split"
+                value={settings.dither_pass_mode}
+                onChange={(event) =>
+                  update({
+                    dither_pass_mode: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["dither_pass_mode"],
+                  })
+                }
+              >
+                <option value="single">Single tone</option>
+                <option value="contrast-bands">Contrast bands</option>
+              </select>
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Tone passes
+              <input
+                aria-label="Dither tone passes"
+                type="number"
+                min="1"
+                max="8"
+                value={settings.dither_pass_count}
+                disabled={settings.dither_pass_mode !== "contrast-bands"}
+                onChange={(event) => update({ dither_pass_count: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Grid spacing mm
+              <input
+                aria-label="Dither spacing"
+                type="number"
+                min="0.1"
+                max="50"
+                step="0.1"
+                value={settings.dither_spacing_mm}
+                onChange={(event) => update({ dither_spacing_mm: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Minimum mark mm
+              <input
+                aria-label="Dither minimum mark size"
+                type="number"
+                min="0"
+                max="25"
+                step="0.05"
+                value={settings.dither_min_mark_size_mm}
+                onChange={(event) =>
+                  update({ dither_min_mark_size_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Maximum mark mm
+              <input
+                aria-label="Dither maximum mark size"
+                type="number"
+                min="0.05"
+                max="25"
+                step="0.05"
+                value={settings.dither_max_mark_size_mm}
+                onChange={(event) =>
+                  update({ dither_max_mark_size_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Dither contrast
+              <input
+                aria-label="Dither contrast"
+                type="number"
+                min="0.1"
+                max="4"
+                step="0.1"
+                value={settings.dither_contrast}
+                onChange={(event) => update({ dither_contrast: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Dither gamma
+              <input
+                aria-label="Dither gamma"
+                type="number"
+                min="0.1"
+                max="5"
+                step="0.1"
+                value={settings.dither_gamma}
+                onChange={(event) => update({ dither_gamma: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Mark threshold
+              <input
+                aria-label="Dither mark threshold"
+                type="number"
+                min="0"
+                max="1"
+                step="0.01"
+                value={settings.dither_threshold}
+                onChange={(event) => update({ dither_threshold: Number(event.target.value) })}
+              />
+            </label>
+            {settings.dither_mark === "crosses" && (
+              <label>
+                Cross angle °
+                <input
+                  aria-label="Dither cross angle"
+                  type="number"
+                  value={settings.dither_angle_degrees}
+                  onChange={(event) => update({ dither_angle_degrees: Number(event.target.value) })}
+                />
+              </label>
+            )}
+          </div>
+          <p className="field-help">
+            Ordered dithering varies mark density and size from the processed image. Contrast bands
+            create separate logical layers for different pens; assign them in Pen passes.
+          </p>
+        </>
       )}
       {settings.algorithm.startsWith("color-") && (
         <div className="field-row">

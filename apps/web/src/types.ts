@@ -210,7 +210,8 @@ export interface ProjectRecipe {
       | "squiggle"
       | "tone-contour"
       | "color-outline"
-      | "color-hatch";
+      | "color-hatch"
+      | "dither";
     minimum_segment_length_mm: number;
     edge_threshold: number;
     edge_min_component_length_mm: number;
@@ -229,6 +230,16 @@ export interface ProjectRecipe {
     contour_levels: number;
     color_count: number;
     color_background_threshold: number;
+    dither_mark: "dots" | "crosses";
+    dither_pass_mode: "single" | "contrast-bands";
+    dither_pass_count: number;
+    dither_spacing_mm: number;
+    dither_min_mark_size_mm: number;
+    dither_max_mark_size_mm: number;
+    dither_contrast: number;
+    dither_gamma: number;
+    dither_threshold: number;
+    dither_angle_degrees: number;
   };
   osm: OsmSettings;
   pen_palette: PenProfile[];
@@ -522,7 +533,49 @@ export interface FluidNCSettings {
 }
 
 export type FluidNCAction =
-  "identify" | "status" | "modal" | "config" | "limits" | "hold" | "home" | "jog" | "pen_test";
+  | "identify"
+  | "status"
+  | "modal"
+  | "config"
+  | "limits"
+  | "hold"
+  | "home"
+  | "jog"
+  | "pen_test"
+  | "commissioning_test";
+
+export type FluidNCCommissioningTestId =
+  | "scale_grid"
+  | "circle_arc"
+  | "diagonal_skew"
+  | "backlash_ladder"
+  | "speed_test"
+  | "z_depth_ladder"
+  | "lift_delay"
+  | "registration"
+  | "pen_swatch"
+  | "line_spacing"
+  | "hatch_density";
+
+export interface FluidNCCommissioningTestRequest {
+  test_id: FluidNCCommissioningTestId;
+  confirmed?: boolean;
+  origin_x_mm: number;
+  origin_y_mm: number;
+  width_mm: number;
+  height_mm: number;
+  feed_mm_min: number;
+  speed_start_mm_min: number;
+  speed_end_mm_min: number;
+  spacing_mm: number;
+  step_mm: number;
+  steps: number;
+  z_up_mm: number;
+  z_down_mm: number;
+  depth_start_mm: number;
+  depth_end_mm: number;
+  delay_step_ms: number;
+}
 
 export interface FluidNCActionRequest {
   action: FluidNCAction;
@@ -532,6 +585,7 @@ export interface FluidNCActionRequest {
   feed_mm_min?: number | null;
   pen_up_mm?: number | null;
   pen_down_mm?: number | null;
+  test?: FluidNCCommissioningTestRequest | null;
 }
 
 export interface FluidNCActionResult {
@@ -541,6 +595,7 @@ export interface FluidNCActionResult {
   command_summary: string[];
   response_lines: string[];
   controller_state: string | null;
+  test_id?: FluidNCCommissioningTestId | null;
 }
 
 export interface AxisCalibrationResult {
