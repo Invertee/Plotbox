@@ -30,10 +30,8 @@ jobs:
       - run: python -m uv sync --all-extras --locked
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @plotterapp/web exec playwright install --with-deps chromium
-      - name: Apply implementation patch
-        run: |
-          git apply --check scripts/circular-scribble.patch
-          git apply scripts/circular-scribble.patch
+      - name: Apply implementation
+        run: python scripts/apply_circular_scribble.py
       - name: Format changed source
         run: |
           uv run ruff format packages/plotter_core/plotter_core/models.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py
@@ -44,7 +42,7 @@ jobs:
         run: make verify
       - name: Commit verified implementation
         run: |
-          rm scripts/circular-scribble.patch .github/workflows/apply-circular-scribble.yml
+          rm scripts/circular-scribble.patch scripts/apply_circular_scribble.py .github/workflows/apply-circular-scribble.yml
           git add -A
           git diff --cached --check
           git config user.name "github-actions[bot]"
