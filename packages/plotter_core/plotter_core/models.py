@@ -247,6 +247,7 @@ class RasterVectorizeSettings(StrictModel):
         "hatch",
         "crosshatch",
         "squiggle",
+        "circular-scribble",
         "tone-contour",
         "color-outline",
         "color-hatch",

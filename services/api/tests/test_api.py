@@ -111,6 +111,7 @@ def test_modes_expose_versioned_generator_controls_presets_and_raster_schema() -
         "hatch",
         "crosshatch",
         "squiggle",
+        "circular-scribble",
         "tone-contour",
         "color-outline",
         "color-hatch",

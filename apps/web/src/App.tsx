@@ -411,6 +411,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="hatch">Hatch</option>
           <option value="crosshatch">Crosshatch</option>
           <option value="squiggle">Squiggle scanlines</option>
+          <option value="circular-scribble">Circular scribble (single line)</option>
           <option value="tone-contour">Tone contours</option>
           <option value="color-outline">Color region outline</option>
           <option value="color-hatch">Color region hatch</option>
@@ -616,6 +617,68 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </select>
             </label>
           </div>
+        </>
+      )}
+      {settings.algorithm === "circular-scribble" && (
+        <>
+          <div className="field-row">
+            <label>
+              Lane spacing mm
+              <input
+                aria-label="Circular scribble lane spacing"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={settings.squiggle_spacing_mm}
+                onChange={(event) => update({ squiggle_spacing_mm: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Max swirl radius mm
+              <input
+                aria-label="Circular scribble maximum swirl radius"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={settings.squiggle_amplitude_mm}
+                onChange={(event) => update({ squiggle_amplitude_mm: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Light loop pitch mm
+              <input
+                aria-label="Circular scribble light loop pitch"
+                type="number"
+                min="0.2"
+                step="0.1"
+                value={settings.squiggle_wavelength_mm}
+                onChange={(event) => update({ squiggle_wavelength_mm: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Tone modulation
+              <select
+                aria-label="Circular scribble tone modulation"
+                value={settings.squiggle_modulation}
+                onChange={(event) =>
+                  update({
+                    squiggle_modulation: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["squiggle_modulation"],
+                  })
+                }
+              >
+                <option value="amplitude">Swirl size</option>
+                <option value="frequency">Overlap distance</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+          </div>
+          <p className="field-help">
+            Emits one continuous plotted path. Darker tones shrink the curls and reduce their
+            forward pitch, increasing overlap without lifting the pen.
+          </p>
         </>
       )}
       {settings.algorithm === "tone-contour" && (

@@ -35,6 +35,7 @@ FloatPoint = tuple[float, float]
 RASTER_VECTORIZER_ID = "import.raster"
 RASTER_VECTORIZER_VERSION = "1.1.0"
 DITHER_VECTORIZER_VERSION = "1.0.0"
+CIRCULAR_SCRIBBLE_VECTORIZER_VERSION = "1.0.0"
 WORKING_PIXEL_LIMITS = {"draft": 250_000, "standard": 750_000, "export": 1_500_000}
 NEIGHBOURS_8: tuple[Pixel, ...] = (
     (-1, -1),
@@ -616,6 +617,126 @@ def _squiggle_paths(
     return VectorizationResult(paths=paths, removed_segments=removed)
 
 
+def _circular_scribble_paths(
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    preview: RasterPreview,
+    checkpoint: ProgressCallback | None,
+) -> VectorizationResult:
+    """Trace one tone-aware serpentine path made from overlapping circular loops."""
+
+    settings = recipe.raster_vectorize
+    placement = preview.placement
+    maximum_radius = min(
+        settings.squiggle_amplitude_mm,
+        placement.width_mm / 4,
+        placement.height_mm / 4,
+    )
+    if maximum_radius <= 0:
+        return VectorizationResult(paths=[], removed_segments=1)
+
+    # Lightweight deterministic variant of circular-scribble synthesis: a virtual serpentine
+    # path carries parametric loops whose radius and forward pitch are modulated by source tone.
+    minimum_radius = maximum_radius * 0.6
+    lane_spacing = max(settings.squiggle_spacing_mm, maximum_radius * 1.8)
+    light_pitch = max(0.2, settings.squiggle_wavelength_mm)
+    dark_pitch = max(0.2, min(light_pitch, maximum_radius * 1.1))
+    segments_per_loop = {"draft": 6, "standard": 8, "export": 10}[recipe.mode.quality]
+
+    min_center_x = placement.x_mm + maximum_radius
+    max_center_x = placement.x_mm + placement.width_mm - maximum_radius
+    min_center_y = placement.y_mm + maximum_radius
+    max_center_y = placement.y_mm + placement.height_mm - maximum_radius
+    vertical_span = max_center_y - min_center_y
+    row_count = max(1, math.floor(vertical_span / lane_spacing) + 1)
+    baselines = (
+        [(min_center_y + max_center_y) / 2]
+        if row_count == 1
+        else [min_center_y + vertical_span * row / (row_count - 1) for row in range(row_count)]
+    )
+
+    pixels = cast(Any, image.load())
+    points: list[FloatPoint] = []
+    phase = 0.0
+    golden_angle = math.pi * (3 - math.sqrt(5))
+
+    def clamp_point(x: float, y: float) -> FloatPoint:
+        return (
+            min(placement.x_mm + placement.width_mm, max(placement.x_mm, x)),
+            min(placement.y_mm + placement.height_mm, max(placement.y_mm, y)),
+        )
+
+    def darkness_at(point: FloatPoint) -> float:
+        raw_darkness = (
+            1.0
+            - _sample_luminance(
+                pixels,
+                image.width,
+                image.height,
+                placement,
+                point,
+            )
+            / 255.0
+        )
+        floor = settings.squiggle_min_darkness
+        if raw_darkness <= floor:
+            return 0.0
+        return min(1.0, max(0.0, (raw_darkness - floor) / max(1e-9, 1.0 - floor)))
+
+    for row, baseline in enumerate(baselines):
+        _checkpoint(checkpoint, "circular-scribble-lanes", row, row_count)
+        direction = 1.0 if row % 2 == 0 else -1.0
+        center_x = min_center_x if direction > 0 else max_center_x
+        end_x = max_center_x if direction > 0 else min_center_x
+
+        while (direction > 0 and center_x <= end_x) or (direction < 0 and center_x >= end_x):
+            darkness = darkness_at((center_x, baseline))
+            radius = (
+                maximum_radius - (maximum_radius - minimum_radius) * darkness
+                if settings.squiggle_modulation in {"amplitude", "both"}
+                else maximum_radius
+            )
+            pitch = (
+                light_pitch - (light_pitch - dark_pitch) * darkness
+                if settings.squiggle_modulation in {"frequency", "both"}
+                else light_pitch
+            )
+
+            for segment in range(segments_per_loop + 1):
+                angle = phase + direction * 2 * math.pi * segment / segments_per_loop
+                radial_scale = 0.96 + 0.04 * math.sin(3 * angle + row * 0.73 + center_x * 0.031)
+                loop_radius = radius * radial_scale
+                points.append(
+                    clamp_point(
+                        center_x + loop_radius * math.cos(angle),
+                        baseline + loop_radius * math.sin(angle),
+                    )
+                )
+
+            phase = (phase + direction * golden_angle) % (2 * math.pi)
+            center_x += direction * pitch
+
+        if row + 1 < row_count:
+            next_baseline = baselines[row + 1]
+            turn_x = max_center_x if direction > 0 else min_center_x
+            turn_sign = 1.0 if direction > 0 else -1.0
+            transition_points = max(3, segments_per_loop // 2)
+            for step in range(1, transition_points + 1):
+                ratio = step / transition_points
+                points.append(
+                    clamp_point(
+                        turn_x + turn_sign * maximum_radius * 0.55 * math.sin(math.pi * ratio),
+                        baseline + (next_baseline - baseline) * ratio,
+                    )
+                )
+
+    _checkpoint(checkpoint, "circular-scribble-lanes", row_count, row_count)
+    deduplicated = [
+        point for index, point in enumerate(points) if index == 0 or point != points[index - 1]
+    ]
+    return VectorizationResult(paths=[deduplicated] if len(deduplicated) >= 2 else [])
+
+
 def _interpolate(
     first: FloatPoint,
     second: FloatPoint,
@@ -1045,6 +1166,8 @@ def vectorize_raster(
             result = _hatch_paths(image, recipe, preview, checkpoint, crosshatch=True)
         elif algorithm == "squiggle":
             result = _squiggle_paths(image, recipe, preview, checkpoint)
+        elif algorithm == "circular-scribble":
+            result = _circular_scribble_paths(image, recipe, preview, checkpoint)
         elif algorithm == "dither":
             dither_results = _dither_paths(image, recipe, preview, checkpoint)
             result = VectorizationResult(
@@ -1183,6 +1306,8 @@ def vectorize_raster(
             generator_version=(
                 DITHER_VECTORIZER_VERSION
                 if algorithm == "dither"
+                else CIRCULAR_SCRIBBLE_VECTORIZER_VERSION
+                if algorithm == "circular-scribble"
                 else RASTER_VECTORIZER_VERSION
                 if algorithm in {"color-outline", "color-hatch"}
                 else "1.0.0"

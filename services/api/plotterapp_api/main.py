@@ -397,6 +397,7 @@ def create_app(
                     "hatch",
                     "crosshatch",
                     "squiggle",
+                    "circular-scribble",
                     "tone-contour",
                     "color-outline",
                     "color-hatch",
