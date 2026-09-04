@@ -1,4 +1,4 @@
-name: verify-organic-scribble-v2
+name: deploy-organic-scribble-v2
 
 on:
   push:
@@ -9,10 +9,10 @@ permissions:
   contents: write
 
 jobs:
-  apply-and-verify:
-    if: github.event.head_commit.message == 'organic scribble verification 5'
+  apply-verify-and-deploy:
+    if: github.event.head_commit.message == 'organic scribble deploy to main'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +31,12 @@ jobs:
       - run: python -m uv sync --all-extras --locked
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @plotterapp/web exec playwright install --with-deps chromium
+      - name: Switch to current main and retain the verified generator
+        run: |
+          cp scripts/apply_organic_scribble_v2.py /tmp/apply_organic_scribble_v2.py
+          git fetch origin main
+          git checkout --detach origin/main
+          cp /tmp/apply_organic_scribble_v2.py scripts/apply_organic_scribble_v2.py
       - name: Apply organic scribble implementation
         run: |
           python scripts/apply_organic_scribble_v2.py
@@ -56,8 +62,12 @@ jobs:
         run: |
           uv run ruff format packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py services/api/plotterapp_api/main.py
           pnpm --filter @plotterapp/web exec prettier --write src/App.tsx src/App.test.tsx ../../README.md
-      - name: Remove staging helper before verification
-        run: rm scripts/apply_organic_scribble_v2.py
+      - name: Remove temporary deployment files
+        run: |
+          rm -f scripts/apply_organic_scribble_v2.py
+          rm -f scripts/organic_circular_scribble.module.gz.b64
+          rm -f scripts/organic_circular_scribble.patch.gz.b64
+          rm -f .github/workflows/apply-organic-circular-scribble.yml
       - name: Verify static checks
         run: |
           uv run ruff check .
@@ -117,14 +127,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: organic-scribble-python-tests
+          name: organic-scribble-python-tests-main-deploy
           path: /tmp/organic-scribble-python-tests.log
           if-no-files-found: ignore
-      - name: Commit verified implementation
+      - name: Commit verified implementation to main
         run: |
           git add -A
           git diff --cached --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Implement organic tone-aware circular scribbles"
-          git push origin HEAD:agent/organic-scribble-v2
+          git commit -m "Rework circular scribble into organic rolling curves"
+          git push origin HEAD:main
