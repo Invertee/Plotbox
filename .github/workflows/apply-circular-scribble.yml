@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   apply-and-verify:
+    if: ${{ github.event.head_commit.message == 'chore: push verified circular scribble implementation' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -40,8 +41,6 @@ jobs:
           pnpm --filter @plotterapp/web exec prettier --write src/App.tsx src/types.ts ../../README.md
       - name: Regenerate schemas
         run: uv run python scripts/export_schemas.py
-      - name: Remove staging helpers
-        run: rm scripts/circular-scribble.patch scripts/apply_circular_scribble.py scripts/add_circular_scribble_api.py .github/workflows/apply-circular-scribble.yml
       - name: Verify static checks
         run: |
           uv run ruff check .
@@ -58,7 +57,15 @@ jobs:
         run: pnpm e2e
       - name: Commit verified implementation
         run: |
-          git add -A
+          git add README.md
+          git add packages/plotter_core/plotter_core/models.py
+          git add packages/plotter_core/plotter_core/importers/raster_vectorize.py
+          git add packages/plotter_core/tests/test_circular_scribble.py
+          git add apps/web/src/types.ts
+          git add apps/web/src/App.tsx
+          git add services/api/plotterapp_api/main.py
+          git add services/api/tests/test_api.py
+          git add packages/schemas/project-recipe.schema.json
           git diff --cached --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
