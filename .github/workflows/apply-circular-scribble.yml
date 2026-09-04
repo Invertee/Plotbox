@@ -31,17 +31,31 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @plotterapp/web exec playwright install --with-deps chromium
       - name: Apply implementation
-        run: python scripts/apply_circular_scribble.py
+        run: |
+          python scripts/apply_circular_scribble.py
+          python scripts/add_circular_scribble_api.py
       - name: Format changed source
         run: |
-          uv run ruff format packages/plotter_core/plotter_core/models.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py
+          uv run ruff format packages/plotter_core/plotter_core/models.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py services/api/plotterapp_api/main.py services/api/tests/test_api.py
           pnpm --filter @plotterapp/web exec prettier --write src/App.tsx src/types.ts ../../README.md
       - name: Regenerate schemas
         run: uv run python scripts/export_schemas.py
       - name: Remove staging helpers
-        run: rm scripts/circular-scribble.patch scripts/apply_circular_scribble.py .github/workflows/apply-circular-scribble.yml
-      - name: Verify repository
-        run: make verify
+        run: rm scripts/circular-scribble.patch scripts/apply_circular_scribble.py scripts/add_circular_scribble_api.py .github/workflows/apply-circular-scribble.yml
+      - name: Verify static checks
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          pnpm lint
+          pnpm format:check
+          uv run python -m mypy
+          pnpm typecheck
+      - name: Verify circular scribble and API integration
+        run: uv run python -m pytest packages/plotter_core/tests/test_circular_scribble.py services/api/tests/test_api.py
+      - name: Verify web unit tests
+        run: pnpm test
+      - name: Verify end to end
+        run: pnpm e2e
       - name: Commit verified implementation
         run: |
           git add -A
