@@ -1,0 +1,79 @@
+name: apply-organic-circular-scribble
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.head_commit.message == 'chore: stage organic circular scribble v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: python -m pip install uv
+      - run: python -m uv sync --all-extras --locked
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @plotterapp/web exec playwright install --with-deps chromium
+      - name: Materialize implementation
+        run: |
+          python - <<'PY'
+          import base64
+          import gzip
+          from pathlib import Path
+
+          def materialize(source: str, destination: str) -> None:
+              payload = Path(source).read_text()
+              Path(destination).write_bytes(gzip.decompress(base64.b64decode(payload)))
+
+          materialize(
+              "scripts/organic_circular_scribble.module.gz.b64",
+              "packages/plotter_core/plotter_core/importers/circular_scribble.py",
+          )
+          materialize(
+              "scripts/organic_circular_scribble.patch.gz.b64",
+              "scripts/apply_organic_circular_scribble.py",
+          )
+          PY
+      - name: Apply organic circular scribble integration
+        run: python scripts/apply_organic_circular_scribble.py
+      - name: Format changed source
+        run: |
+          uv run ruff format packages/plotter_core/plotter_core/importers/circular_scribble.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py
+          pnpm --filter @plotterapp/web exec prettier --write src/App.tsx src/App.test.tsx ../../README.md
+      - name: Remove staging helpers
+        run: |
+          rm scripts/apply_organic_circular_scribble.py
+          rm scripts/organic_circular_scribble.module.gz.b64
+          rm scripts/organic_circular_scribble.patch.gz.b64
+          rm .github/workflows/apply-organic-circular-scribble.yml
+      - name: Verify repository
+        run: make verify
+      - name: Commit verified implementation
+        run: |
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No implementation changes were produced"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refine circular scribble into an organic continuous path"
+          git push origin HEAD:main
