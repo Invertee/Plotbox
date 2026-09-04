@@ -1,0 +1,394 @@
+diff --git a/README.md b/README.md
+index 101078f..0000000 100644
+--- a/README.md
++++ b/README.md
+@@ -12,8 +12,8 @@ ProjectRecipe -> DesignDocument -> PlotPlan -> GcodeProgram
+ 
+ It creates an A3 landscape project, generates deterministic procedural modes including hierarchical
+ Glyphscape artwork, imports a safe SVG subset, or converts bounded PNG/JPEG sources at a physical
+-plot resolution using edge, centerline, hatch, crosshatch, squiggle, tone-contour, or quantized
+-color-region geometry. Work runs as cancellable background jobs. Vector designs continue through physical
++plot resolution using edge, centerline, hatch, crosshatch, squiggle, tone-contour, single-line
++circular-scribble, or quantized color-region geometry. Work runs as cancellable background jobs. Vector designs continue through physical
+ pen-pass planning, pen-down/travel preview, and validated
+ FluidNC/Grbl-compatible G-code or per-pass SVG export. Every generated G-code file is parsed back and
+ blocked if reconstruction differs from the `PlotPlan`.
+@@ -107,13 +107,14 @@ The preprocessing result is a versioned contract containing source/crop dimensio
+ is derived from page placement, active pen width, sampling density, and draft/standard/export
+ quality, then bounded by the configured megapixel budget. Preprocessing has its own content-keyed
+ cache and does not create or replace `DesignDocument`.
+ 
+ Raster vectorization converts that physical preview into a normal `DesignDocument` using one of
+-nine deterministic algorithms:
++ten deterministic algorithms:
+ 
+ - edge drawing with response threshold and small-component removal;
+ - thresholded centerline skeleton tracing with short-branch pruning;
+ - tone-clipped hatch and four-angle crosshatch;
+ - continuous luminance-modulated squiggle scanlines;
++- single-line tone-aware circular scribbles with smaller, more closely spaced loops in darker regions;
+ - multi-level marching-squares tone contours.
+ - quantized color-region outlines;
+ - quantized color-region hatching.
+ - ordered-dithered halftone marks with selectable dots or crosses.
+diff --git a/packages/plotter_core/plotter_core/models.py b/packages/plotter_core/plotter_core/models.py
+index b1e2088..0000000 100644
+--- a/packages/plotter_core/plotter_core/models.py
++++ b/packages/plotter_core/plotter_core/models.py
+@@ -232,6 +232,7 @@ class RasterVectorizeSettings(StrictModel):
+         "hatch",
+         "crosshatch",
+         "squiggle",
++        "circular-scribble",
+         "tone-contour",
+         "color-outline",
+         "color-hatch",
+diff --git a/apps/web/src/types.ts b/apps/web/src/types.ts
+index c1e4294..0000000 100644
+--- a/apps/web/src/types.ts
++++ b/apps/web/src/types.ts
+@@ -190,6 +190,7 @@ export interface ProjectRecipe {
+       | "hatch"
+       | "crosshatch"
+       | "squiggle"
++      | "circular-scribble"
+       | "tone-contour"
+       | "color-outline"
+       | "color-hatch"
+diff --git a/apps/web/src/App.tsx b/apps/web/src/App.tsx
+index b9ac43a..0000000 100644
+--- a/apps/web/src/App.tsx
++++ b/apps/web/src/App.tsx
+@@ -372,6 +372,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
+           <option value="hatch">Hatch</option>
+           <option value="crosshatch">Crosshatch</option>
+           <option value="squiggle">Squiggle scanlines</option>
++          <option value="circular-scribble">Circular scribble (single line)</option>
+           <option value="tone-contour">Tone contours</option>
+           <option value="color-outline">Color region outline</option>
+           <option value="color-hatch">Color region hatch</option>
+@@ -483,13 +484,15 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
+           </label>
+         </>
+       )}
+-      {settings.algorithm === "squiggle" && (
++      {(settings.algorithm === "squiggle" || settings.algorithm === "circular-scribble") && (
+         <>
+           <div className="field-row">
+             <label>
+-              Scan spacing mm
++              {settings.algorithm === "circular-scribble" ? "Lane spacing mm" : "Scan spacing mm"}
+               <input
+                 aria-label="Raster squiggle spacing"
+                 type="number"
+@@ -500,7 +503,11 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
+               />
+             </label>
+             <label>
+-              Amplitude mm
++              {settings.algorithm === "circular-scribble"
++                ? "Max swirl radius mm"
++                : "Amplitude mm"}
+               <input
+                 aria-label="Raster squiggle amplitude"
+                 type="number"
+@@ -512,7 +519,11 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
+           </div>
+           <div className="field-row">
+             <label>
+-              Wavelength mm
++              {settings.algorithm === "circular-scribble"
++                ? "Light loop pitch mm"
++                : "Wavelength mm"}
+               <input
+                 aria-label="Raster squiggle wavelength"
+                 type="number"
+@@ -541,6 +552,12 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
+               </select>
+             </label>
+           </div>
++          {settings.algorithm === "circular-scribble" && (
++            <p className="field-help">
++              Emits one continuous plotted path. Darker tones shrink the curls and reduce their
++              forward pitch, increasing overlap without lifting the pen.
++            </p>
++          )}
+         </>
+       )}
+       {settings.algorithm === "tone-contour" && (
+diff --git a/packages/plotter_core/plotter_core/importers/raster_vectorize.py b/packages/plotter_core/plotter_core/importers/raster_vectorize.py
+index a8b8918..0000000 100644
+--- a/packages/plotter_core/plotter_core/importers/raster_vectorize.py
++++ b/packages/plotter_core/plotter_core/importers/raster_vectorize.py
+@@ -31,6 +31,7 @@ FloatPoint = tuple[float, float]
+ 
+ RASTER_VECTORIZER_ID = "import.raster"
+ RASTER_VECTORIZER_VERSION = "1.1.0"
+ DITHER_VECTORIZER_VERSION = "1.0.0"
++CIRCULAR_SCRIBBLE_VECTORIZER_VERSION = "1.0.0"
+ WORKING_PIXEL_LIMITS = {"draft": 250_000, "standard": 750_000, "export": 1_500_000}
+ NEIGHBOURS_8: tuple[Pixel, ...] = (
+     (-1, -1),
+@@ -598,6 +599,129 @@ def _squiggle_paths(
+     return VectorizationResult(paths=paths, removed_segments=removed)
+ 
+ 
++def _circular_scribble_paths(
++    image: Image.Image,
++    recipe: ProjectRecipe,
++    preview: RasterPreview,
++    checkpoint: ProgressCallback | None,
++) -> VectorizationResult:
++    """Trace one tone-aware serpentine path made from overlapping circular loops."""
++
++    settings = recipe.raster_vectorize
++    placement = preview.placement
++    maximum_radius = min(
++        settings.squiggle_amplitude_mm,
++        placement.width_mm / 4,
++        placement.height_mm / 4,
++    )
++    if maximum_radius <= 0:
++        return VectorizationResult(paths=[], removed_segments=1)
++
++    # This is an original lightweight variant of the virtual-path / parametric-circle idea
++    # described by Chiu et al. (2015). Plotbox keeps the controls in physical millimetres and
++    # deliberately emits one DesignPath so the pen remains down across the complete image.
++    minimum_radius = maximum_radius * 0.6
++    lane_spacing = max(settings.squiggle_spacing_mm, maximum_radius * 1.8)
++    light_pitch = max(0.2, settings.squiggle_wavelength_mm)
++    dark_pitch = max(0.2, min(light_pitch, maximum_radius * 1.1))
++    segments_per_loop = {"draft": 6, "standard": 8, "export": 10}[recipe.mode.quality]
++
++    min_center_x = placement.x_mm + maximum_radius
++    max_center_x = placement.x_mm + placement.width_mm - maximum_radius
++    min_center_y = placement.y_mm + maximum_radius
++    max_center_y = placement.y_mm + placement.height_mm - maximum_radius
++    vertical_span = max_center_y - min_center_y
++    row_count = max(1, math.floor(vertical_span / lane_spacing) + 1)
++    baselines = (
++        [(min_center_y + max_center_y) / 2]
++        if row_count == 1
++        else [
++            min_center_y + vertical_span * row / (row_count - 1)
++            for row in range(row_count)
++        ]
++    )
++
++    pixels = cast(Any, image.load())
++    points: list[FloatPoint] = []
++    phase = 0.0
++    golden_angle = math.pi * (3 - math.sqrt(5))
++
++    def clamp_point(x: float, y: float) -> FloatPoint:
++        return (
++            min(placement.x_mm + placement.width_mm, max(placement.x_mm, x)),
++            min(placement.y_mm + placement.height_mm, max(placement.y_mm, y)),
++        )
++
++    def darkness_at(point: FloatPoint) -> float:
++        raw_darkness = 1.0 - _sample_luminance(
++            pixels,
++            image.width,
++            image.height,
++            placement,
++            point,
++        ) / 255.0
++        floor = settings.squiggle_min_darkness
++        if raw_darkness <= floor:
++            return 0.0
++        return min(1.0, max(0.0, (raw_darkness - floor) / max(1e-9, 1.0 - floor)))
++
++    for row, baseline in enumerate(baselines):
++        _checkpoint(checkpoint, "circular-scribble-lanes", row, row_count)
++        direction = 1.0 if row % 2 == 0 else -1.0
++        center_x = min_center_x if direction > 0 else max_center_x
++        end_x = max_center_x if direction > 0 else min_center_x
++
++        while (direction > 0 and center_x <= end_x) or (
++            direction < 0 and center_x >= end_x
++        ):
++            darkness = darkness_at((center_x, baseline))
++            radius = (
++                maximum_radius - (maximum_radius - minimum_radius) * darkness
++                if settings.squiggle_modulation in {"amplitude", "both"}
++                else maximum_radius
++            )
++            pitch = (
++                light_pitch - (light_pitch - dark_pitch) * darkness
++                if settings.squiggle_modulation in {"frequency", "both"}
++                else light_pitch
++            )
++
++            for segment in range(segments_per_loop + 1):
++                angle = phase + direction * 2 * math.pi * segment / segments_per_loop
++                radial_scale = 0.96 + 0.04 * math.sin(
++                    3 * angle + row * 0.73 + center_x * 0.031
++                )
++                loop_radius = radius * radial_scale
++                points.append(
++                    clamp_point(
++                        center_x + loop_radius * math.cos(angle),
++                        baseline + loop_radius * math.sin(angle),
++                    )
++                )
++
++            phase = (phase + direction * golden_angle) % (2 * math.pi)
++            center_x += direction * pitch
++
++        if row + 1 < row_count:
++            next_baseline = baselines[row + 1]
++            turn_x = max_center_x if direction > 0 else min_center_x
++            turn_sign = 1.0 if direction > 0 else -1.0
++            transition_points = max(3, segments_per_loop // 2)
++            for step in range(1, transition_points + 1):
++                ratio = step / transition_points
++                points.append(
++                    clamp_point(
++                        turn_x
++                        + turn_sign
++                        * maximum_radius
++                        * 0.55
++                        * math.sin(math.pi * ratio),
++                        baseline + (next_baseline - baseline) * ratio,
++                    )
++                )
++
++    _checkpoint(checkpoint, "circular-scribble-lanes", row_count, row_count)
++    deduplicated = [
++        point
++        for index, point in enumerate(points)
++        if index == 0 or point != points[index - 1]
++    ]
++    return VectorizationResult(paths=[deduplicated] if len(deduplicated) >= 2 else [])
++
++
+ def _interpolate(
+     first: FloatPoint,
+     second: FloatPoint,
+@@ -1056,6 +1180,8 @@ def vectorize_raster(
+             result = _hatch_paths(image, recipe, preview, checkpoint, crosshatch=True)
+         elif algorithm == "squiggle":
+             result = _squiggle_paths(image, recipe, preview, checkpoint)
++        elif algorithm == "circular-scribble":
++            result = _circular_scribble_paths(image, recipe, preview, checkpoint)
+         elif algorithm == "dither":
+             dither_results = _dither_paths(image, recipe, preview, checkpoint)
+             result = VectorizationResult(
+@@ -1186,6 +1312,8 @@ def vectorize_raster(
+             generator_version=(
+                 DITHER_VECTORIZER_VERSION
+                 if algorithm == "dither"
++                else CIRCULAR_SCRIBBLE_VECTORIZER_VERSION
++                if algorithm == "circular-scribble"
+                 else RASTER_VECTORIZER_VERSION
+                 if algorithm in {"color-outline", "color-hatch"}
+                 else "1.0.0"
+diff --git a/packages/plotter_core/tests/test_circular_scribble.py b/packages/plotter_core/tests/test_circular_scribble.py
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/packages/plotter_core/tests/test_circular_scribble.py
+@@ -0,0 +1,98 @@
++from __future__ import annotations
++
++import io
++import math
++
++from PIL import Image
++from plotter_core.importers.raster_vectorize import vectorize_raster
++from plotter_core.models import LineCommand, MoveCommand, ProjectRecipe
++from plotter_core.planning import build_plot_plan
++
++
++def _gradient_fixture() -> bytes:
++    image = Image.new("L", (96, 64), 255)
++    for y in range(image.height):
++        for x in range(image.width):
++            image.putpixel((x, y), round(255 * x / (image.width - 1)))
++    encoded = io.BytesIO()
++    image.save(encoded, format="PNG")
++    return encoded.getvalue()
++
++
++def _recipe() -> ProjectRecipe:
++    recipe = ProjectRecipe(project_id="raster-circular-scribble", name="Circular scribble")
++    recipe.mode.mode_id = "import.raster"
++    recipe.mode.quality = "draft"
++    recipe.page.preset = "custom"
++    recipe.page.width_mm = 90
++    recipe.page.height_mm = 70
++    recipe.page.margin_mm = 5
++    recipe.raster_preprocess.sampling_pixels_per_pen_width = 1
++    recipe.raster_vectorize.algorithm = "circular-scribble"
++    recipe.raster_vectorize.squiggle_spacing_mm = 4
++    recipe.raster_vectorize.squiggle_amplitude_mm = 1.4
++    recipe.raster_vectorize.squiggle_wavelength_mm = 6
++    recipe.raster_vectorize.squiggle_modulation = "both"
++    return recipe
++
++
++def _points(document: object) -> list[tuple[float, float]]:
++    layers = document.layers  # type: ignore[attr-defined]
++    return [
++        (command.point.x, command.point.y)
++        for path in layers[0].paths
++        for command in path.commands
++        if isinstance(command, MoveCommand | LineCommand)
++    ]
++
++
++def test_circular_scribble_is_deterministic_single_path_and_tone_aware() -> None:
++    recipe = _recipe()
++    content = _gradient_fixture()
++    first = vectorize_raster(
++        content,
++        "image/png",
++        recipe,
++        source_sha256="9" * 64,
++    )
++    second = vectorize_raster(
++        content,
++        "image/png",
++        recipe,
++        source_sha256="9" * 64,
++    )
++
++    assert first.metadata.normalized_sha256 == second.metadata.normalized_sha256
++    assert first.layers[0].layer_id == "layer-raster-circular-scribble"
++    assert first.layers[0].metadata["path_count"] == 1
++    assert len(first.layers[0].paths) == 1
++
++    path = first.layers[0].paths[0]
++    assert not path.closed
++    assert isinstance(path.commands[0], MoveCommand)
++    assert all(isinstance(command, LineCommand) for command in path.commands[1:])
++    assert len(path.commands) > 500
++
++    points = _points(first)
++    assert all(
++        math.isfinite(x)
++        and math.isfinite(y)
++        and recipe.page.margin_mm <= x <= recipe.page.width_mm - recipe.page.margin_mm
++        and recipe.page.margin_mm <= y <= recipe.page.height_mm - recipe.page.margin_mm
++        for x, y in points
++    )
++    midpoint = recipe.page.width_mm / 2
++    dark_vertices = sum(x < midpoint for x, _ in points)
++    light_vertices = sum(x >= midpoint for x, _ in points)
++    assert dark_vertices > light_vertices * 1.8
++
++    plan = build_plot_plan(recipe, first)
++    assert plan.statistics.path_count == 1
++
++
++def test_circular_scribble_tone_modulation_changes_geometry() -> None:
++    recipe = _recipe()
++    content = _gradient_fixture()
++    adaptive = vectorize_raster(content, "image/png", recipe, source_sha256="a" * 64)
++
++    recipe.raster_vectorize.squiggle_modulation = "amplitude"
++    fixed_pitch = vectorize_raster(content, "image/png", recipe, source_sha256="a" * 64)
++
++    assert adaptive.metadata.normalized_sha256 != fixed_pitch.metadata.normalized_sha256
++    assert len(adaptive.layers[0].paths[0].commands) > len(fixed_pitch.layers[0].paths[0].commands)
