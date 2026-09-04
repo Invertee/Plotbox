@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'chore: stage circular scribble implementation'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
