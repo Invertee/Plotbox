@@ -81,6 +81,18 @@ const project: ProjectRecipe = {
     squiggle_wavelength_mm: 5,
     squiggle_modulation: "both",
     squiggle_min_darkness: 0.03,
+    spiral_spacing_mm: 2.0,
+    spiral_amplitude_mm: 0.7,
+    spiral_wavelength_mm: 8.0,
+    spiral_frequency_gain: 4.0,
+    single_line_point_count: 1200,
+    single_line_gamma: 1.0,
+    single_line_min_darkness: 0.02,
+    single_line_edge_bias: 0.5,
+    arc_min_radius_mm: 0.4,
+    arc_max_radius_mm: 3.0,
+    arc_loop_spacing_mm: 4.0,
+    tsp_smoothing: 0.0,
     contour_levels: 6,
     color_count: 2,
     color_background_threshold: 248,
@@ -381,6 +393,32 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("Circular scribble row spacing")).toHaveValue(1.5);
     expect(screen.getByLabelText("Circular scribble largest loop")).toHaveValue(1);
     expect(screen.getByLabelText("Circular scribble minimum darkness")).toHaveValue("0.03");
+    await user.selectOptions(
+      screen.getByLabelText("Raster vectorization algorithm"),
+      "spiral-wave",
+    );
+    const spiralSpacing = screen.getByRole("slider", { name: "Spiral turn spacing" });
+    expect(spiralSpacing).toHaveAttribute("title", expect.stringContaining("millimetres"));
+    fireEvent.change(spiralSpacing, { target: { value: "2.4" } });
+    expect(spiralSpacing).toHaveValue("2.4");
+    expect(
+      screen.queryByRole("slider", { name: "Single-line point count" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Raster minimum segment length")).toBeDisabled();
+    await user.selectOptions(
+      screen.getByLabelText("Raster vectorization algorithm"),
+      "arc-scribble",
+    );
+    expect(screen.getByRole("slider", { name: "Arc dark radius" })).toHaveValue("0.4");
+    expect(screen.getByRole("slider", { name: "Arc dark radius" })).toHaveAttribute("max", "3");
+    await user.selectOptions(
+      screen.getByLabelText("Raster vectorization algorithm"),
+      "travelling-salesman",
+    );
+    const smoothing = screen.getByRole("slider", { name: "TSP corner smoothing" });
+    fireEvent.change(smoothing, { target: { value: "0.7" } });
+    expect(smoothing).toHaveValue("0.7");
+
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "dither");
     expect(screen.getByLabelText("Dither mark shape")).toHaveValue("dots");
     await user.selectOptions(screen.getByLabelText("Dither mark shape"), "crosses");

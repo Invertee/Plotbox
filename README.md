@@ -117,13 +117,16 @@ quality, then bounded by the configured megapixel budget. Preprocessing has its 
 cache and does not create or replace `DesignDocument`.
 
 Raster vectorization converts that physical preview into a normal `DesignDocument` using one of
-ten deterministic algorithms:
+deterministic algorithms:
 
 - edge drawing with response threshold and small-component removal;
 - thresholded centerline skeleton tracing with short-branch pruning;
 - tone-clipped hatch and four-angle crosshatch;
 - continuous luminance-modulated squiggle scanlines;
 - single-line tone-aware circular scribbles with smaller, more closely spaced loops in darker regions;
+- single-line spiral waves with tone-dependent radial amplitude and frequency;
+- single-line overlapping arcs along a tone-weighted travelling-salesman route;
+- a non-crossing single-line travelling-salesman tour with optional corner rounding;
 - multi-level marching-squares tone contours.
 - quantized color-region outlines;
 - quantized color-region hatching.
@@ -290,3 +293,35 @@ composition and **Generate design** to create plot-ready paths for the normal pe
 
 Release 0.3.2 adds slider controls and automatic raster preprocessing previews. Production frontend
 assets use Vite content hashes so updated JavaScript and CSS receive new cache URLs.
+
+## Continuous-line image conversion (0.3.3)
+
+In **Image import → Algorithm**, choose one of these styles, adjust its sliders, then select
+**Vectorize and plan**. Each nonblank result is one continuous path in the normal pen-pass,
+SVG, and validated G-code workflow.
+
+| Style | Drawing | Main controls |
+| --- | --- | --- |
+| Single-line spiral waves | A centre-outward spiral with stronger, faster waves over dark areas | Turn spacing, wave height, wavelength, dark frequency, tone gamma |
+| Single-line overlapping arcs | An image-guided route decorated with overlapping loops, smaller and tighter in shadows | Point count, edge detail, tone gamma, dark/light radius, loop spacing |
+| Single-line travelling salesman | A tone-weighted point tour with intersections removed, optionally rounded | Point count, edge detail, tone gamma, minimum darkness, corner smoothing |
+
+The spiral uses the largest circle inside the fitted image, so rectangular image corners are omitted.
+Wave height is limited to 45% of turn spacing. Increasing frequency adds shadow density; preprocessing
+contrast and gamma are useful for portraits. Spiral quality controls the samples per wave.
+
+The route modes use deterministic, tone-weighted point placement and nearest-neighbour routing with
+2-opt crossing removal. The travelling-salesman mode is a heuristic, not an exact shortest-tour solver.
+Corner smoothing uses sampled quadratic curves and is reduced if it would create a centreline
+intersection. Closely spaced strokes can still touch when drawn with a thick physical pen.
+
+The overlapping arc style is an original implementation inspired by the virtual-path and
+tone-controlled loop idea in [Chiu et al. (2015)](https://cgv.cs.nthu.edu.tw/projects/Recreational_Graphics/CircularScribbleArt)
+and the [MarginallyClever reference](https://github.com/MarginallyClever/chiuEtAl2015).
+It does not copy that implementation or reproduce every stage of the paper. The existing
+**Circular scribble scanlines** option remains available.
+
+Route points are bounded at 4,000 and continuous output at 400,000 vertices. Exceeding the detail
+budget reports an error rather than silently cutting off the line. Background progress and
+cancellation remain available. Minimum-segment filtering is disabled for these styles to preserve
+continuity; empty sources produce no route. New settings have defaults when older projects are loaded.

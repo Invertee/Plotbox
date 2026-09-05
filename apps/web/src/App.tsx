@@ -1,3 +1,4 @@
+import { SingleLineControls } from "./SingleLineControls";
 import { NumericInput } from "./NumericInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -454,7 +455,10 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="hatch">Hatch</option>
           <option value="crosshatch">Crosshatch</option>
           <option value="squiggle">Squiggle scanlines</option>
-          <option value="circular-scribble">Circular scribble</option>
+          <option value="circular-scribble">Circular scribble scanlines</option>
+          <option value="spiral-wave">Single-line spiral waves</option>
+          <option value="arc-scribble">Single-line overlapping arcs</option>
+          <option value="travelling-salesman">Single-line travelling salesman</option>
           <option value="tone-contour">Tone contours</option>
           <option value="color-outline">Color region outline</option>
           <option value="color-hatch">Color region hatch</option>
@@ -463,11 +467,17 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="adaptive-stipple">Adaptive stipple dots</option>
         </select>
       </label>
+      {["spiral-wave", "arc-scribble", "travelling-salesman"].includes(settings.algorithm) && (
+        <SingleLineControls settings={settings} onChange={update} />
+      )}
       <label>
         Minimum segment mm
         <NumericInput
           aria-label="Raster minimum segment length"
           type="number"
+          disabled={["spiral-wave", "arc-scribble", "travelling-salesman"].includes(
+            settings.algorithm,
+          )}
           min="0"
           step="0.1"
           value={settings.minimum_segment_length_mm}

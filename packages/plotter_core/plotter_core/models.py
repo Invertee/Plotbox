@@ -248,6 +248,9 @@ class RasterVectorizeSettings(StrictModel):
         "crosshatch",
         "squiggle",
         "circular-scribble",
+        "spiral-wave",
+        "arc-scribble",
+        "travelling-salesman",
         "tone-contour",
         "color-outline",
         "color-hatch",
@@ -270,6 +273,18 @@ class RasterVectorizeSettings(StrictModel):
     squiggle_wavelength_mm: float = Field(default=5.0, gt=0, le=100)
     squiggle_modulation: Literal["amplitude", "frequency", "both"] = "both"
     squiggle_min_darkness: float = Field(default=0.03, ge=0, le=1)
+    spiral_spacing_mm: float = Field(default=2.0, ge=0.5, le=12)
+    spiral_amplitude_mm: float = Field(default=0.7, ge=0, le=5)
+    spiral_wavelength_mm: float = Field(default=8.0, ge=1, le=30)
+    spiral_frequency_gain: float = Field(default=4.0, ge=0, le=12)
+    single_line_point_count: int = Field(default=1200, ge=100, le=4000)
+    single_line_gamma: float = Field(default=1.0, ge=0.2, le=3)
+    single_line_min_darkness: float = Field(default=0.02, ge=0, le=1)
+    single_line_edge_bias: float = Field(default=0.5, ge=0, le=2)
+    arc_min_radius_mm: float = Field(default=0.4, ge=0.1, le=5)
+    arc_max_radius_mm: float = Field(default=3.0, ge=0.1, le=12)
+    arc_loop_spacing_mm: float = Field(default=4.0, ge=0.5, le=12)
+    tsp_smoothing: float = Field(default=0.0, ge=0, le=1)
     contour_levels: int = Field(default=6, ge=1, le=32)
     color_count: int = Field(default=2, ge=2, le=8)
     color_background_threshold: int = Field(default=248, ge=0, le=255)
@@ -322,6 +337,8 @@ class RasterVectorizeSettings(StrictModel):
             )
         ):
             raise ValueError("crosshatch thresholds must be strictly descending")
+        if self.arc_min_radius_mm > self.arc_max_radius_mm:
+            raise ValueError("arc dark radius must not exceed arc light radius")
         if self.dither_min_mark_size_mm > self.dither_max_mark_size_mm:
             raise ValueError("dither minimum mark size must not exceed maximum mark size")
         if self.dither_pen_thickness_mm + self.dither_dot_gap_mm > 50:

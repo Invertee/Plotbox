@@ -210,6 +210,9 @@ export interface ProjectRecipe {
       | "crosshatch"
       | "squiggle"
       | "circular-scribble"
+      | "spiral-wave"
+      | "arc-scribble"
+      | "travelling-salesman"
       | "tone-contour"
       | "color-outline"
       | "color-hatch"
@@ -231,6 +234,18 @@ export interface ProjectRecipe {
     squiggle_wavelength_mm: number;
     squiggle_modulation: "amplitude" | "frequency" | "both";
     squiggle_min_darkness: number;
+    spiral_spacing_mm: number;
+    spiral_amplitude_mm: number;
+    spiral_wavelength_mm: number;
+    spiral_frequency_gain: number;
+    single_line_point_count: number;
+    single_line_gamma: number;
+    single_line_min_darkness: number;
+    single_line_edge_bias: number;
+    arc_min_radius_mm: number;
+    arc_max_radius_mm: number;
+    arc_loop_spacing_mm: number;
+    tsp_smoothing: number;
     contour_levels: number;
     color_count: number;
     color_background_threshold: number;

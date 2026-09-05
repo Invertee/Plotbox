@@ -12,6 +12,7 @@ from typing import Any, cast
 from PIL import Image, ImageFilter
 
 from plotter_core.importers.raster import preprocess_color_image, preprocess_raster
+from plotter_core.importers.single_line import single_line_paths
 from plotter_core.models import (
     DesignDiagnostic,
     DesignDocument,
@@ -1634,6 +1635,10 @@ def vectorize_raster(
             result = _squiggle_paths(image, recipe, preview, checkpoint)
         elif algorithm == "circular-scribble":
             result = _circular_scribble_paths(image, recipe, preview, checkpoint)
+        elif algorithm in {"spiral-wave", "arc-scribble", "travelling-salesman"}:
+            result = VectorizationResult(
+                paths=single_line_paths(image, recipe, preview.placement, checkpoint)
+            )
         elif algorithm == "dither":
             dither_results = _dither_paths(image, recipe, preview, checkpoint)
             result = VectorizationResult(
@@ -1657,6 +1662,38 @@ def vectorize_raster(
             ),
         )
     ]
+    if algorithm == "spiral-wave":
+        diagnostics.append(
+            DesignDiagnostic(
+                code="spiral-circular-area",
+                message=(
+                    "Spiral waves use the largest circle inside the image placement; "
+                    "corners are omitted."
+                ),
+            )
+        )
+    if algorithm in {"spiral-wave", "arc-scribble", "travelling-salesman"}:
+        diagnostics.append(
+            DesignDiagnostic(
+                code="continuous-line",
+                message=(
+                    "One continuous path; minimum segment filtering is bypassed "
+                    "to preserve the line."
+                    if result.paths
+                    else "No drawable dark features were found. Lower the minimum darkness."
+                ),
+            )
+        )
+    if algorithm == "travelling-salesman":
+        diagnostics.append(
+            DesignDiagnostic(
+                code="non-crossing-tour",
+                message=(
+                    "Route crossings were removed and smoothing was checked "
+                    "for centreline intersections."
+                ),
+            )
+        )
     if resolution_reduced:
         diagnostics.append(
             DesignDiagnostic(
