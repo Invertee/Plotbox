@@ -459,6 +459,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="color-hatch">Color region hatch</option>
           <option value="dither">Dithered halftone</option>
           <option value="stipple">Stippled dots</option>
+          <option value="adaptive-stipple">Adaptive stipple dots</option>
         </select>
       </label>
       <label>
@@ -718,9 +719,21 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </select>
             </label>
           </div>
+          <label>
+            Minimum darkness
+            <input
+              aria-label="Circular scribble minimum darkness"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value={settings.squiggle_min_darkness}
+              onChange={(event) => update({ squiggle_min_darkness: Number(event.target.value) })}
+            />
+          </label>
           <p className="field-help">
-            Draws one continuous line. Dark areas use tighter, overlapping loops without lifting the
-            pen.
+            Draws one continuous organic line. Dark areas use tighter, smaller curls without lifting
+            the pen; raise minimum darkness to leave light areas more open.
           </p>
         </>
       )}
@@ -1117,6 +1130,258 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <p className="field-help">
             Stippling makes dots more common in dark parts of the image. Separate source colours
             creates one layer and pen pass for each colour, ready to assign in Pen passes.
+          </p>
+        </>
+      )}
+      {settings.algorithm === "adaptive-stipple" && (
+        <>
+          <div className="field-row">
+            <label>
+              Colours
+              <select
+                aria-label="Adaptive stipple colour mode"
+                value={settings.adaptive_stipple_color_mode}
+                onChange={(event) =>
+                  update({
+                    adaptive_stipple_color_mode: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["adaptive_stipple_color_mode"],
+                  })
+                }
+              >
+                <option value="single">One pen</option>
+                <option value="separate">Separate source colours</option>
+              </select>
+            </label>
+            <label>
+              Dot type
+              <select
+                aria-label="Adaptive stipple dot type"
+                value={settings.adaptive_stipple_mark}
+                onChange={(event) =>
+                  update({
+                    adaptive_stipple_mark: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["adaptive_stipple_mark"],
+                  })
+                }
+              >
+                <option value="pen-dots">Pen-tip dots</option>
+                <option value="drawn-dots">Drawn circles</option>
+              </select>
+            </label>
+          </div>
+          {settings.adaptive_stipple_color_mode === "separate" && (
+            <div className="field-row">
+              <label>
+                Colour passes
+                <input
+                  aria-label="Adaptive stipple colour passes"
+                  type="number"
+                  min="2"
+                  max="8"
+                  value={settings.color_count}
+                  onChange={(event) => update({ color_count: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Ignore near-white
+                <input
+                  aria-label="Adaptive stipple colour background threshold"
+                  type="number"
+                  min="0"
+                  max="255"
+                  value={settings.color_background_threshold}
+                  onChange={(event) =>
+                    update({ color_background_threshold: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          )}
+          {settings.adaptive_stipple_mark === "pen-dots" ? (
+            <div className="field-row">
+              <label>
+                Pen-tip thickness mm
+                <input
+                  aria-label="Adaptive stipple pen thickness"
+                  type="number"
+                  min="0.05"
+                  max="25"
+                  step="0.05"
+                  value={settings.adaptive_stipple_pen_thickness_mm}
+                  onChange={(event) =>
+                    update({ adaptive_stipple_pen_thickness_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Clear gap mm
+                <input
+                  aria-label="Adaptive stipple dot gap"
+                  type="number"
+                  min="0"
+                  max="50"
+                  step="0.05"
+                  value={settings.adaptive_stipple_dot_gap_mm}
+                  onChange={(event) =>
+                    update({ adaptive_stipple_dot_gap_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          ) : (
+            <>
+              <label>
+                Candidate spacing mm
+                <input
+                  aria-label="Adaptive stipple spacing"
+                  type="number"
+                  min="0.1"
+                  max="50"
+                  step="0.1"
+                  value={settings.adaptive_stipple_spacing_mm}
+                  onChange={(event) =>
+                    update({ adaptive_stipple_spacing_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <div className="field-row">
+                <label>
+                  Light dot size mm
+                  <input
+                    aria-label="Adaptive stipple minimum dot size"
+                    type="number"
+                    min="0"
+                    max="25"
+                    step="0.05"
+                    value={settings.adaptive_stipple_min_dot_size_mm}
+                    onChange={(event) =>
+                      update({ adaptive_stipple_min_dot_size_mm: Number(event.target.value) })
+                    }
+                  />
+                </label>
+                <label>
+                  Dark dot size mm
+                  <input
+                    aria-label="Adaptive stipple maximum dot size"
+                    type="number"
+                    min="0.05"
+                    max="25"
+                    step="0.05"
+                    value={settings.adaptive_stipple_max_dot_size_mm}
+                    onChange={(event) =>
+                      update({ adaptive_stipple_max_dot_size_mm: Number(event.target.value) })
+                    }
+                  />
+                </label>
+              </div>
+            </>
+          )}
+          <div className="field-row">
+            <label>
+              Local area radius mm
+              <input
+                aria-label="Adaptive stipple local radius"
+                type="number"
+                min="0.1"
+                max="100"
+                step="0.5"
+                value={settings.adaptive_stipple_local_radius_mm}
+                onChange={(event) =>
+                  update({ adaptive_stipple_local_radius_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Local contrast
+              <input
+                aria-label="Adaptive stipple local contrast"
+                type="number"
+                min="0"
+                max="2"
+                step="0.05"
+                value={settings.adaptive_stipple_local_contrast}
+                onChange={(event) =>
+                  update({ adaptive_stipple_local_contrast: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Light-area density
+              <input
+                aria-label="Adaptive stipple light density"
+                type="number"
+                min="0"
+                max="2"
+                step="0.05"
+                value={settings.adaptive_stipple_light_density}
+                onChange={(event) =>
+                  update({ adaptive_stipple_light_density: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Dark-area density
+              <input
+                aria-label="Adaptive stipple dark density"
+                type="number"
+                min="0"
+                max="2"
+                step="0.05"
+                value={settings.adaptive_stipple_dark_density}
+                onChange={(event) =>
+                  update({ adaptive_stipple_dark_density: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Contrast
+              <input
+                aria-label="Adaptive stipple contrast"
+                type="number"
+                min="0.1"
+                max="4"
+                step="0.1"
+                value={settings.adaptive_stipple_contrast}
+                onChange={(event) =>
+                  update({ adaptive_stipple_contrast: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Gamma
+              <input
+                aria-label="Adaptive stipple gamma"
+                type="number"
+                min="0.1"
+                max="5"
+                step="0.1"
+                value={settings.adaptive_stipple_gamma}
+                onChange={(event) => update({ adaptive_stipple_gamma: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <label>
+            Minimum darkness
+            <input
+              aria-label="Adaptive stipple minimum darkness"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value={settings.adaptive_stipple_threshold}
+              onChange={(event) =>
+                update({ adaptive_stipple_threshold: Number(event.target.value) })
+              }
+            />
+          </label>
+          <p className="field-help">
+            Adaptive stippling compares each sample with its surrounding area, then varies dot
+            density—and drawn-circle size—between light and dark regions. Colour separation emits
+            one stable layer per source colour for independent pen passes.
           </p>
         </>
       )}

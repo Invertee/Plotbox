@@ -451,7 +451,7 @@ def build_plot_plan(recipe: ProjectRecipe, design: DesignDocument) -> PlotPlan:
             # grid traversal is O(n log n) and remains deterministic.  Natural
             # stipples retain their jitter; this only chooses their draw order.
             grid_order=all(
-                layer.metadata.get("algorithm") in {"dither", "stipple"}
+                layer.metadata.get("algorithm") in {"dither", "stipple", "adaptive-stipple"}
                 for layer in selected_layers
             ),
         )

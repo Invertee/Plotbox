@@ -253,6 +253,7 @@ class RasterVectorizeSettings(StrictModel):
         "color-hatch",
         "dither",
         "stipple",
+        "adaptive-stipple",
     ] = "edge"
     minimum_segment_length_mm: float = Field(default=0.6, ge=0)
     edge_threshold: int = Field(default=12, ge=1, le=255)
@@ -295,6 +296,20 @@ class RasterVectorizeSettings(StrictModel):
     stipple_contrast: float = Field(default=1.0, gt=0, le=4)
     stipple_gamma: float = Field(default=1.0, ge=0.1, le=5)
     stipple_threshold: float = Field(default=0.02, ge=0, le=1)
+    adaptive_stipple_color_mode: Literal["single", "separate"] = "single"
+    adaptive_stipple_mark: Literal["drawn-dots", "pen-dots"] = "pen-dots"
+    adaptive_stipple_spacing_mm: float = Field(default=1.4, gt=0, le=50)
+    adaptive_stipple_pen_thickness_mm: float = Field(default=0.5, gt=0, le=25)
+    adaptive_stipple_dot_gap_mm: float = Field(default=0.25, ge=0, le=50)
+    adaptive_stipple_min_dot_size_mm: float = Field(default=0.2, ge=0, le=25)
+    adaptive_stipple_max_dot_size_mm: float = Field(default=1.3, gt=0, le=25)
+    adaptive_stipple_contrast: float = Field(default=1.0, gt=0, le=4)
+    adaptive_stipple_gamma: float = Field(default=1.0, ge=0.1, le=5)
+    adaptive_stipple_threshold: float = Field(default=0.015, ge=0, le=1)
+    adaptive_stipple_local_radius_mm: float = Field(default=5.0, gt=0, le=100)
+    adaptive_stipple_local_contrast: float = Field(default=0.65, ge=0, le=2)
+    adaptive_stipple_light_density: float = Field(default=0.35, ge=0, le=2)
+    adaptive_stipple_dark_density: float = Field(default=1.0, ge=0, le=2)
 
     @model_validator(mode="after")
     def crosshatch_thresholds_descend(self) -> RasterVectorizeSettings:
@@ -315,6 +330,10 @@ class RasterVectorizeSettings(StrictModel):
             raise ValueError("stipple minimum dot size must not exceed maximum dot size")
         if self.stipple_pen_thickness_mm + self.stipple_dot_gap_mm > 50:
             raise ValueError("stipple pen thickness plus dot gap must not exceed 50 mm")
+        if self.adaptive_stipple_min_dot_size_mm > self.adaptive_stipple_max_dot_size_mm:
+            raise ValueError("adaptive stipple minimum dot size must not exceed maximum dot size")
+        if self.adaptive_stipple_pen_thickness_mm + self.adaptive_stipple_dot_gap_mm > 50:
+            raise ValueError("adaptive stipple pen thickness plus dot gap must not exceed 50 mm")
         return self
 
 

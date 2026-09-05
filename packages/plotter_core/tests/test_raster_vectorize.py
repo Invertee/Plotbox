@@ -351,6 +351,103 @@ def test_stipple_separates_source_colours_into_pen_ready_layers() -> None:
     )
 
 
+def test_adaptive_stipple_is_separate_deterministic_and_tone_adjustable() -> None:
+    recipe = _recipe("adaptive-stipple")
+    recipe.raster_vectorize.adaptive_stipple_pen_thickness_mm = 0.7
+    recipe.raster_vectorize.adaptive_stipple_dot_gap_mm = 0.3
+    first = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="4" * 64,
+    )
+    second = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="4" * 64,
+    )
+    plan = build_plot_plan(recipe, first)
+
+    assert first.metadata.normalized_sha256 == second.metadata.normalized_sha256
+    assert first.metadata.generator_version == "1.0.0"
+    assert first.layers[0].layer_id == "layer-raster-adaptive-stipple"
+    assert first.layers[0].metadata["algorithm"] == "adaptive-stipple"
+    assert first.layers[0].metadata["adaptive_stipple_local_contrast"] == 0.65
+    assert first.layers[0].paths
+    assert all(
+        path.kind == "dot" and path.dot_diameter_mm == 0.7 for path in plan.passes[0].ordered_paths
+    )
+
+    recipe.raster_vectorize.adaptive_stipple_light_density = 2.0
+    lighter_detail = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="4" * 64,
+    )
+    assert len(lighter_detail.layers[0].paths) > len(first.layers[0].paths)
+
+
+def test_adaptive_stipple_local_contrast_changes_local_tone_geometry() -> None:
+    image = Image.new("L", (80, 48), 178)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((28, 12, 51, 35), fill=128)
+    encoded = io.BytesIO()
+    image.save(encoded, format="PNG")
+    recipe = _recipe("adaptive-stipple")
+    recipe.raster_vectorize.adaptive_stipple_local_contrast = 0
+    global_only = vectorize_raster(encoded.getvalue(), "image/png", recipe, source_sha256="5" * 64)
+    recipe.raster_vectorize.adaptive_stipple_local_contrast = 2
+    locally_adaptive = vectorize_raster(
+        encoded.getvalue(), "image/png", recipe, source_sha256="5" * 64
+    )
+
+    assert global_only.metadata.normalized_sha256 != locally_adaptive.metadata.normalized_sha256
+    assert len(global_only.layers[0].paths) != len(locally_adaptive.layers[0].paths)
+
+
+def test_adaptive_stipple_separates_colours_into_pen_ready_layers() -> None:
+    recipe = _recipe("adaptive-stipple")
+    recipe.raster_vectorize.adaptive_stipple_color_mode = "separate"
+    recipe.raster_vectorize.color_count = 2
+    document = vectorize_raster(
+        (ROOT / "fixtures" / "raster" / "two-color-poster.png").read_bytes(),
+        "image/png",
+        recipe,
+        source_sha256="6" * 64,
+    )
+    recipe.passes = [
+        PassSettings(
+            pass_id=f"adaptive-pass-{index}",
+            name=f"Adaptive pen {index}",
+            semantic_role=layer.semantic_role,
+            preview_color=layer.preview_color,
+            source_layer_ids=[layer.layer_id],
+        )
+        for index, layer in enumerate(document.layers, 1)
+    ]
+    plan = build_plot_plan(recipe, document)
+
+    assert len(document.layers) == 2
+    assert all(layer.paths for layer in document.layers)
+    assert all(layer.metadata["algorithm"] == "adaptive-stipple" for layer in document.layers)
+    assert all(layer.semantic_role.startswith("source-color-") for layer in document.layers)
+    assert all(
+        path.metadata["mark_kind"] == "pen-dot" for layer in document.layers for path in layer.paths
+    )
+    assert len(plan.passes) == 2
+    assert [plot_pass.source_layer_ids for plot_pass in plan.passes] == [
+        [layer.layer_id] for layer in document.layers
+    ]
+    bundle = export_gcode_bundle(recipe, plan, MachineProfile())
+    pass_entries = [entry for entry in bundle.manifest.entries if entry.kind == "pass"]
+    combined = next(program for program in bundle.programs if program.filename == "combined.nc")
+    assert len(pass_entries) == 2
+    assert combined.statistics.pause_count == 1
+    assert all(program.validation.valid for program in bundle.programs)
+
+
 def test_squiggles_are_long_continuous_scanline_paths() -> None:
     document = vectorize_raster(
         _gradient_fixture(),

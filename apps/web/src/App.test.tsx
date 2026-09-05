@@ -107,6 +107,20 @@ const project: ProjectRecipe = {
     stipple_contrast: 1,
     stipple_gamma: 1,
     stipple_threshold: 0.02,
+    adaptive_stipple_color_mode: "single",
+    adaptive_stipple_mark: "pen-dots",
+    adaptive_stipple_spacing_mm: 1.4,
+    adaptive_stipple_pen_thickness_mm: 0.5,
+    adaptive_stipple_dot_gap_mm: 0.25,
+    adaptive_stipple_min_dot_size_mm: 0.2,
+    adaptive_stipple_max_dot_size_mm: 1.3,
+    adaptive_stipple_contrast: 1,
+    adaptive_stipple_gamma: 1,
+    adaptive_stipple_threshold: 0.015,
+    adaptive_stipple_local_radius_mm: 5,
+    adaptive_stipple_local_contrast: 0.65,
+    adaptive_stipple_light_density: 0.35,
+    adaptive_stipple_dark_density: 1,
   },
   osm: {
     selection: {
@@ -352,6 +366,7 @@ describe("workspace shell", () => {
     );
     expect(screen.getByLabelText("Circular scribble row spacing")).toHaveValue(1.5);
     expect(screen.getByLabelText("Circular scribble largest loop")).toHaveValue(1);
+    expect(screen.getByLabelText("Circular scribble minimum darkness")).toHaveValue(0.03);
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "dither");
     expect(screen.getByLabelText("Dither mark shape")).toHaveValue("dots");
     await user.selectOptions(screen.getByLabelText("Dither mark shape"), "crosses");
@@ -367,6 +382,16 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("Stipple pen thickness")).toHaveValue(0.5);
     await user.selectOptions(screen.getByLabelText("Stipple colour mode"), "separate");
     expect(screen.getByLabelText("Stipple colour passes")).toHaveValue(2);
+    await user.selectOptions(
+      screen.getByLabelText("Raster vectorization algorithm"),
+      "adaptive-stipple",
+    );
+    expect(screen.getByLabelText("Adaptive stipple colour mode")).toHaveValue("single");
+    expect(screen.getByLabelText("Adaptive stipple local radius")).toHaveValue(5);
+    expect(screen.getByLabelText("Adaptive stipple light density")).toHaveValue(0.35);
+    expect(screen.getByLabelText("Adaptive stipple dark density")).toHaveValue(1);
+    await user.selectOptions(screen.getByLabelText("Adaptive stipple colour mode"), "separate");
+    expect(screen.getByLabelText("Adaptive stipple colour passes")).toHaveValue(2);
     expect(screen.getByRole("button", { name: "Preview raster preprocessing" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Vectorize and plan" })).toBeEnabled();
   });

@@ -36,7 +36,8 @@ RASTER_VECTORIZER_ID = "import.raster"
 RASTER_VECTORIZER_VERSION = "1.1.0"
 DITHER_VECTORIZER_VERSION = "1.0.0"
 STIPPLE_VECTORIZER_VERSION = "1.0.0"
-CIRCULAR_SCRIBBLE_VECTORIZER_VERSION = "1.0.0"
+ADAPTIVE_STIPPLE_VECTORIZER_VERSION = "1.0.0"
+CIRCULAR_SCRIBBLE_VECTORIZER_VERSION = "2.0.0"
 WORKING_PIXEL_LIMITS = {"draft": 250_000, "standard": 750_000, "export": 1_500_000}
 NEIGHBOURS_8: tuple[Pixel, ...] = (
     (-1, -1),
@@ -624,7 +625,7 @@ def _circular_scribble_paths(
     preview: RasterPreview,
     checkpoint: ProgressCallback | None,
 ) -> VectorizationResult:
-    """Trace one tone-aware serpentine path made from overlapping circular loops."""
+    """Trace one organic tone-aware curl along a meandering serpentine carrier."""
 
     settings = recipe.raster_vectorize
     placement = preview.placement
@@ -636,28 +637,54 @@ def _circular_scribble_paths(
     if maximum_radius <= 0:
         return VectorizationResult(paths=[], removed_segments=1)
 
-    minimum_radius = maximum_radius * 0.6
-    lane_spacing = max(settings.squiggle_spacing_mm, maximum_radius * 1.8)
-    light_pitch = max(0.2, settings.squiggle_wavelength_mm)
-    dark_pitch = max(0.2, min(light_pitch, maximum_radius * 1.1))
-    segments_per_loop = {"draft": 6, "standard": 8, "export": 10}[recipe.mode.quality]
+    minimum_radius = maximum_radius * 0.36
+    light_pitch = max(0.3, settings.squiggle_wavelength_mm)
+    dark_pitch = max(0.22, min(light_pitch * 0.28, maximum_radius * 0.68))
+    nominal_lane_spacing = max(settings.squiggle_spacing_mm, maximum_radius * 0.72)
 
     min_center_x = placement.x_mm + maximum_radius
     max_center_x = placement.x_mm + placement.width_mm - maximum_radius
     min_center_y = placement.y_mm + maximum_radius
     max_center_y = placement.y_mm + placement.height_mm - maximum_radius
+    horizontal_span = max_center_x - min_center_x
     vertical_span = max_center_y - min_center_y
-    row_count = max(1, math.floor(vertical_span / lane_spacing) + 1)
-    baselines = (
-        [(min_center_y + max_center_y) / 2]
-        if row_count == 1
-        else [min_center_y + vertical_span * row / (row_count - 1) for row in range(row_count)]
-    )
+    if horizontal_span <= 0 or vertical_span < 0:
+        return VectorizationResult(paths=[], removed_segments=1)
+
+    row_count = max(1, math.floor(vertical_span / nominal_lane_spacing) + 1)
+    if row_count == 1:
+        baselines = [(min_center_y + max_center_y) / 2]
+    else:
+        gap_weights = [
+            max(
+                0.65,
+                0.92
+                + 0.18 * math.sin((gap + 1) * 1.61803398875 + 0.31)
+                + 0.08 * math.sin((gap + 1) * 0.713 + 1.17),
+            )
+            for gap in range(row_count - 1)
+        ]
+        weight_total = sum(gap_weights)
+        baselines = [min_center_y]
+        accumulated = 0.0
+        for weight in gap_weights:
+            accumulated += weight
+            baselines.append(min_center_y + vertical_span * accumulated / weight_total)
 
     pixels = cast(Any, image.load())
     points: list[FloatPoint] = []
     phase = 0.0
-    golden_angle = math.pi * (3 - math.sqrt(5))
+    carrier_distance = 0.0
+    smoothed_darkness: float | None = None
+    previous_center: FloatPoint | None = None
+    previous_pitch: float | None = None
+    phase_step = {
+        "draft": math.tau / 18,
+        "standard": math.tau / 24,
+        "export": math.tau / 32,
+    }[recipe.mode.quality]
+    tone_smoothing_distance = max(0.45, maximum_radius * 1.8)
+    wave_amplitude = min(maximum_radius * 0.62, nominal_lane_spacing * 0.26)
 
     def clamp_point(x: float, y: float) -> FloatPoint:
         return (
@@ -682,56 +709,242 @@ def _circular_scribble_paths(
             return 0.0
         return min(1.0, max(0.0, (raw_darkness - floor) / max(1e-9, 1.0 - floor)))
 
-    for row, baseline in enumerate(baselines):
+    def lane_terms(x: float, row: int) -> tuple[float, float]:
+        baseline = baselines[row]
+        clearance = min(baseline - min_center_y, max_center_y - baseline)
+        amplitude = min(wave_amplitude, max(0.0, clearance * 0.72))
+        if amplitude <= 0:
+            return baseline, 0.0
+
+        u = min(1.0, max(0.0, (x - min_center_x) / horizontal_span))
+        row_phase = row * 1.32471795724
+        frequency_a = 1.13 + 0.11 * (row % 5)
+        frequency_b = 2.71 + 0.09 * ((row * 3) % 7)
+        frequency_c = 6.17 + 0.07 * ((row * 5) % 6)
+        angle_a = math.tau * frequency_a * u + row_phase
+        angle_b = math.tau * frequency_b * u + row_phase * 0.47 + 1.21
+        angle_c = math.tau * frequency_c * u + row_phase * 1.31 + 0.63
+        offset = amplitude * (
+            0.56 * math.sin(angle_a) + 0.29 * math.sin(angle_b) + 0.15 * math.sin(angle_c)
+        )
+        slope = (
+            amplitude
+            * math.tau
+            / horizontal_span
+            * (
+                0.56 * frequency_a * math.cos(angle_a)
+                + 0.29 * frequency_b * math.cos(angle_b)
+                + 0.15 * frequency_c * math.cos(angle_c)
+            )
+        )
+        return baseline + offset, slope
+
+    def lane_tangent(x: float, row: int, direction: float) -> FloatPoint:
+        _, slope = lane_terms(x, row)
+        magnitude = math.hypot(1.0, slope)
+        return direction / magnitude, direction * slope / magnitude
+
+    def emit_point(center: FloatPoint, tangent: FloatPoint, row: int) -> float:
+        nonlocal carrier_distance, phase, previous_center, previous_pitch, smoothed_darkness
+
+        tangent_x, tangent_y = tangent
+        normal_x, normal_y = -tangent_y, tangent_x
+        sample_offset = maximum_radius * 0.42
+        raw_darkness = (
+            0.46 * darkness_at(center)
+            + 0.135
+            * darkness_at(
+                clamp_point(
+                    center[0] + normal_x * sample_offset,
+                    center[1] + normal_y * sample_offset,
+                )
+            )
+            + 0.135
+            * darkness_at(
+                clamp_point(
+                    center[0] - normal_x * sample_offset,
+                    center[1] - normal_y * sample_offset,
+                )
+            )
+            + 0.135
+            * darkness_at(
+                clamp_point(
+                    center[0] + tangent_x * sample_offset,
+                    center[1] + tangent_y * sample_offset,
+                )
+            )
+            + 0.135
+            * darkness_at(
+                clamp_point(
+                    center[0] - tangent_x * sample_offset,
+                    center[1] - tangent_y * sample_offset,
+                )
+            )
+        )
+        distance_step = 0.0
+        if previous_center is not None:
+            distance_step = math.hypot(
+                center[0] - previous_center[0], center[1] - previous_center[1]
+            )
+            carrier_distance += distance_step
+
+        if smoothed_darkness is None:
+            smoothed_darkness = raw_darkness
+        else:
+            smoothing = 1.0 - math.exp(-distance_step / tone_smoothing_distance)
+            smoothed_darkness += smoothing * (raw_darkness - smoothed_darkness)
+
+        tone = min(1.0, max(0.0, smoothed_darkness))
+        radius_tone = tone if settings.squiggle_modulation in {"amplitude", "both"} else 0.0
+        pitch_tone = tone if settings.squiggle_modulation in {"frequency", "both"} else 0.0
+        radius = maximum_radius - (maximum_radius - minimum_radius) * radius_tone
+        pitch = light_pitch - (light_pitch - dark_pitch) * pitch_tone
+
+        organic_position = carrier_distance / max(maximum_radius, 0.1)
+        radius_scale = (
+            0.88
+            + 0.07 * math.sin(organic_position * 0.37 + row * 1.11)
+            + 0.05 * math.sin(organic_position * 0.91 + row * 0.43 + 1.7)
+        )
+        pitch_scale = (
+            0.94
+            + 0.14 * math.sin(organic_position * 0.19 + row * 0.83 + 0.4)
+            + 0.08 * math.sin(organic_position * 0.47 + row * 1.37 + 2.1)
+        )
+        radius = max(minimum_radius * 0.72, min(maximum_radius, radius * radius_scale))
+        pitch = max(dark_pitch * 0.72, min(light_pitch * 1.22, pitch * pitch_scale))
+
+        if previous_pitch is not None and distance_step > 0:
+            phase += math.tau * distance_step / max(0.1, (previous_pitch + pitch) / 2)
+        angle = (
+            phase
+            + 0.13 * math.sin(organic_position * 0.43 + row * 1.17)
+            + 0.05 * math.sin(phase * 0.41 + row * 0.67)
+        )
+        tangent_radius = radius * (
+            0.84
+            + 0.10 * math.sin(phase * 0.61 + row * 1.29 + 0.8)
+            + 0.04 * math.sin(phase * 1.73 + organic_position * 0.11)
+        )
+        normal_radius = radius * (
+            0.88
+            + 0.08 * math.sin(phase * 0.73 + row * 0.53)
+            + 0.04 * math.sin(phase * 1.91 + organic_position * 0.17 + 1.4)
+        )
+        point = clamp_point(
+            center[0]
+            + tangent_x * tangent_radius * math.sin(angle)
+            + normal_x * normal_radius * math.cos(angle),
+            center[1]
+            + tangent_y * tangent_radius * math.sin(angle)
+            + normal_y * normal_radius * math.cos(angle),
+        )
+        if not points or point != points[-1]:
+            points.append(point)
+        previous_center = center
+        previous_pitch = pitch
+        return pitch
+
+    def target_advance(pitch: float, row: int) -> float:
+        irregularity = (
+            0.87
+            + 0.07 * math.sin(carrier_distance / max(maximum_radius * 2.3, 0.2) + row)
+            + 0.04 * math.sin(carrier_distance / max(maximum_radius * 0.91, 0.1) + row * 1.7)
+        )
+        return max(0.01, pitch * phase_step * irregularity / math.tau)
+
+    row_start_x = min_center_x
+    current_pitch = light_pitch
+    for row, _ in enumerate(baselines):
         _checkpoint(checkpoint, "circular-scribble-lanes", row, row_count)
         direction = 1.0 if row % 2 == 0 else -1.0
-        center_x = min_center_x if direction > 0 else max_center_x
-        end_x = max_center_x if direction > 0 else min_center_x
-
-        while (direction > 0 and center_x <= end_x) or (direction < 0 and center_x >= end_x):
-            darkness = darkness_at((center_x, baseline))
-            radius = (
-                maximum_radius - (maximum_radius - minimum_radius) * darkness
-                if settings.squiggle_modulation in {"amplitude", "both"}
-                else maximum_radius
-            )
-            pitch = (
-                light_pitch - (light_pitch - dark_pitch) * darkness
-                if settings.squiggle_modulation in {"frequency", "both"}
-                else light_pitch
-            )
-            for segment in range(segments_per_loop + 1):
-                angle = phase + direction * 2 * math.pi * segment / segments_per_loop
-                radial_scale = 0.96 + 0.04 * math.sin(3 * angle + row * 0.73 + center_x * 0.031)
-                loop_radius = radius * radial_scale
-                points.append(
-                    clamp_point(
-                        center_x + loop_radius * math.cos(angle),
-                        baseline + loop_radius * math.sin(angle),
-                    )
-                )
-            phase = (phase + direction * golden_angle) % (2 * math.pi)
-            center_x += direction * pitch
 
         if row + 1 < row_count:
-            next_baseline = baselines[row + 1]
-            turn_x = max_center_x if direction > 0 else min_center_x
-            turn_sign = 1.0 if direction > 0 else -1.0
-            transition_points = max(3, segments_per_loop // 2)
-            for step in range(1, transition_points + 1):
-                ratio = step / transition_points
-                points.append(
-                    clamp_point(
-                        turn_x + turn_sign * maximum_radius * 0.55 * math.sin(math.pi * ratio),
-                        baseline + (next_baseline - baseline) * ratio,
-                    )
-                )
+            gap = baselines[row + 1] - baselines[row]
+            turn_depth = min(horizontal_span * 0.45, max(maximum_radius * 1.1, gap * 0.65))
+            end_x = max_center_x - turn_depth if direction > 0 else min_center_x + turn_depth
+        else:
+            turn_depth = 0.0
+            end_x = max_center_x if direction > 0 else min_center_x
+        if direction * (end_x - row_start_x) < 0:
+            end_x = row_start_x
+
+        x = row_start_x
+        if row > 0 and x != end_x:
+            _, slope = lane_terms(x, row)
+            x_step = target_advance(current_pitch, row) / math.hypot(1.0, slope)
+            x = min(end_x, x + x_step) if direction > 0 else max(end_x, x - x_step)
+        while True:
+            center_y, slope = lane_terms(x, row)
+            current_pitch = emit_point((x, center_y), lane_tangent(x, row, direction), row)
+            if math.isclose(x, end_x, abs_tol=1e-9):
+                break
+            x_step = target_advance(current_pitch, row) / math.hypot(1.0, slope)
+            next_x = x + direction * x_step
+            if (direction > 0 and next_x > end_x) or (direction < 0 and next_x < end_x):
+                next_x = end_x
+            x = next_x
+
+        if row + 1 >= row_count:
+            continue
+
+        start_y, start_slope = lane_terms(end_x, row)
+        end_y, end_slope = lane_terms(end_x, row + 1)
+        start_dx = direction * turn_depth * math.pi
+        end_dx = -direction * turn_depth * math.pi
+        start_dy = start_slope * start_dx
+        end_dy = end_slope * end_dx
+
+        def transition_terms(
+            t: float,
+            *,
+            transition_end_x: float = end_x,
+            transition_direction: float = direction,
+            transition_depth: float = turn_depth,
+            transition_start_y: float = start_y,
+            transition_start_dy: float = start_dy,
+            transition_end_y: float = end_y,
+            transition_end_dy: float = end_dy,
+        ) -> tuple[FloatPoint, FloatPoint, float]:
+            t2 = t * t
+            t3 = t2 * t
+            h00 = 2 * t3 - 3 * t2 + 1
+            h10 = t3 - 2 * t2 + t
+            h01 = -2 * t3 + 3 * t2
+            h11 = t3 - t2
+            center_x = transition_end_x + transition_direction * transition_depth * math.sin(
+                math.pi * t
+            )
+            center_y = (
+                h00 * transition_start_y
+                + h10 * transition_start_dy
+                + h01 * transition_end_y
+                + h11 * transition_end_dy
+            )
+            dx_dt = transition_direction * transition_depth * math.pi * math.cos(math.pi * t)
+            dy_dt = (
+                (6 * t2 - 6 * t) * transition_start_y
+                + (3 * t2 - 4 * t + 1) * transition_start_dy
+                + (-6 * t2 + 6 * t) * transition_end_y
+                + (3 * t2 - 2 * t) * transition_end_dy
+            )
+            speed = math.hypot(dx_dt, dy_dt)
+            tangent = (
+                (-transition_direction, 0.0) if speed <= 1e-12 else (dx_dt / speed, dy_dt / speed)
+            )
+            return (center_x, center_y), tangent, speed
+
+        t = 0.0
+        while t < 1.0:
+            _, _, speed = transition_terms(t)
+            parameter_step = target_advance(current_pitch, row) / max(speed, 1e-9)
+            t = min(1.0, t + min(0.12, max(0.004, parameter_step)))
+            center, tangent, _ = transition_terms(t)
+            current_pitch = emit_point(center, tangent, row)
+        row_start_x = end_x
 
     _checkpoint(checkpoint, "circular-scribble-lanes", row_count, row_count)
-    deduplicated = [
-        point for index, point in enumerate(points) if index == 0 or point != points[index - 1]
-    ]
-    return VectorizationResult(paths=[deduplicated] if len(deduplicated) >= 2 else [])
+    return VectorizationResult(paths=[points] if len(points) >= 2 else [])
 
 
 def _interpolate(
@@ -1203,6 +1416,132 @@ def _color_stipple_paths(
     return results
 
 
+def _adaptive_stipple_paths(
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    placement: RasterPlacement,
+    checkpoint: ProgressCallback | None,
+) -> VectorizationResult:
+    """Create locally tone-adaptive dots on a deterministic blue-noise-like grid.
+
+    Unlike the legacy stipple, this samples both the source tone and a blurred local
+    neighbourhood. Fine detail is therefore retained in broadly light or dark regions,
+    while independent light/shadow density controls shape the overall tonal response.
+    """
+
+    settings = recipe.raster_vectorize
+    spacing = (
+        settings.adaptive_stipple_pen_thickness_mm + settings.adaptive_stipple_dot_gap_mm
+        if settings.adaptive_stipple_mark == "pen-dots"
+        else settings.adaptive_stipple_spacing_mm
+    )
+    columns = max(1, math.floor(placement.width_mm / spacing))
+    rows = max(1, math.floor(placement.height_mm / spacing))
+    maximum_size = min(settings.adaptive_stipple_max_dot_size_mm, spacing)
+    minimum_size = min(settings.adaptive_stipple_min_dot_size_mm, maximum_size)
+    pixels_per_mm = 0.5 * (image.width / placement.width_mm + image.height / placement.height_mm)
+    blur_radius_px = min(
+        max(image.width, image.height),
+        max(0.5, settings.adaptive_stipple_local_radius_mm * pixels_per_mm),
+    )
+    local_mean = image.filter(ImageFilter.BoxBlur(blur_radius_px))
+    pixels = cast(Any, image.load())
+    local_pixels = cast(Any, local_mean.load())
+    paths: list[list[FloatPoint]] = []
+    removed = 0
+
+    for row in range(rows):
+        _checkpoint(checkpoint, "adaptive-stipple-dots", row, rows)
+        base_y = (
+            placement.y_mm + placement.height_mm / 2
+            if rows == 1
+            else placement.y_mm + spacing / 2 + row * spacing
+        )
+        for column in range(columns):
+            base_x = (
+                placement.x_mm + placement.width_mm / 2
+                if columns == 1
+                else placement.x_mm + spacing / 2 + column * spacing
+            )
+            jitter = spacing * 0.38
+            center = (
+                min(
+                    placement.x_mm + placement.width_mm,
+                    max(
+                        placement.x_mm,
+                        base_x + (_noise(row, column, 11) - 0.5) * 2 * jitter,
+                    ),
+                ),
+                min(
+                    placement.y_mm + placement.height_mm,
+                    max(
+                        placement.y_mm,
+                        base_y + (_noise(row, column, 12) - 0.5) * 2 * jitter,
+                    ),
+                ),
+            )
+            luminance = _sample_luminance(pixels, image.width, image.height, placement, center)
+            neighbourhood_luminance = _sample_luminance(
+                local_pixels, image.width, image.height, placement, center
+            )
+            global_darkness = _bounded_darkness(
+                luminance,
+                settings.adaptive_stipple_contrast,
+                settings.adaptive_stipple_gamma,
+            )
+            local_detail = (neighbourhood_luminance - luminance) / 255.0
+            darkness = min(
+                1.0,
+                max(
+                    0.0,
+                    global_darkness + settings.adaptive_stipple_local_contrast * local_detail,
+                ),
+            )
+            if darkness < settings.adaptive_stipple_threshold:
+                continue
+            density_gain = (
+                settings.adaptive_stipple_light_density
+                + (settings.adaptive_stipple_dark_density - settings.adaptive_stipple_light_density)
+                * darkness
+            )
+            density = min(1.0, max(0.0, darkness * density_gain))
+            if density <= _noise(row, column, 13):
+                continue
+            if settings.adaptive_stipple_mark == "pen-dots":
+                paths.append([center, center])
+                continue
+            size = minimum_size + (maximum_size - minimum_size) * darkness
+            if size < max(settings.minimum_segment_length_mm, 1e-9):
+                removed += 1
+                continue
+            paths.append(_dot_mark(center, size))
+    _checkpoint(checkpoint, "adaptive-stipple-dots", rows, rows)
+    return VectorizationResult(paths=paths, removed_segments=removed)
+
+
+def _color_adaptive_stipple_paths(
+    image: Image.Image,
+    placement: RasterPlacement,
+    recipe: ProjectRecipe,
+    checkpoint: ProgressCallback | None,
+) -> list[ColorVectorizationResult]:
+    results: list[ColorVectorizationResult] = []
+    regions = _quantized_regions(image, recipe)
+    for index, (rgb, pixel_count, mask) in enumerate(regions):
+        _checkpoint(checkpoint, "adaptive-stipple-colors", index, len(regions))
+        result = _adaptive_stipple_paths(mask, recipe, placement, checkpoint)
+        results.append(
+            ColorVectorizationResult(
+                rgb=rgb,
+                pixel_count=pixel_count,
+                paths=result.paths,
+                removed_segments=result.removed_segments,
+            )
+        )
+    _checkpoint(checkpoint, "adaptive-stipple-colors", len(regions), len(regions))
+    return results
+
+
 def _design_paths(
     algorithm: str,
     paths: Sequence[Sequence[FloatPoint]],
@@ -1257,13 +1596,18 @@ def vectorize_raster(
     color_warnings: list[RasterPreviewWarning] = []
     color_stipple = (
         algorithm == "stipple" and recipe.raster_vectorize.stipple_color_mode == "separate"
+    ) or (
+        algorithm == "adaptive-stipple"
+        and recipe.raster_vectorize.adaptive_stipple_color_mode == "separate"
     )
     if algorithm in {"color-outline", "color-hatch"} or color_stipple:
         color_image, placement, color_warnings = preprocess_color_image(content, media_type, recipe)
         image, resolution_reduced = _bounded_image(color_image, recipe.mode.quality)
         color_results = (
             _color_stipple_paths(image, placement, recipe, checkpoint)
-            if color_stipple
+            if algorithm == "stipple"
+            else _color_adaptive_stipple_paths(image, placement, recipe, checkpoint)
+            if algorithm == "adaptive-stipple"
             else _color_paths(
                 image,
                 placement,
@@ -1298,6 +1642,8 @@ def vectorize_raster(
             )
         elif algorithm == "stipple":
             result = _stipple_paths(image, recipe, preview.placement, checkpoint)
+        elif algorithm == "adaptive-stipple":
+            result = _adaptive_stipple_paths(image, recipe, preview.placement, checkpoint)
         else:
             result = _tone_contour_paths(image, recipe, preview, checkpoint)
 
@@ -1386,6 +1732,9 @@ def vectorize_raster(
                         else recipe.raster_vectorize.stipple_pen_thickness_mm
                         if algorithm == "stipple"
                         and recipe.raster_vectorize.stipple_mark == "pen-dots"
+                        else recipe.raster_vectorize.adaptive_stipple_pen_thickness_mm
+                        if algorithm == "adaptive-stipple"
+                        and recipe.raster_vectorize.adaptive_stipple_mark == "pen-dots"
                         else None
                     ),
                 ),
@@ -1405,6 +1754,25 @@ def vectorize_raster(
                             "stipple_mark": recipe.raster_vectorize.stipple_mark,
                         }
                         if algorithm == "stipple"
+                        else {
+                            "adaptive_stipple_color_mode": (
+                                recipe.raster_vectorize.adaptive_stipple_color_mode
+                            ),
+                            "adaptive_stipple_mark": recipe.raster_vectorize.adaptive_stipple_mark,
+                            "adaptive_stipple_local_radius_mm": (
+                                recipe.raster_vectorize.adaptive_stipple_local_radius_mm
+                            ),
+                            "adaptive_stipple_local_contrast": (
+                                recipe.raster_vectorize.adaptive_stipple_local_contrast
+                            ),
+                            "adaptive_stipple_light_density": (
+                                recipe.raster_vectorize.adaptive_stipple_light_density
+                            ),
+                            "adaptive_stipple_dark_density": (
+                                recipe.raster_vectorize.adaptive_stipple_dark_density
+                            ),
+                        }
+                        if algorithm == "adaptive-stipple"
                         else {}
                     ),
                     "path_count": len(result.paths),
@@ -1433,6 +1801,9 @@ def vectorize_raster(
                             recipe.raster_vectorize.stipple_pen_thickness_mm
                             if algorithm == "stipple"
                             and recipe.raster_vectorize.stipple_mark == "pen-dots"
+                            else recipe.raster_vectorize.adaptive_stipple_pen_thickness_mm
+                            if algorithm == "adaptive-stipple"
+                            and recipe.raster_vectorize.adaptive_stipple_mark == "pen-dots"
                             else None
                         ),
                     ),
@@ -1464,6 +1835,8 @@ def vectorize_raster(
                 if algorithm == "dither"
                 else STIPPLE_VECTORIZER_VERSION
                 if algorithm == "stipple"
+                else ADAPTIVE_STIPPLE_VECTORIZER_VERSION
+                if algorithm == "adaptive-stipple"
                 else CIRCULAR_SCRIBBLE_VECTORIZER_VERSION
                 if algorithm == "circular-scribble"
                 else RASTER_VECTORIZER_VERSION

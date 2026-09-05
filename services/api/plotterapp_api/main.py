@@ -181,7 +181,15 @@ def _job_work(recipe: ProjectRecipe) -> tuple[str, str, DesignOperation]:
                 checkpoint=checkpoint,
             )
 
-        return "import.raster", "1.1.0", run_vectorize
+        return (
+            "import.raster",
+            "1.3.0"
+            if recipe.raster_vectorize.algorithm == "adaptive-stipple"
+            else "1.2.0"
+            if recipe.raster_vectorize.algorithm == "circular-scribble"
+            else "1.1.0",
+            run_vectorize,
+        )
     raise ValueError(f"unsupported project mode: {recipe.mode.mode_id}")
 
 
@@ -405,6 +413,7 @@ def create_app(
                     "color-hatch",
                     "dither",
                     "stipple",
+                    "adaptive-stipple",
                 ],
                 parameter_schema=RasterVectorizeSettings.model_json_schema(),
             ),

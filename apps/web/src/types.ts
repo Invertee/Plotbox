@@ -214,7 +214,8 @@ export interface ProjectRecipe {
       | "color-outline"
       | "color-hatch"
       | "dither"
-      | "stipple";
+      | "stipple"
+      | "adaptive-stipple";
     minimum_segment_length_mm: number;
     edge_threshold: number;
     edge_min_component_length_mm: number;
@@ -256,6 +257,20 @@ export interface ProjectRecipe {
     stipple_contrast: number;
     stipple_gamma: number;
     stipple_threshold: number;
+    adaptive_stipple_color_mode: "single" | "separate";
+    adaptive_stipple_mark: "drawn-dots" | "pen-dots";
+    adaptive_stipple_spacing_mm: number;
+    adaptive_stipple_pen_thickness_mm: number;
+    adaptive_stipple_dot_gap_mm: number;
+    adaptive_stipple_min_dot_size_mm: number;
+    adaptive_stipple_max_dot_size_mm: number;
+    adaptive_stipple_contrast: number;
+    adaptive_stipple_gamma: number;
+    adaptive_stipple_threshold: number;
+    adaptive_stipple_local_radius_mm: number;
+    adaptive_stipple_local_contrast: number;
+    adaptive_stipple_light_density: number;
+    adaptive_stipple_dark_density: number;
   };
   osm: OsmSettings;
   pen_palette: PenProfile[];

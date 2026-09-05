@@ -131,6 +131,7 @@ def test_modes_expose_versioned_generator_controls_presets_and_raster_schema() -
         "color-hatch",
         "dither",
         "stipple",
+        "adaptive-stipple",
     ]
     assert raster["parameter_schema"]["properties"]["algorithm"]["enum"] == raster["algorithms"]
     hybrid = next(item for item in modes if item["id"] == "builtin.map-glyphscape")

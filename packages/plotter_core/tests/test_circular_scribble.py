@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import math
+from itertools import pairwise
 
 from PIL import Image
 from plotter_core.importers.raster_vectorize import vectorize_raster
@@ -52,6 +53,7 @@ def test_circular_scribble_is_deterministic_single_path_and_tone_aware() -> None
     second = vectorize_raster(content, "image/png", recipe, source_sha256="9" * 64)
 
     assert first.metadata.normalized_sha256 == second.metadata.normalized_sha256
+    assert first.metadata.generator_version == "2.0.0"
     assert first.layers[0].layer_id == "layer-raster-circular-scribble"
     assert first.layers[0].metadata["path_count"] == 1
     assert len(first.layers[0].paths) == 1
@@ -85,3 +87,35 @@ def test_circular_scribble_tone_modulation_changes_geometry() -> None:
 
     assert adaptive.metadata.normalized_sha256 != fixed_pitch.metadata.normalized_sha256
     assert len(adaptive.layers[0].paths[0].commands) > len(fixed_pitch.layers[0].paths[0].commands)
+
+
+def test_circular_scribble_has_rounded_segments_without_straight_loop_bridges() -> None:
+    recipe = _recipe()
+    document = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="b" * 64,
+    )
+    points = _points(document)
+    lengths = [
+        math.hypot(second[0] - first[0], second[1] - first[1]) for first, second in pairwise(points)
+    ]
+    non_zero_lengths = [length for length in lengths if length > 1e-9]
+
+    assert len(points) > 1_500
+    assert non_zero_lengths
+    assert max(non_zero_lengths) < 1.8
+    ordered_lengths = sorted(non_zero_lengths)
+    assert ordered_lengths[round((len(ordered_lengths) - 1) * 0.95)] < 1.0
+
+    headings = [
+        math.atan2(second[1] - first[1], second[0] - first[0])
+        for first, second in pairwise(points)
+        if first != second
+    ]
+    turns = [
+        (second - first + math.pi) % math.tau - math.pi for first, second in pairwise(headings)
+    ]
+    distinct_turns = {round(turn, 2) for turn in turns if abs(turn) > 1e-4}
+    assert len(distinct_turns) > 40
