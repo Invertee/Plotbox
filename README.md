@@ -288,7 +288,7 @@ See [AGENTS.md](AGENTS.md), [architecture decisions](docs/DECISIONS.md), and the
 
 Choose **Artwork → Flow Field** for seeded generative streamlines. Start with Curl ribbons,
 Wandering threads, Sunburst, or Vortex rings, then drag density, integration step, and collision
-spacing to tune the drawing. Hover or focus a slider for help. Use **Regenerate seed** for a new
+spacing to tune the drawing. Help text is always visible beneath each slider. Use **Regenerate seed** for a new
 composition and **Generate design** to create plot-ready paths for the normal pen and export workflow.
 
 Release 0.3.2 adds slider controls and automatic raster preprocessing previews. Production frontend

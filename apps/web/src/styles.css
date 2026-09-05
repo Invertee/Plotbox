@@ -1593,7 +1593,7 @@ code {
   white-space: pre-wrap;
 }
 
-/* Slider controls — version 0.3.2 */
+/* Slider controls — version 0.3.4 */
 .slider-control {
   position: relative;
   display: block;
@@ -1623,13 +1623,9 @@ code {
   font-size: 0.8rem;
 }
 .slider-tooltip {
-  display: none;
+  display: block;
   padding: 0.4rem 0;
   font-size: 0.75rem;
   line-height: 1.4;
   color: #52616b;
-}
-.slider-control:hover .slider-tooltip,
-.slider-control:focus-within .slider-tooltip {
-  display: block;
 }
