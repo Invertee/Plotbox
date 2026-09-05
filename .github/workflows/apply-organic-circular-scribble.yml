@@ -6,13 +6,13 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'organic circular scribble final 5'
+    if: github.event.head_commit.message == 'organic circular scribble artifact 6'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
         with:
@@ -141,22 +141,31 @@ jobs:
         run: pnpm test
       - name: Verify end to end
         run: pnpm e2e
+      - name: Package verified implementation
+        run: |
+          bundle=/tmp/organic-circular-scribble-verified
+          mkdir -p "$bundle/files"
+          git diff --name-only --diff-filter=ACMRT HEAD > "$bundle/changed-files.txt"
+          git diff --name-only --diff-filter=D HEAD > "$bundle/deleted-files.txt"
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$bundle/files/$(dirname "$path")"
+            cp "$path" "$bundle/files/$path"
+          done < "$bundle/changed-files.txt"
+          git diff --binary HEAD > "$bundle/implementation.patch"
+          tar -C /tmp -czf /tmp/organic-circular-scribble-verified.tar.gz organic-circular-scribble-verified
+      - name: Upload verified implementation
+        uses: actions/upload-artifact@v4
+        with:
+          name: organic-circular-scribble-verified-v6
+          path: /tmp/organic-circular-scribble-verified.tar.gz
+          if-no-files-found: error
+          retention-days: 1
       - name: Upload Python test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: organic-scribble-python-tests
+          name: organic-scribble-python-tests-v6
           path: /tmp/organic-scribble-python-tests.log
           if-no-files-found: ignore
-      - name: Commit verified implementation
-        run: |
-          git add -A
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo "No implementation changes were produced"
-            exit 1
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Refine circular scribble into an organic continuous path"
-          git push origin HEAD:main
+          retention-days: 1
