@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'organic circular scribble artifact 6'
+    if: github.event.head_commit.message == 'organic circular scribble artifact 7'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -141,23 +141,29 @@ jobs:
         run: pnpm test
       - name: Verify end to end
         run: pnpm e2e
+      - name: Remove generated package metadata changes
+        run: git restore --source=HEAD -- plotterapp.egg-info
       - name: Package verified implementation
         run: |
           bundle=/tmp/organic-circular-scribble-verified
           mkdir -p "$bundle/files"
-          git diff --name-only --diff-filter=ACMRT HEAD > "$bundle/changed-files.txt"
-          git diff --name-only --diff-filter=D HEAD > "$bundle/deleted-files.txt"
+          {
+            git diff --name-only --diff-filter=ACMRT HEAD
+            git ls-files --others --exclude-standard
+          } | sort -u > "$bundle/changed-files.txt"
+          git diff --name-only --diff-filter=D HEAD | sort -u > "$bundle/deleted-files.txt"
           while IFS= read -r path; do
             [ -n "$path" ] || continue
             mkdir -p "$bundle/files/$(dirname "$path")"
             cp "$path" "$bundle/files/$path"
           done < "$bundle/changed-files.txt"
           git diff --binary HEAD > "$bundle/implementation.patch"
+          git status --short > "$bundle/status.txt"
           tar -C /tmp -czf /tmp/organic-circular-scribble-verified.tar.gz organic-circular-scribble-verified
       - name: Upload verified implementation
         uses: actions/upload-artifact@v4
         with:
-          name: organic-circular-scribble-verified-v6
+          name: organic-circular-scribble-verified-v7
           path: /tmp/organic-circular-scribble-verified.tar.gz
           if-no-files-found: error
           retention-days: 1
@@ -165,7 +171,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: organic-scribble-python-tests-v6
+          name: organic-scribble-python-tests-v7
           path: /tmp/organic-scribble-python-tests.log
           if-no-files-found: ignore
           retention-days: 1
