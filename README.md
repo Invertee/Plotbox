@@ -12,8 +12,8 @@ ProjectRecipe -> DesignDocument -> PlotPlan -> GcodeProgram
 
 It creates an A3 landscape project, generates deterministic procedural modes including hierarchical
 Glyphscape artwork, imports a safe SVG subset, or converts bounded PNG/JPEG sources at a physical
-plot resolution using edge, centerline, hatch, crosshatch, squiggle, tone-contour, or quantized
-color-region geometry. Work runs as cancellable background jobs. Vector designs continue through physical
+plot resolution using edge, centerline, hatch, crosshatch, squiggle, tone-contour, single-line
+circular-scribble, or quantized color-region geometry. Work runs as cancellable background jobs. Vector designs continue through physical
 pen-pass planning, pen-down/travel preview, and validated
 FluidNC/Grbl-compatible G-code or per-pass SVG export. Every generated G-code file is parsed back and
 blocked if reconstruction differs from the `PlotPlan`.
@@ -118,12 +118,13 @@ quality, then bounded by the configured megapixel budget. Preprocessing has its 
 cache and does not create or replace `DesignDocument`.
 
 Raster vectorization converts that physical preview into a normal `DesignDocument` using one of
-nine deterministic algorithms:
+ten deterministic algorithms:
 
 - edge drawing with response threshold and small-component removal;
 - thresholded centerline skeleton tracing with short-branch pruning;
 - tone-clipped hatch and four-angle crosshatch;
 - continuous luminance-modulated squiggle scanlines;
+- single-line tone-aware circular scribbles with smaller, more closely spaced loops in darker regions;
 - multi-level marching-squares tone contours.
 - quantized color-region outlines;
 - quantized color-region hatching.

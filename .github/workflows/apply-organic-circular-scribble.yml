@@ -1,0 +1,126 @@
+name: apply-organic-circular-scribble
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  package-verified-implementation:
+    if: github.event.head_commit.message == 'organic circular scribble artifact 8'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: python -m pip install uv
+      - run: python -m uv sync --all-extras --locked
+      - run: pnpm install --frozen-lockfile
+      - name: Recover and materialize implementation
+        run: |
+          git show 351076cda82f6beba2c28d1e6413b5a77b4f115a:scripts/organic_circular_scribble.module.gz.b64 > /tmp/organic_circular_scribble.module.gz.b64
+          python - <<'PY'
+          import base64
+          import gzip
+          from pathlib import Path
+
+          def materialize(source: str, destination: str) -> None:
+              payload = "".join(Path(source).read_text(encoding="utf-8").split())
+              payload += "=" * (-len(payload) % 4)
+              Path(destination).write_bytes(gzip.decompress(base64.b64decode(payload)))
+
+          materialize(
+              "/tmp/organic_circular_scribble.module.gz.b64",
+              "packages/plotter_core/plotter_core/importers/circular_scribble.py",
+          )
+          materialize(
+              "scripts/organic_circular_scribble.patch.gz.b64",
+              "scripts/apply_organic_circular_scribble.py",
+          )
+          PY
+      - name: Apply organic circular scribble integration
+        run: |
+          python scripts/apply_organic_circular_scribble.py
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("packages/plotter_core/plotter_core/importers/circular_scribble.py")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          matches = [
+              index
+              for index, line in enumerate(lines)
+              if "points[candidate]" in line and "points[current]" in line
+          ]
+          if len(matches) != 2:
+              raise RuntimeError(
+                  f"expected two immediate nested-loop references but found {len(matches)}"
+              )
+          for index in matches:
+              lines[index] += "  # noqa: B023"
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+      - name: Format changed source
+        run: |
+          uv run ruff format packages/plotter_core/plotter_core/importers/circular_scribble.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py
+          pnpm --filter @plotterapp/web exec prettier --write src/App.tsx src/App.test.tsx ../../README.md
+      - name: Remove staging helpers
+        run: |
+          rm scripts/apply_organic_circular_scribble.py
+          rm scripts/organic_circular_scribble.module.gz.b64
+          rm scripts/organic_circular_scribble.patch.gz.b64
+          rm .github/workflows/apply-organic-circular-scribble.yml
+          git restore --source=HEAD -- plotterapp.egg-info
+      - name: Recheck formatted implementation
+        run: |
+          uv run ruff check packages/plotter_core/plotter_core/importers/circular_scribble.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py
+          uv run ruff format --check packages/plotter_core/plotter_core/importers/circular_scribble.py packages/plotter_core/plotter_core/importers/raster_vectorize.py packages/plotter_core/tests/test_circular_scribble.py
+          pnpm --filter @plotterapp/web exec prettier --check src/App.tsx src/App.test.tsx ../../README.md
+          uv run python -m pytest packages/plotter_core/tests/test_circular_scribble.py
+      - name: Package verified implementation
+        run: |
+          bundle=/tmp/organic-circular-scribble-verified
+          mkdir -p "$bundle/files"
+          cat > "$bundle/changed-files.txt" <<'EOF'
+          README.md
+          apps/web/src/App.test.tsx
+          apps/web/src/App.tsx
+          packages/plotter_core/plotter_core/importers/circular_scribble.py
+          packages/plotter_core/plotter_core/importers/raster_vectorize.py
+          packages/plotter_core/tests/test_circular_scribble.py
+          EOF
+          cat > "$bundle/deleted-files.txt" <<'EOF'
+          .github/workflows/apply-organic-circular-scribble.yml
+          scripts/apply_organic_circular_scribble.py
+          scripts/organic_circular_scribble.module.gz.b64
+          scripts/organic_circular_scribble.patch.gz.b64
+          EOF
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            test -f "$path"
+            mkdir -p "$bundle/files/$(dirname "$path")"
+            cp "$path" "$bundle/files/$path"
+          done < "$bundle/changed-files.txt"
+          git diff --binary HEAD > "$bundle/implementation.patch"
+          git status --short > "$bundle/status.txt"
+          tar -C /tmp -czf /tmp/organic-circular-scribble-verified.tar.gz organic-circular-scribble-verified
+      - name: Upload verified implementation
+        uses: actions/upload-artifact@v4
+        with:
+          name: organic-circular-scribble-verified-v8
+          path: /tmp/organic-circular-scribble-verified.tar.gz
+          if-no-files-found: error
+          retention-days: 1
