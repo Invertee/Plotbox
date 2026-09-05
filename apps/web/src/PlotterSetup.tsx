@@ -16,6 +16,10 @@ const DEFAULT_SETTINGS: FluidNCSettings = {
   port: 81,
   tls: false,
   command_timeout_seconds: 15,
+  safe_z_min_mm: -10,
+  safe_z_max_mm: 0,
+  pen_up_z_mm: 0,
+  pen_down_z_mm: -5,
 };
 
 const COMMISSIONING_TEST_DEFINITIONS: Record<
@@ -102,25 +106,53 @@ function messageFor(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected controller error";
 }
 
+type Axis = "X" | "Y" | "Z";
+type AxisPositions = Record<Axis, number | null>;
+
+const EMPTY_AXIS_POSITIONS: AxisPositions = { X: null, Y: null, Z: null };
+
+function parseAxisPositions(
+  lines: string[],
+): { positions: AxisPositions; coordinateType: "MPos" | "WPos" } | null {
+  const status = lines.join(" ");
+  const machineMatch = status.match(
+    /MPos:\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
+  );
+  const workMatch = status.match(
+    /WPos:\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i,
+  );
+  const match = machineMatch ?? workMatch;
+  if (!match) return null;
+  return {
+    positions: { X: Number(match[1]), Y: Number(match[2]), Z: Number(match[3]) },
+    coordinateType: machineMatch ? "MPos" : "WPos",
+  };
+}
+
+function formatAxisPosition(value: number | null): string {
+  return value === null ? "—" : value.toFixed(2);
+}
+
 export function PlotterSetup() {
   const [settings, setSettings] = useState<FluidNCSettings>(DEFAULT_SETTINGS);
   const [busy, setBusy] = useState<string | null>("loading");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FluidNCActionResult | null>(null);
-  const [homeAxis, setHomeAxis] = useState<"X" | "Y" | "Z" | "ALL">("ALL");
-  const [homeConfirmed, setHomeConfirmed] = useState(false);
   const [jogAxis, setJogAxis] = useState<"X" | "Y" | "Z">("X");
   const [jogDistance, setJogDistance] = useState(5);
   const [jogFeed, setJogFeed] = useState(500);
-  const [jogConfirmed, setJogConfirmed] = useState(false);
+  const [axisPositions, setAxisPositions] = useState<AxisPositions>(EMPTY_AXIS_POSITIONS);
+  const [positionType, setPositionType] = useState<"MPos" | "WPos" | null>(null);
+  const [positionBusy, setPositionBusy] = useState(false);
+  const [controllerState, setControllerState] = useState<string | null>(null);
+  const [statusUpdatedAt, setStatusUpdatedAt] = useState<Date | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [penUp, setPenUp] = useState(5);
   const [penDown, setPenDown] = useState(0);
   const [penFeed, setPenFeed] = useState(400);
-  const [penConfirmed, setPenConfirmed] = useState(false);
   const [commissioningTest, setCommissioningTest] = useState<FluidNCCommissioningTestRequest>(
     DEFAULT_COMMISSIONING_TEST,
   );
-  const [commissioningTestConfirmed, setCommissioningTestConfirmed] = useState(false);
   const [currentSteps, setCurrentSteps] = useState(80);
   const [commandedDistance, setCommandedDistance] = useState(100);
   const [measuredDistance, setMeasuredDistance] = useState(100);
@@ -143,11 +175,14 @@ export function PlotterSetup() {
     setBusy(label);
     setError(null);
     try {
-      setResult(await api.runFluidNCAction(request));
-      if (request.action === "home") setHomeConfirmed(false);
-      if (request.action === "jog") setJogConfirmed(false);
-      if (request.action === "pen_test") setPenConfirmed(false);
-      if (request.action === "commissioning_test") setCommissioningTestConfirmed(false);
+      const actionResult = await api.runFluidNCAction(request);
+      const parsed = parseAxisPositions(actionResult.response_lines);
+      if (parsed) {
+        setAxisPositions(parsed.positions);
+        setPositionType(parsed.coordinateType);
+      }
+      if (actionResult.controller_state) setControllerState(actionResult.controller_state);
+      setResult(actionResult);
     } catch (reason) {
       setError(messageFor(reason));
     } finally {
@@ -155,7 +190,60 @@ export function PlotterSetup() {
     }
   };
 
+  const refreshPosition = async () => {
+    setPositionBusy(true);
+    setError(null);
+    try {
+      const statusResult = await api.runFluidNCAction({ action: "status" });
+      const parsed = parseAxisPositions(statusResult.response_lines);
+      if (parsed) {
+        setAxisPositions(parsed.positions);
+        setPositionType(parsed.coordinateType);
+      }
+      if (statusResult.controller_state) setControllerState(statusResult.controller_state);
+      setStatusUpdatedAt(new Date());
+      setStatusError(null);
+      setResult(statusResult);
+    } catch (reason) {
+      setError(messageFor(reason));
+    } finally {
+      setPositionBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    let disposed = false;
+    let polling = false;
+    const pollStatus = async () => {
+      if (disposed || polling || busy !== null || positionBusy) return;
+      polling = true;
+      try {
+        const statusResult = await api.runFluidNCAction({ action: "status" });
+        if (disposed) return;
+        const parsed = parseAxisPositions(statusResult.response_lines);
+        if (parsed) {
+          setAxisPositions(parsed.positions);
+          setPositionType(parsed.coordinateType);
+        }
+        setControllerState(statusResult.controller_state ?? "Unknown");
+        setStatusUpdatedAt(new Date());
+        setStatusError(null);
+      } catch (reason) {
+        if (!disposed) setStatusError(messageFor(reason));
+      } finally {
+        polling = false;
+      }
+    };
+    const timer = window.setInterval(() => void pollStatus(), 2_000);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
+  }, [busy, positionBusy]);
+
   const selectedCommissioningTest = COMMISSIONING_TEST_DEFINITIONS[commissioningTest.test_id];
+  const jogReady =
+    Number.isFinite(jogDistance) && jogDistance > 0 && Number.isFinite(jogFeed) && jogFeed > 0;
   const updateCommissioningTest = (changes: Partial<FluidNCCommissioningTestRequest>): void => {
     setCommissioningTest((current) => ({ ...current, ...changes }));
   };
@@ -197,14 +285,24 @@ export function PlotterSetup() {
             typed, and confirmation-gated.
           </p>
         </div>
-        <button
-          className="hold-button"
-          type="button"
-          disabled={busy === "loading" || busy === "hold"}
-          onClick={() => void runAction("hold", { action: "hold" })}
-        >
-          Feed hold (!)
-        </button>
+        <div className="setup-heading-actions">
+          <button
+            className="danger-button"
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void runAction("alarm-reset", { action: "alarm_reset" })}
+          >
+            {busy === "alarm-reset" ? "Resetting alarm…" : "Reset FluidNC alarm"}
+          </button>
+          <button
+            className="hold-button"
+            type="button"
+            disabled={busy === "loading" || busy === "hold"}
+            onClick={() => void runAction("hold", { action: "hold" })}
+          >
+            Feed hold (!)
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -222,6 +320,230 @@ export function PlotterSetup() {
       )}
 
       <div className="setup-grid">
+        <section className="setup-card jog-console-card">
+          <div className="jog-console-copy">
+            <p className="eyebrow">MANUAL JOG</p>
+            <h3>Axis controls</h3>
+            <p>
+              Use the directional pad for small relative moves. X/Y moves are on the left; Z is
+              isolated on the right.
+            </p>
+            <div className="jog-axis-selector" aria-label="Jog axis selection">
+              {(["X", "Y", "Z"] as const).map((axis) => (
+                <button
+                  key={axis}
+                  className={jogAxis === axis ? "selected" : ""}
+                  type="button"
+                  aria-pressed={jogAxis === axis}
+                  onClick={() => setJogAxis(axis)}
+                >
+                  {axis} axis
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="jog-pad-wrap">
+            <div className="jog-pad" aria-label="FluidNC XY jog pad">
+              <button
+                className="jog-direction jog-y-positive"
+                type="button"
+                aria-label="Jog Y positive"
+                disabled={busy !== null || !jogReady}
+                onClick={() =>
+                  void runAction("jog", {
+                    action: "jog",
+                    axis: "Y",
+                    distance_mm: Math.abs(jogDistance),
+                    feed_mm_min: jogFeed,
+                  })
+                }
+              >
+                Y+
+              </button>
+              <button
+                className="jog-direction jog-x-negative"
+                type="button"
+                aria-label="Jog X negative"
+                disabled={busy !== null || !jogReady}
+                onClick={() =>
+                  void runAction("jog", {
+                    action: "jog",
+                    axis: "X",
+                    distance_mm: -Math.abs(jogDistance),
+                    feed_mm_min: jogFeed,
+                  })
+                }
+              >
+                X−
+              </button>
+              <div className="jog-pad-center" aria-hidden="true">
+                <span>{jogAxis}</span>
+                <small>{Math.abs(jogDistance)} mm</small>
+              </div>
+              <button
+                className="jog-direction jog-x-positive"
+                type="button"
+                aria-label="Jog X positive"
+                disabled={busy !== null || !jogReady}
+                onClick={() =>
+                  void runAction("jog", {
+                    action: "jog",
+                    axis: "X",
+                    distance_mm: Math.abs(jogDistance),
+                    feed_mm_min: jogFeed,
+                  })
+                }
+              >
+                X+
+              </button>
+              <button
+                className="jog-direction jog-y-negative"
+                type="button"
+                aria-label="Jog Y negative"
+                disabled={busy !== null || !jogReady}
+                onClick={() =>
+                  void runAction("jog", {
+                    action: "jog",
+                    axis: "Y",
+                    distance_mm: -Math.abs(jogDistance),
+                    feed_mm_min: jogFeed,
+                  })
+                }
+              >
+                Y−
+              </button>
+            </div>
+            <div className="z-jog-controls">
+              <span>Z axis</span>
+              <button
+                type="button"
+                aria-label="Jog Z positive"
+                disabled={busy !== null || !jogReady}
+                onClick={() =>
+                  void runAction("jog", {
+                    action: "jog",
+                    axis: "Z",
+                    distance_mm: Math.abs(jogDistance),
+                    feed_mm_min: jogFeed,
+                  })
+                }
+              >
+                Z+
+              </button>
+              <button
+                type="button"
+                aria-label="Jog Z negative"
+                disabled={busy !== null || !jogReady}
+                onClick={() =>
+                  void runAction("jog", {
+                    action: "jog",
+                    axis: "Z",
+                    distance_mm: -Math.abs(jogDistance),
+                    feed_mm_min: jogFeed,
+                  })
+                }
+              >
+                Z−
+              </button>
+            </div>
+          </div>
+
+          <div className="jog-console-settings">
+            <div className="axis-position-card" aria-label="Current axis positions">
+              <div className="axis-position-heading">
+                <span>Live controller status</span>
+                <button
+                  type="button"
+                  onClick={() => void refreshPosition()}
+                  disabled={positionBusy || busy !== null}
+                >
+                  {positionBusy ? "Reading…" : "Refresh"}
+                </button>
+              </div>
+              <div className="axis-position-values" aria-live="polite">
+                {(["X", "Y", "Z"] as const).map((axis) => (
+                  <div key={axis}>
+                    <span>{axis}</span>
+                    <strong>{formatAxisPosition(axisPositions[axis])}</strong>
+                    <small>mm</small>
+                  </div>
+                ))}
+              </div>
+              <small className="axis-position-source">
+                {positionType
+                  ? `${positionType === "MPos" ? "Machine" : "Work"} coordinates`
+                  : "No status read yet"}
+              </small>
+              <div
+                className={`controller-state ${
+                  controllerState === "Alarm" ? "alarm" : controllerState === "Idle" ? "idle" : ""
+                }`}
+                aria-live="polite"
+              >
+                <strong>{controllerState ?? "Unknown"}</strong>
+                <span>
+                  {statusError
+                    ? `Status unavailable: ${statusError}`
+                    : statusUpdatedAt
+                      ? `Updated ${statusUpdatedAt.toLocaleTimeString()}`
+                      : "Polling every 2 seconds"}
+                </span>
+              </div>
+            </div>
+            <label>
+              Step distance mm
+              <input
+                aria-label="Jog distance"
+                type="number"
+                step="0.1"
+                value={jogDistance}
+                onChange={(event) => setJogDistance(Number(event.target.value))}
+              />
+            </label>
+            <label>
+              Jog speed mm/min
+              <input
+                aria-label="Jog feed"
+                type="number"
+                step="1"
+                value={jogFeed}
+                onChange={(event) => setJogFeed(Number(event.target.value))}
+              />
+              <span className="speed-value">{jogFeed} mm/min</span>
+            </label>
+            <div className="speed-presets" aria-label="Jog speed presets">
+              {[100, 500, 1000, 2000].map((speed) => (
+                <button
+                  key={speed}
+                  className={jogFeed === speed ? "selected" : ""}
+                  type="button"
+                  aria-label={`Set jog speed to ${speed} mm/min`}
+                  aria-pressed={jogFeed === speed}
+                  onClick={() => setJogFeed(speed)}
+                >
+                  {speed}
+                </button>
+              ))}
+            </div>
+            <button
+              className="primary-button"
+              type="button"
+              disabled={busy !== null || !jogReady}
+              onClick={() =>
+                void runAction("jog", {
+                  action: "jog",
+                  axis: jogAxis,
+                  distance_mm: Math.abs(jogDistance),
+                  feed_mm_min: jogFeed,
+                })
+              }
+            >
+              {busy === "jog" ? "Jogging…" : "Run guarded jog"}
+            </button>
+          </div>
+        </section>
+
         <section className="setup-card">
           <p className="eyebrow">CONNECTION</p>
           <h3>FluidNC endpoint</h3>
@@ -267,6 +589,63 @@ export function PlotterSetup() {
             />
             FluidNC itself uses TLS (wss)
           </label>
+          <div className="field-row">
+            <label>
+              Safe Z minimum
+              <input
+                aria-label="Safe Z minimum"
+                type="number"
+                step="0.1"
+                value={settings.safe_z_min_mm}
+                onChange={(event) =>
+                  setSettings({ ...settings, safe_z_min_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Safe Z maximum
+              <input
+                aria-label="Safe Z maximum"
+                type="number"
+                step="0.1"
+                value={settings.safe_z_max_mm}
+                onChange={(event) =>
+                  setSettings({ ...settings, safe_z_max_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Plot pen-up Z
+              <input
+                aria-label="Plot pen up Z"
+                type="number"
+                step="0.1"
+                value={settings.pen_up_z_mm}
+                onChange={(event) =>
+                  setSettings({ ...settings, pen_up_z_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Plot pen-down Z
+              <input
+                aria-label="Plot pen down Z"
+                type="number"
+                step="0.1"
+                value={settings.pen_down_z_mm}
+                onChange={(event) =>
+                  setSettings({ ...settings, pen_down_z_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          </div>
+          <p className="field-help">
+            Used to create the editor's default plot profile and to block direct sends outside this
+            controller-safe Z envelope. For this configured machine, use the FluidNC Z range −10 to
+            0.
+          </p>
           <code className="endpoint-preview">{endpoint}</code>
           <div className="action-row">
             <button type="button" disabled={busy !== null} onClick={() => void saveSettings()}>
@@ -326,111 +705,31 @@ export function PlotterSetup() {
         </section>
 
         <section className="setup-card motion-card">
-          <p className="eyebrow">MOTION TEST</p>
-          <h3>Jog one axis</h3>
-          <p>Clear the carriage first. One request is limited to 25 mm and 3000 mm/min.</p>
-          <div className="field-row three">
-            <label>
-              Axis
-              <select
-                aria-label="Jog axis"
-                value={jogAxis}
-                onChange={(event) => setJogAxis(event.target.value as "X" | "Y" | "Z")}
-              >
-                <option>X</option>
-                <option>Y</option>
-                <option>Z</option>
-              </select>
-            </label>
-            <label>
-              Distance mm
-              <input
-                aria-label="Jog distance"
-                type="number"
-                min="-25"
-                max="25"
-                step="0.1"
-                value={jogDistance}
-                onChange={(event) => setJogDistance(Number(event.target.value))}
-              />
-            </label>
-            <label>
-              Feed mm/min
-              <input
-                aria-label="Jog feed"
-                type="number"
-                min="1"
-                max="3000"
-                value={jogFeed}
-                onChange={(event) => setJogFeed(Number(event.target.value))}
-              />
-            </label>
-          </div>
-          <label className="checkbox-row safety-confirmation">
-            <input
-              type="checkbox"
-              checked={jogConfirmed}
-              onChange={(event) => setJogConfirmed(event.target.checked)}
-            />
-            I have cleared the selected axis and can stop the machine.
-          </label>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={busy !== null || !jogConfirmed || jogDistance === 0}
-            onClick={() =>
-              void runAction("jog", {
-                action: "jog",
-                confirmed: true,
-                axis: jogAxis,
-                distance_mm: jogDistance,
-                feed_mm_min: jogFeed,
-              })
-            }
-          >
-            Run guarded jog
-          </button>
-        </section>
-
-        <section className="setup-card motion-card">
           <p className="eyebrow">LIMITS AND HOME</p>
-          <h3>Home configured axes</h3>
-          <p>Only use this after limit switches and homing direction have been checked.</p>
-          <label>
-            Homing target
-            <select
-              aria-label="Homing target"
-              value={homeAxis}
-              onChange={(event) => setHomeAxis(event.target.value as "X" | "Y" | "Z" | "ALL")}
+          <h3>Home plotter axes</h3>
+          <p>Check the limit switches and homing direction before starting either homing cycle.</p>
+          <div className="home-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void runAction("home-xy", { action: "home", axis: "XY" })}
             >
-              <option value="ALL">All configured axes</option>
-              <option value="X">X only</option>
-              <option value="Y">Y only</option>
-              <option value="Z">Z only</option>
-            </select>
-          </label>
-          <label className="checkbox-row safety-confirmation">
-            <input
-              type="checkbox"
-              checked={homeConfirmed}
-              onChange={(event) => setHomeConfirmed(event.target.checked)}
-            />
-            Limit inputs, direction, clearance, and an emergency stop are ready.
-          </label>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={busy !== null || !homeConfirmed}
-            onClick={() =>
-              void runAction("home", {
-                action: "home",
-                confirmed: true,
-                axis: homeAxis,
-              })
-            }
-          >
-            Start confirmed homing
-          </button>
+              {busy === "home-xy" ? "Homing X/Y…" : "Home X/Y"}
+            </button>
+            <button
+              className="manual-action-button"
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void runAction("home-z", { action: "home", axis: "Z" })}
+            >
+              {busy === "home-z" ? "Homing Z…" : "Home Z after pen install"}
+            </button>
+          </div>
+          <p className="field-help">
+            XY homes together. Install and secure the pen before manually homing Z so the pen
+            position is referenced correctly.
+          </p>
         </section>
 
         <section className="setup-card motion-card">
@@ -474,22 +773,13 @@ export function PlotterSetup() {
               />
             </label>
           </div>
-          <label className="checkbox-row safety-confirmation">
-            <input
-              type="checkbox"
-              checked={penConfirmed}
-              onChange={(event) => setPenConfirmed(event.target.checked)}
-            />
-            Z is homed or otherwise safe for these absolute positions.
-          </label>
           <button
             className="primary-button"
             type="button"
-            disabled={busy !== null || !penConfirmed || penUp === penDown}
+            disabled={busy !== null || penUp === penDown}
             onClick={() =>
               void runAction("pen_test", {
                 action: "pen_test",
-                confirmed: true,
                 feed_mm_min: penFeed,
                 pen_up_mm: penUp,
                 pen_down_mm: penDown,
@@ -516,7 +806,6 @@ export function PlotterSetup() {
                 updateCommissioningTest({
                   test_id: event.target.value as FluidNCCommissioningTestId,
                 });
-                setCommissioningTestConfirmed(false);
               }}
             >
               {Object.entries(COMMISSIONING_TEST_DEFINITIONS).map(([testId, definition]) => (
@@ -750,24 +1039,14 @@ export function PlotterSetup() {
               />
             </label>
           )}
-          <label className="checkbox-row safety-confirmation">
-            <input
-              type="checkbox"
-              checked={commissioningTestConfirmed}
-              onChange={(event) => setCommissioningTestConfirmed(event.target.checked)}
-            />
-            I have cleared this test area, verified the origin and Z values, and can stop the
-            machine.
-          </label>
           <button
             className="primary-button"
             type="button"
-            disabled={busy !== null || !commissioningTestConfirmed}
+            disabled={busy !== null}
             onClick={() =>
               void runAction("commissioning-test", {
                 action: "commissioning_test",
-                confirmed: true,
-                test: { ...commissioningTest, confirmed: true },
+                test: { ...commissioningTest },
               })
             }
           >

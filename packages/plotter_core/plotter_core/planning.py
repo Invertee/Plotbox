@@ -234,6 +234,9 @@ def _snap_endpoints(paths: list[PlannedPath], tolerance: float) -> list[PlannedP
     endpoints: list[Point] = []
     result: list[PlannedPath] = []
     for path in paths:
+        if path.kind == "dot":
+            result.append(path)
+            continue
         points = list(path.points)
         for index in (0, -1):
             candidate = points[index]
@@ -254,14 +257,18 @@ def _merge_compatible_paths(paths: list[PlannedPath], tolerance: float) -> list[
     merged: list[PlannedPath] = []
     while remaining:
         current = remaining.pop(0)
-        if current.closed:
+        if current.closed or current.kind == "dot":
             merged.append(current)
             continue
         changed = True
         while changed:
             changed = False
             for index, candidate in enumerate(remaining):
-                if candidate.closed or candidate.source_layer_id != current.source_layer_id:
+                if (
+                    candidate.closed
+                    or candidate.kind == "dot"
+                    or candidate.source_layer_id != current.source_layer_id
+                ):
                     continue
                 combinations: list[tuple[float, list[Point]]] = [
                     (
@@ -382,6 +389,31 @@ def build_plot_plan(recipe: ProjectRecipe, design: DesignDocument) -> PlotPlan:
         for layer in selected_layers:
             for source in layer.paths:
                 flattened = flatten_design_path(source, recipe.geometry.curve_tolerance_mm)
+                is_pen_dot = source.metadata.get("mark_kind") == "pen-dot"
+                if is_pen_dot and len(flattened) == 1:
+                    point = flattened[0]
+                    if not (
+                        minimum.x <= point.x <= maximum.x and minimum.y <= point.y <= maximum.y
+                    ):
+                        removed = removed.model_copy(
+                            update={"clipped_paths": removed.clipped_paths + 1}
+                        )
+                        continue
+                    diameter = source.metadata.get("dot_diameter_mm")
+                    if not isinstance(diameter, (int, float)) or diameter <= 0:
+                        raise ValueError("pen-dot path is missing a positive dot diameter")
+                    planned.append(
+                        PlannedPath(
+                            path_id=source.path_id,
+                            source_layer_id=layer.layer_id,
+                            points=[point],
+                            reversible=False,
+                            closed=False,
+                            kind="dot",
+                            dot_diameter_mm=float(diameter),
+                        )
+                    )
+                    continue
                 if len(flattened) < 2:
                     removed = removed.model_copy(
                         update={"degenerate_paths": removed.degenerate_paths + 1}
@@ -413,8 +445,14 @@ def build_plot_plan(recipe: ProjectRecipe, design: DesignDocument) -> PlotPlan:
         ordered = _order_paths(
             merged,
             Point(x=0.0, y=0.0),
+            # Raster halftoning emits independent marks on a physical grid.  A normal
+            # nearest-neighbour pass is O(n²), which becomes prohibitively expensive
+            # for the tens of thousands of marks a dense stipple can contain.  The
+            # grid traversal is O(n log n) and remains deterministic.  Natural
+            # stipples retain their jitter; this only chooses their draw order.
             grid_order=all(
-                layer.metadata.get("algorithm") == "dither" for layer in selected_layers
+                layer.metadata.get("algorithm") in {"dither", "stipple"}
+                for layer in selected_layers
             ),
         )
         passes.append(

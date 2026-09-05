@@ -35,6 +35,8 @@ FloatPoint = tuple[float, float]
 RASTER_VECTORIZER_ID = "import.raster"
 RASTER_VECTORIZER_VERSION = "1.1.0"
 DITHER_VECTORIZER_VERSION = "1.0.0"
+STIPPLE_VECTORIZER_VERSION = "1.0.0"
+CIRCULAR_SCRIBBLE_VECTORIZER_VERSION = "1.0.0"
 WORKING_PIXEL_LIMITS = {"draft": 250_000, "standard": 750_000, "export": 1_500_000}
 NEIGHBOURS_8: tuple[Pixel, ...] = (
     (-1, -1),
@@ -616,6 +618,122 @@ def _squiggle_paths(
     return VectorizationResult(paths=paths, removed_segments=removed)
 
 
+def _circular_scribble_paths(
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    preview: RasterPreview,
+    checkpoint: ProgressCallback | None,
+) -> VectorizationResult:
+    """Trace one tone-aware serpentine path made from overlapping circular loops."""
+
+    settings = recipe.raster_vectorize
+    placement = preview.placement
+    maximum_radius = min(
+        settings.squiggle_amplitude_mm,
+        placement.width_mm / 4,
+        placement.height_mm / 4,
+    )
+    if maximum_radius <= 0:
+        return VectorizationResult(paths=[], removed_segments=1)
+
+    minimum_radius = maximum_radius * 0.6
+    lane_spacing = max(settings.squiggle_spacing_mm, maximum_radius * 1.8)
+    light_pitch = max(0.2, settings.squiggle_wavelength_mm)
+    dark_pitch = max(0.2, min(light_pitch, maximum_radius * 1.1))
+    segments_per_loop = {"draft": 6, "standard": 8, "export": 10}[recipe.mode.quality]
+
+    min_center_x = placement.x_mm + maximum_radius
+    max_center_x = placement.x_mm + placement.width_mm - maximum_radius
+    min_center_y = placement.y_mm + maximum_radius
+    max_center_y = placement.y_mm + placement.height_mm - maximum_radius
+    vertical_span = max_center_y - min_center_y
+    row_count = max(1, math.floor(vertical_span / lane_spacing) + 1)
+    baselines = (
+        [(min_center_y + max_center_y) / 2]
+        if row_count == 1
+        else [min_center_y + vertical_span * row / (row_count - 1) for row in range(row_count)]
+    )
+
+    pixels = cast(Any, image.load())
+    points: list[FloatPoint] = []
+    phase = 0.0
+    golden_angle = math.pi * (3 - math.sqrt(5))
+
+    def clamp_point(x: float, y: float) -> FloatPoint:
+        return (
+            min(placement.x_mm + placement.width_mm, max(placement.x_mm, x)),
+            min(placement.y_mm + placement.height_mm, max(placement.y_mm, y)),
+        )
+
+    def darkness_at(point: FloatPoint) -> float:
+        raw_darkness = (
+            1.0
+            - _sample_luminance(
+                pixels,
+                image.width,
+                image.height,
+                placement,
+                point,
+            )
+            / 255.0
+        )
+        floor = settings.squiggle_min_darkness
+        if raw_darkness <= floor:
+            return 0.0
+        return min(1.0, max(0.0, (raw_darkness - floor) / max(1e-9, 1.0 - floor)))
+
+    for row, baseline in enumerate(baselines):
+        _checkpoint(checkpoint, "circular-scribble-lanes", row, row_count)
+        direction = 1.0 if row % 2 == 0 else -1.0
+        center_x = min_center_x if direction > 0 else max_center_x
+        end_x = max_center_x if direction > 0 else min_center_x
+
+        while (direction > 0 and center_x <= end_x) or (direction < 0 and center_x >= end_x):
+            darkness = darkness_at((center_x, baseline))
+            radius = (
+                maximum_radius - (maximum_radius - minimum_radius) * darkness
+                if settings.squiggle_modulation in {"amplitude", "both"}
+                else maximum_radius
+            )
+            pitch = (
+                light_pitch - (light_pitch - dark_pitch) * darkness
+                if settings.squiggle_modulation in {"frequency", "both"}
+                else light_pitch
+            )
+            for segment in range(segments_per_loop + 1):
+                angle = phase + direction * 2 * math.pi * segment / segments_per_loop
+                radial_scale = 0.96 + 0.04 * math.sin(3 * angle + row * 0.73 + center_x * 0.031)
+                loop_radius = radius * radial_scale
+                points.append(
+                    clamp_point(
+                        center_x + loop_radius * math.cos(angle),
+                        baseline + loop_radius * math.sin(angle),
+                    )
+                )
+            phase = (phase + direction * golden_angle) % (2 * math.pi)
+            center_x += direction * pitch
+
+        if row + 1 < row_count:
+            next_baseline = baselines[row + 1]
+            turn_x = max_center_x if direction > 0 else min_center_x
+            turn_sign = 1.0 if direction > 0 else -1.0
+            transition_points = max(3, segments_per_loop // 2)
+            for step in range(1, transition_points + 1):
+                ratio = step / transition_points
+                points.append(
+                    clamp_point(
+                        turn_x + turn_sign * maximum_radius * 0.55 * math.sin(math.pi * ratio),
+                        baseline + (next_baseline - baseline) * ratio,
+                    )
+                )
+
+    _checkpoint(checkpoint, "circular-scribble-lanes", row_count, row_count)
+    deduplicated = [
+        point for index, point in enumerate(points) if index == 0 or point != points[index - 1]
+    ]
+    return VectorizationResult(paths=[deduplicated] if len(deduplicated) >= 2 else [])
+
+
 def _interpolate(
     first: FloatPoint,
     second: FloatPoint,
@@ -911,7 +1029,11 @@ def _dither_paths(
 ) -> list[VectorizationResult]:
     settings = recipe.raster_vectorize
     placement = preview.placement
-    spacing = settings.dither_spacing_mm
+    spacing = (
+        settings.dither_pen_thickness_mm + settings.dither_dot_gap_mm
+        if settings.dither_mark == "pen-dots"
+        else settings.dither_spacing_mm
+    )
     columns = max(1, math.floor(placement.width_mm / spacing))
     rows = max(1, math.floor(placement.height_mm / spacing))
     x_positions = [
@@ -956,17 +1078,25 @@ def _dither_paths(
                 intensity = min(1.0, max(0.0, darkness * band_count - band))
                 if intensity <= ordered_threshold:
                     continue
-                size = minimum_size + (maximum_size - minimum_size) * intensity
-                if size < max(settings.minimum_segment_length_mm, 1e-9):
-                    removed_by_band[band] += 1
-                    continue
                 center = (x, y)
                 if settings.dither_mark == "dots":
+                    size = minimum_size + (maximum_size - minimum_size) * intensity
+                    if size < max(settings.minimum_segment_length_mm, 1e-9):
+                        removed_by_band[band] += 1
+                        continue
                     paths_by_band[band].append(_dot_mark(center, size))
-                else:
+                elif settings.dither_mark == "crosses":
+                    size = minimum_size + (maximum_size - minimum_size) * intensity
+                    if size < max(settings.minimum_segment_length_mm, 1e-9):
+                        removed_by_band[band] += 1
+                        continue
                     paths_by_band[band].extend(
                         _cross_mark(center, size, settings.dither_angle_degrees)
                     )
+                else:
+                    # A duplicated point carries a physical pen tap through DesignPath; planning
+                    # turns it into a zero-travel dot action.
+                    paths_by_band[band].append([center, center])
     _checkpoint(checkpoint, "dither-grid", total_rows, total_rows)
     return [
         VectorizationResult(
@@ -977,9 +1107,107 @@ def _dither_paths(
     ]
 
 
+def _noise(row: int, column: int, salt: int) -> float:
+    """Return a stable, inexpensive pseudo-random value for a grid cell."""
+
+    value = (row * 374_761_393 + column * 668_265_263 + salt * 2_246_822_519) & 0xFFFFFFFF
+    value = ((value ^ (value >> 13)) * 1_274_126_177) & 0xFFFFFFFF
+    return ((value ^ (value >> 16)) & 0xFFFFFFFF) / 2**32
+
+
+def _stipple_paths(
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    placement: RasterPlacement,
+    checkpoint: ProgressCallback | None,
+) -> VectorizationResult:
+    """Create density-based dots on an even or gently jittered grid."""
+
+    settings = recipe.raster_vectorize
+    spacing = (
+        settings.stipple_pen_thickness_mm + settings.stipple_dot_gap_mm
+        if settings.stipple_mark == "pen-dots"
+        else settings.stipple_spacing_mm
+    )
+    columns = max(1, math.floor(placement.width_mm / spacing))
+    rows = max(1, math.floor(placement.height_mm / spacing))
+    maximum_size = min(settings.stipple_max_dot_size_mm, spacing)
+    minimum_size = min(settings.stipple_min_dot_size_mm, maximum_size)
+    pixels = cast(Any, image.load())
+    paths: list[list[FloatPoint]] = []
+    removed = 0
+
+    for row in range(rows):
+        _checkpoint(checkpoint, "stipple-dots", row, rows)
+        base_y = (
+            placement.y_mm + placement.height_mm / 2
+            if rows == 1
+            else placement.y_mm + spacing / 2 + row * spacing
+        )
+        for column in range(columns):
+            base_x = (
+                placement.x_mm + placement.width_mm / 2
+                if columns == 1
+                else placement.x_mm + spacing / 2 + column * spacing
+            )
+            jitter = spacing * 0.32 if settings.stipple_layout == "natural" else 0.0
+            center = (
+                min(
+                    placement.x_mm + placement.width_mm,
+                    max(placement.x_mm, base_x + (_noise(row, column, 1) - 0.5) * 2 * jitter),
+                ),
+                min(
+                    placement.y_mm + placement.height_mm,
+                    max(placement.y_mm, base_y + (_noise(row, column, 2) - 0.5) * 2 * jitter),
+                ),
+            )
+            darkness = _bounded_darkness(
+                _sample_luminance(pixels, image.width, image.height, placement, center),
+                settings.stipple_contrast,
+                settings.stipple_gamma,
+            )
+            if darkness < settings.stipple_threshold or darkness <= _noise(row, column, 3):
+                continue
+            if settings.stipple_mark == "pen-dots":
+                paths.append([center, center])
+                continue
+            size = minimum_size + (maximum_size - minimum_size) * darkness
+            if size < max(settings.minimum_segment_length_mm, 1e-9):
+                removed += 1
+                continue
+            paths.append(_dot_mark(center, size))
+    _checkpoint(checkpoint, "stipple-dots", rows, rows)
+    return VectorizationResult(paths=paths, removed_segments=removed)
+
+
+def _color_stipple_paths(
+    image: Image.Image,
+    placement: RasterPlacement,
+    recipe: ProjectRecipe,
+    checkpoint: ProgressCallback | None,
+) -> list[ColorVectorizationResult]:
+    results: list[ColorVectorizationResult] = []
+    regions = _quantized_regions(image, recipe)
+    for index, (rgb, pixel_count, mask) in enumerate(regions):
+        _checkpoint(checkpoint, "stipple-colors", index, len(regions))
+        result = _stipple_paths(mask, recipe, placement, checkpoint)
+        results.append(
+            ColorVectorizationResult(
+                rgb=rgb,
+                pixel_count=pixel_count,
+                paths=result.paths,
+                removed_segments=result.removed_segments,
+            )
+        )
+    _checkpoint(checkpoint, "stipple-colors", len(regions), len(regions))
+    return results
+
+
 def _design_paths(
     algorithm: str,
     paths: Sequence[Sequence[FloatPoint]],
+    *,
+    pen_dot_diameter_mm: float | None = None,
 ) -> list[DesignPath]:
     return [
         DesignPath(
@@ -989,7 +1217,15 @@ def _design_paths(
                 *(LineCommand(point=Point(x=point[0], y=point[1])) for point in points[1:]),
             ],
             closed=len(points) > 2 and points[0] == points[-1],
-            metadata={"source": "raster", "algorithm": algorithm},
+            metadata={
+                "source": "raster",
+                "algorithm": algorithm,
+                **(
+                    {"mark_kind": "pen-dot", "dot_diameter_mm": pen_dot_diameter_mm}
+                    if pen_dot_diameter_mm is not None
+                    else {}
+                ),
+            },
         )
         for index, points in enumerate(paths)
         if len(points) >= 2
@@ -1019,15 +1255,22 @@ def vectorize_raster(
     color_results: list[ColorVectorizationResult] | None = None
     dither_results: list[VectorizationResult] | None = None
     color_warnings: list[RasterPreviewWarning] = []
-    if algorithm in {"color-outline", "color-hatch"}:
+    color_stipple = (
+        algorithm == "stipple" and recipe.raster_vectorize.stipple_color_mode == "separate"
+    )
+    if algorithm in {"color-outline", "color-hatch"} or color_stipple:
         color_image, placement, color_warnings = preprocess_color_image(content, media_type, recipe)
         image, resolution_reduced = _bounded_image(color_image, recipe.mode.quality)
-        color_results = _color_paths(
-            image,
-            placement,
-            recipe,
-            checkpoint,
-            hatch=algorithm == "color-hatch",
+        color_results = (
+            _color_stipple_paths(image, placement, recipe, checkpoint)
+            if color_stipple
+            else _color_paths(
+                image,
+                placement,
+                recipe,
+                checkpoint,
+                hatch=algorithm == "color-hatch",
+            )
         )
         result = VectorizationResult(
             paths=[path for color_result in color_results for path in color_result.paths],
@@ -1045,12 +1288,16 @@ def vectorize_raster(
             result = _hatch_paths(image, recipe, preview, checkpoint, crosshatch=True)
         elif algorithm == "squiggle":
             result = _squiggle_paths(image, recipe, preview, checkpoint)
+        elif algorithm == "circular-scribble":
+            result = _circular_scribble_paths(image, recipe, preview, checkpoint)
         elif algorithm == "dither":
             dither_results = _dither_paths(image, recipe, preview, checkpoint)
             result = VectorizationResult(
                 paths=[path for item in dither_results for path in item.paths],
                 removed_segments=sum(item.removed_segments for item in dither_results),
             )
+        elif algorithm == "stipple":
+            result = _stipple_paths(image, recipe, preview.placement, checkpoint)
         else:
             result = _tone_contour_paths(image, recipe, preview, checkpoint)
 
@@ -1100,7 +1347,15 @@ def vectorize_raster(
                     name=f"Dither tone {index + 1}/{band_count}",
                     semantic_role=f"dither-tone-{index + 1}",
                     preview_color=color_hex,
-                    paths=_design_paths(layer_algorithm, band_result.paths),
+                    paths=_design_paths(
+                        layer_algorithm,
+                        band_result.paths,
+                        pen_dot_diameter_mm=(
+                            recipe.raster_vectorize.dither_pen_thickness_mm
+                            if recipe.raster_vectorize.dither_mark == "pen-dots"
+                            else None
+                        ),
+                    ),
                     metadata={
                         "source": "raster",
                         "algorithm": algorithm,
@@ -1121,7 +1376,19 @@ def vectorize_raster(
                 name=f"Raster {algorithm.replace('-', ' ').title()}",
                 semantic_role="structure",
                 preview_color="#171717",
-                paths=_design_paths(algorithm, result.paths),
+                paths=_design_paths(
+                    algorithm,
+                    result.paths,
+                    pen_dot_diameter_mm=(
+                        recipe.raster_vectorize.dither_pen_thickness_mm
+                        if algorithm == "dither"
+                        and recipe.raster_vectorize.dither_mark == "pen-dots"
+                        else recipe.raster_vectorize.stipple_pen_thickness_mm
+                        if algorithm == "stipple"
+                        and recipe.raster_vectorize.stipple_mark == "pen-dots"
+                        else None
+                    ),
+                ),
                 metadata={
                     "source": "raster",
                     "algorithm": algorithm,
@@ -1132,6 +1399,12 @@ def vectorize_raster(
                             "dither_pass_count": recipe.raster_vectorize.dither_pass_count,
                         }
                         if algorithm == "dither"
+                        else {
+                            "stipple_layout": recipe.raster_vectorize.stipple_layout,
+                            "stipple_color_mode": recipe.raster_vectorize.stipple_color_mode,
+                            "stipple_mark": recipe.raster_vectorize.stipple_mark,
+                        }
+                        if algorithm == "stipple"
                         else {}
                     ),
                     "path_count": len(result.paths),
@@ -1156,6 +1429,12 @@ def vectorize_raster(
                     paths=_design_paths(
                         f"{algorithm}-{color_key}",
                         color_result.paths,
+                        pen_dot_diameter_mm=(
+                            recipe.raster_vectorize.stipple_pen_thickness_mm
+                            if algorithm == "stipple"
+                            and recipe.raster_vectorize.stipple_mark == "pen-dots"
+                            else None
+                        ),
                     ),
                     metadata={
                         "source": "raster",
@@ -1183,6 +1462,10 @@ def vectorize_raster(
             generator_version=(
                 DITHER_VECTORIZER_VERSION
                 if algorithm == "dither"
+                else STIPPLE_VECTORIZER_VERSION
+                if algorithm == "stipple"
+                else CIRCULAR_SCRIBBLE_VECTORIZER_VERSION
+                if algorithm == "circular-scribble"
                 else RASTER_VECTORIZER_VERSION
                 if algorithm in {"color-outline", "color-hatch"}
                 else "1.0.0"

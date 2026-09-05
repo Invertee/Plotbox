@@ -54,6 +54,7 @@ from plotterapp_api.fluidnc import (
     FluidNCActionResult,
     FluidNCGateway,
     FluidNCGatewayProtocol,
+    FluidNCProgramResult,
     FluidNCSettings,
     build_action_frames,
     calculate_axis_calibration,
@@ -76,6 +77,7 @@ from plotterapp_api.schemas import (
     OsmSnapshotRequest,
     OsmSnapshotResponse,
     ProjectPatchRequest,
+    SendGcodeRequest,
 )
 
 TERMINAL_JOB_STATES = {"succeeded", "cancelled", "failed", "stale"}
@@ -397,10 +399,12 @@ def create_app(
                     "hatch",
                     "crosshatch",
                     "squiggle",
+                    "circular-scribble",
                     "tone-contour",
                     "color-outline",
                     "color-hatch",
                     "dither",
+                    "stipple",
                 ],
                 parameter_schema=RasterVectorizeSettings.model_json_schema(),
             ),
@@ -427,7 +431,20 @@ def create_app(
 
     @application.get("/api/export-profiles", response_model=list[MachineProfile])
     def export_profiles() -> list[MachineProfile]:
-        return [MachineProfile()]
+        settings = controller.settings()
+        profile = MachineProfile()
+        return [
+            profile.model_copy(
+                update={
+                    "pen_actuator": profile.pen_actuator.model_copy(
+                        update={
+                            "up_mm": settings.pen_up_z_mm,
+                            "down_mm": settings.pen_down_z_mm,
+                        }
+                    )
+                }
+            )
+        ]
 
     @application.get("/api/fluidnc/settings", response_model=FluidNCSettings)
     def fluidnc_settings() -> FluidNCSettings:
@@ -535,48 +552,88 @@ def create_app(
 
     @application.post(
         "/api/projects/{project_id}/osm/snapshot",
-        response_model=OsmSnapshotResponse,
+        response_model=OsmSnapshotResponse | JobState,
     )
     def fetch_osm_snapshot(
         project_id: str,
         request: OsmSnapshotRequest,
-    ) -> OsmSnapshotResponse:
+        response: Response,
+    ) -> OsmSnapshotResponse | JobState:
         try:
             store = _store()
             query = build_overpass_query(request.bounds)
             query_sha256 = hashlib.sha256(query.encode("utf-8")).hexdigest()
-            cache_key = node_cache_key(
-                operator_name="osm.query",
-                operator_version="1.0.0",
-                input_content_hash=query_sha256,
-                parameters={"bounds": request.bounds.model_dump(mode="json")},
-                quality="source",
+
+            def download(progress: ProgressCallback | None = None) -> OsmSnapshotResponse:
+                if progress is not None:
+                    progress("preparing map download", 0, 4)
+                cache_key = node_cache_key(
+                    operator_name="osm.query",
+                    operator_version="1.0.0",
+                    input_content_hash=query_sha256,
+                    parameters={"bounds": request.bounds.model_dump(mode="json")},
+                    quality="source",
+                )
+                if progress is not None:
+                    progress("checking saved map data", 1, 4)
+                cache = store.osm_query_cache()
+                payload = cache.get_json(cache_key)
+                cache_hit = payload is not None
+                if payload is None:
+                    if progress is not None:
+                        progress("downloading map data", 2, 4)
+                    payload = osm_fetcher(query)
+                    if not isinstance(payload.get("elements"), list):
+                        raise ValueError("OSM provider returned an invalid snapshot")
+                    cache.put_json(cache_key, payload)
+                elif progress is not None:
+                    progress("using saved map data", 2, 4)
+                if progress is not None:
+                    progress("freezing map data", 3, 4)
+                store.update(
+                    project_id,
+                    {"osm": {"selection": {"bounds": request.bounds.model_dump(mode="json")}}},
+                )
+                project = store.write_osm_snapshot(
+                    project_id,
+                    payload=payload,
+                    query_sha256=query_sha256,
+                    bounds=request.bounds,
+                )
+                if project.osm.snapshot is None:
+                    raise RuntimeError("snapshot metadata was not persisted")
+                if progress is not None:
+                    progress("map data ready", 4, 4)
+                return OsmSnapshotResponse(
+                    project=project,
+                    snapshot=project.osm.snapshot,
+                    cache_hit=cache_hit,
+                )
+
+            if not request.background:
+                return download()
+            recipe = store.read(project_id)
+
+            def download_work(token: CancellationToken, progress: ProgressCallback) -> JobResult:
+                token.checkpoint()
+                result = download(progress)
+                token.checkpoint()
+                return JobResult(
+                    result_hash=result.snapshot.sha256,
+                    cache_hit=result.cache_hit,
+                    result_project_revision=result.project.revision,
+                )
+
+            state = jobs.submit(
+                project_id=project_id,
+                project_revision=recipe.revision,
+                operation="download_map",
+                quality=recipe.mode.quality,
+                input_hash=query_sha256,
+                work=download_work,
             )
-            cache = store.osm_query_cache()
-            payload = cache.get_json(cache_key)
-            cache_hit = payload is not None
-            if payload is None:
-                payload = osm_fetcher(query)
-                if not isinstance(payload.get("elements"), list):
-                    raise ValueError("OSM provider returned an invalid snapshot")
-                cache.put_json(cache_key, payload)
-            store.update(
-                project_id,
-                {"osm": {"selection": {"bounds": request.bounds.model_dump(mode="json")}}},
-            )
-            project = store.write_osm_snapshot(
-                project_id,
-                payload=payload,
-                query_sha256=query_sha256,
-                bounds=request.bounds,
-            )
-            if project.osm.snapshot is None:
-                raise RuntimeError("snapshot metadata was not persisted")
-            return OsmSnapshotResponse(
-                project=project,
-                snapshot=project.osm.snapshot,
-                cache_hit=cache_hit,
-            )
+            response.status_code = 202
+            return state
         except FileNotFoundError as error:
             raise _not_found(error) from error
         except (OSError, json.JSONDecodeError) as error:
@@ -843,12 +900,79 @@ def create_app(
             recipe = store.read(project_id)
             design = store.read_design(recipe)
             plot_plan = store.read_plan(recipe, design)
-            profile = request.profile or MachineProfile()
+            settings = controller.settings()
+            default_profile = MachineProfile().model_copy(
+                update={
+                    "pen_actuator": MachineProfile().pen_actuator.model_copy(
+                        update={
+                            "up_mm": settings.pen_up_z_mm,
+                            "down_mm": settings.pen_down_z_mm,
+                        }
+                    )
+                }
+            )
+            profile = request.profile or default_profile
             bundle = export_gcode_bundle(recipe, plot_plan, profile)
             store.write_export_bundle(recipe, bundle)
             return bundle
         except FileNotFoundError as error:
             raise _not_found(error) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+    @application.post(
+        "/api/projects/{project_id}/send/gcode",
+        response_model=FluidNCProgramResult,
+    )
+    async def send_gcode(project_id: str, request: SendGcodeRequest) -> FluidNCProgramResult:
+        """Regenerate and validate a selected project export before streaming it.
+
+        The request carries only a filename from the freshly generated bundle, never
+        arbitrary G-code.  This keeps direct plotting on the same validation path as a
+        downloaded export.
+        """
+        try:
+            store = _store()
+            recipe = store.read(project_id)
+            design = store.read_design(recipe)
+            plot_plan = store.read_plan(recipe, design)
+            settings = controller.settings()
+            default = MachineProfile()
+            default_profile = default.model_copy(
+                update={
+                    "pen_actuator": default.pen_actuator.model_copy(
+                        update={
+                            "up_mm": settings.pen_up_z_mm,
+                            "down_mm": settings.pen_down_z_mm,
+                        }
+                    )
+                }
+            )
+            profile = request.profile or default_profile
+            actuator = profile.pen_actuator
+            if not (
+                settings.safe_z_min_mm
+                <= actuator.down_mm
+                < actuator.up_mm
+                <= settings.safe_z_max_mm
+            ):
+                raise ValueError(
+                    "export profile pen Z values fall outside the configured "
+                    "controller-safe Z range"
+                )
+            bundle = export_gcode_bundle(recipe, plot_plan, profile)
+            program = next(
+                (item for item in bundle.programs if item.filename == request.filename),
+                None,
+            )
+            if program is None:
+                raise ValueError("selected G-code file is not available in this validated export")
+            store.write_export_bundle(recipe, bundle)
+            return await controller.stream_program(program)
+        except FileNotFoundError as error:
+            raise _not_found(error) from error
+        except ConnectionError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 

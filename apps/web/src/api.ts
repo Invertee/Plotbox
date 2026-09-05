@@ -5,13 +5,13 @@ import type {
   ExportBundle,
   FluidNCActionRequest,
   FluidNCActionResult,
+  FluidNCProgramResult,
   FluidNCSettings,
   JobState,
   MachineProfile,
   ModeManifest,
   OsmBounds,
   OsmPlaceSearchResponse,
-  OsmSnapshotResponse,
   PlotPlan,
   ProjectRecipe,
   RasterPreview,
@@ -108,10 +108,10 @@ export const api = {
         body: file,
       },
     ),
-  fetchOsmSnapshot: (projectId: string, bounds: OsmBounds) =>
-    request<OsmSnapshotResponse>(`api/projects/${projectId}/osm/snapshot`, {
+  startOsmSnapshotDownload: (projectId: string, bounds: OsmBounds) =>
+    request<JobState>(`api/projects/${projectId}/osm/snapshot`, {
       method: "POST",
-      body: JSON.stringify({ bounds }),
+      body: JSON.stringify({ bounds, background: true }),
     }),
   searchOsmPlaces: (query: string) =>
     request<OsmPlaceSearchResponse>(`api/osm/places?query=${encodeURIComponent(query)}`),
@@ -126,6 +126,11 @@ export const api = {
     request<ExportBundle>(`api/projects/${projectId}/export/gcode`, {
       method: "POST",
       body: JSON.stringify({ profile }),
+    }),
+  sendGcode: (projectId: string, profile: MachineProfile, filename: string) =>
+    request<FluidNCProgramResult>(`api/projects/${projectId}/send/gcode`, {
+      method: "POST",
+      body: JSON.stringify({ profile, filename, confirmed: true }),
     }),
   exportSvg: (projectId: string) =>
     request<SvgExportBundle>(`api/projects/${projectId}/export/svg`, {

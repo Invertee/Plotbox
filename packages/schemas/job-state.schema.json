@@ -104,6 +104,7 @@
       "enum": [
         "generate",
         "generate_map",
+        "download_map",
         "import_svg",
         "preprocess_raster",
         "vectorize_raster"

@@ -24,6 +24,9 @@ def test_home_assistant_entry_points_use_plotbox_brand() -> None:
     assert "panel_title: Plotbox" in addon_config
     assert "ingress_port: 5616" in addon_config
     assert "5616/tcp: 5616" in addon_config
+    assert "192.168.0.0/16" in addon_config
+    assert "172.16.0.0/12" in addon_config
+    assert "fc00::/7" in addon_config
     assert create_app().title == "Plotbox API"
 
 
@@ -47,6 +50,17 @@ def test_allowed_client_networks_protect_home_assistant_ingress(monkeypatch) -> 
         response = blocked_client.get("/api/health")
     assert response.status_code == 403
     assert response.json()["detail"] == "client address is not allowed"
+
+
+def test_private_lan_and_container_proxy_clients_can_reach_packaged_app(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "PLOTTERAPP_ALLOWED_CLIENT_NETWORKS",
+        "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128,fc00::/7",
+    )
+    application = create_app()
+    for address in ("192.168.1.20", "172.30.33.4", "10.0.0.8"):
+        with TestClient(application, client=(address, 50000)) as client:
+            assert client.get("/api/health").status_code == 200
 
 
 def test_production_web_root_is_served_without_shadowing_api(tmp_path: Path, monkeypatch) -> None:
@@ -111,10 +125,12 @@ def test_modes_expose_versioned_generator_controls_presets_and_raster_schema() -
         "hatch",
         "crosshatch",
         "squiggle",
+        "circular-scribble",
         "tone-contour",
         "color-outline",
         "color-hatch",
         "dither",
+        "stipple",
     ]
     assert raster["parameter_schema"]["properties"]["algorithm"]["enum"] == raster["algorithms"]
     hybrid = next(item for item in modes if item["id"] == "builtin.map-glyphscape")
@@ -622,8 +638,39 @@ def test_osm_snapshot_cache_generation_plan_and_frozen_reopen(tmp_path: Path, mo
 
         reopened = client.get(f"/api/projects/{project_id}")
         assert reopened.status_code == 200
-        assert reopened.json()["osm"]["snapshot"]["sha256"]
-        assert fetch_count == 1
+    assert reopened.json()["osm"]["snapshot"]["sha256"]
+    assert fetch_count == 1
+
+
+def test_osm_snapshot_background_job_reports_download_progress(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("PLOTTERAPP_PROJECTS_ROOT", str(tmp_path))
+    started = threading.Event()
+    release = threading.Event()
+
+    def fetcher(_: str) -> dict[str, Any]:
+        started.set()
+        assert release.wait(timeout=2)
+        return {"elements": []}
+
+    bounds = {"south": 51.503, "west": -0.1305, "north": 51.507, "east": -0.1235}
+    with TestClient(create_app(osm_fetcher=fetcher)) as client:
+        project_id = client.post("/api/projects", json={}).json()["project_id"]
+        started_job = client.post(
+            f"/api/projects/{project_id}/osm/snapshot",
+            json={"bounds": bounds, "background": True},
+        )
+        assert started_job.status_code == 202, started_job.text
+        job_id = started_job.json()["job_id"]
+        assert started.wait(timeout=1)
+        progress = client.get(f"/api/jobs/{job_id}").json()
+        assert progress["operation"] == "download_map"
+        assert progress["stage"] == "downloading map data"
+        assert progress["progress"] == 0.5
+        release.set()
+        completed = _wait_for_job(client, job_id)
+        assert completed["status"] == "succeeded"
+        assert completed["progress"] == 1
+        assert client.get(f"/api/projects/{project_id}").json()["osm"]["snapshot"] is not None
 
 
 def test_frozen_osm_snapshot_generates_hybrid_mode_and_plans(tmp_path: Path, monkeypatch) -> None:
@@ -705,8 +752,28 @@ def test_osm_snapshot_rejects_large_area_without_fetching(tmp_path: Path, monkey
             json={"bounds": {"south": 50, "west": -1, "north": 51, "east": 0}},
         )
         assert response.status_code == 422
-        assert "maximum request area" in response.json()["detail"]
-        assert fetch_count == 0
+    assert "maximum request area" in response.json()["detail"]
+    assert fetch_count == 0
+
+
+def test_osm_snapshot_accepts_larger_supported_areas(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("PLOTTERAPP_PROJECTS_ROOT", str(tmp_path))
+    fetch_count = 0
+
+    def fetcher(_: str) -> dict[str, Any]:
+        nonlocal fetch_count
+        fetch_count += 1
+        return {"elements": []}
+
+    with TestClient(create_app(osm_fetcher=fetcher)) as client:
+        project_id = client.post("/api/projects", json={}).json()["project_id"]
+        response = client.post(
+            f"/api/projects/{project_id}/osm/snapshot",
+            json={"bounds": {"south": 51.5, "west": -0.15, "north": 51.55, "east": -0.08}},
+        )
+
+    assert response.status_code == 200, response.text
+    assert fetch_count == 1
 
 
 def test_osm_place_search_is_submitted_cached_and_limited(tmp_path: Path, monkeypatch) -> None:

@@ -296,6 +296,13 @@
     "ReconstructedToolpath": {
       "additionalProperties": false,
       "properties": {
+        "draw_dots": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "title": "Draw Dots",
+          "type": "array"
+        },
         "draw_paths": {
           "items": {
             "items": {

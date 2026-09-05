@@ -22,7 +22,7 @@ from plotter_core.models import (
 )
 
 EARTH_RADIUS_M = 6_371_008.8
-MAX_QUERY_AREA_KM2 = 25.0
+MAX_QUERY_AREA_KM2 = 100.0
 OSM_GENERATOR_ID = "map.openstreetmap"
 OSM_GENERATOR_VERSION = "1.0.0"
 

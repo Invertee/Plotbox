@@ -85,6 +85,15 @@ def test_parser_reconstructs_hand_authored_modal_program() -> None:
     assert reconstructed.final_z_mm == 5
 
 
+def test_export_converts_pen_dwell_milliseconds_to_fluidnc_seconds() -> None:
+    program = bundle_for()[3].programs[0]
+
+    assert "G4 P0.080" in program.text
+    assert "G4 P0.120" in program.text
+    assert "G4 P80" not in program.text
+    assert "G4 P120" not in program.text
+
+
 def test_per_pass_pen_down_override_round_trips_as_drawing_state() -> None:
     recipe = ProjectRecipe(project_id="override", name="Override")
     recipe.passes[0].pen_down_override = 0.25

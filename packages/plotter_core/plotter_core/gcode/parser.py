@@ -62,6 +62,8 @@ def reconstruct_toolpath(
     absolute = False
     units_mm = False
     segments: list[ReconstructedSegment] = []
+    draw_dots: list[Point] = []
+    pending_dot: Point | None = None
     pause_count = 0
 
     for instruction in instructions:
@@ -91,6 +93,11 @@ def reconstruct_toolpath(
         next_x = parameters.get("X", x)
         next_y = parameters.get("Y", y)
         next_z = parameters.get("Z", z)
+        pen_was_down = z < profile.pen_actuator.up_mm - 1e-9
+        pen_is_down = next_z < profile.pen_actuator.up_mm - 1e-9
+        has_xy_motion = "X" in parameters or "Y" in parameters
+        if not pen_was_down and pen_is_down:
+            pending_dot = Point(x=x, y=y)
         if "X" in parameters or "Y" in parameters:
             segments.append(
                 ReconstructedSegment(
@@ -99,6 +106,11 @@ def reconstruct_toolpath(
                     pen_down=next_z < profile.pen_actuator.up_mm - 1e-9,
                 )
             )
+            if pen_is_down:
+                pending_dot = None
+        if pen_was_down and not pen_is_down and not has_xy_motion and pending_dot is not None:
+            draw_dots.append(pending_dot)
+            pending_dot = None
         x, y, z = next_x, next_y, next_z
 
     draw_paths: list[list[Point]] = []
@@ -128,6 +140,7 @@ def reconstruct_toolpath(
     return ReconstructedToolpath(
         segments=segments,
         draw_paths=normalized,
+        draw_dots=draw_dots,
         final_position=Point(x=x, y=y),
         final_z_mm=z,
         pause_count=pause_count,

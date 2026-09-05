@@ -21,9 +21,11 @@ from plotterapp_api.fluidnc import (
     AxisCalibrationResult,
     FluidNCActionRequest,
     FluidNCActionResult,
+    FluidNCProgramResult,
     FluidNCSettings,
 )
 from plotterapp_api.fluidnc_tests import FluidNCCommissioningTestRequest
+from plotterapp_api.schemas import SendGcodeRequest
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "packages" / "schemas"
@@ -43,8 +45,10 @@ MODELS = {
     "fluidnc-commissioning-test-request": FluidNCCommissioningTestRequest,
     "fluidnc-action-request": FluidNCActionRequest,
     "fluidnc-action-result": FluidNCActionResult,
+    "fluidnc-program-result": FluidNCProgramResult,
     "axis-calibration-request": AxisCalibrationRequest,
     "axis-calibration-result": AxisCalibrationResult,
+    "send-gcode-request": SendGcodeRequest,
 }
 
 

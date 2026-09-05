@@ -249,13 +249,13 @@ test("project list manages names and returns from the editor", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Managed lifecycle project" })).toHaveCount(0);
 });
 
-test("plotter setup keeps motion gated until explicitly confirmed", async ({ page }) => {
+test("plotter setup exposes direct machine controls", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Plotter setup" }).click();
   await expect(page.getByLabel("FluidNC hostname")).toHaveValue("fluidnc.local");
-  await expect(page.getByRole("button", { name: "Run guarded jog" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Start confirmed homing" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Run up → down → up test" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Run guarded jog" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start homing" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Run up → down → up test" })).toBeEnabled();
   await page.getByLabel("Measured calibration distance").fill("98");
   await page.getByRole("button", { name: "Calculate correction" }).click();
   await expect(page.getByText("81.632653")).toBeVisible();

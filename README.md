@@ -201,8 +201,10 @@ for `amd64` and `aarch64`, serving both on internal port 5616.
 Ingress handles authentication and your existing Home Assistant reverse proxy handles SSL. The
 frontend uses relative asset, API, and event-stream URLs so the changing Ingress session prefix is
 preserved. Host port 5616 is published for a trusted reverse proxy such as Nginx Proxy Manager.
-The packaged app still accepts HTTP clients only from the configured Ingress gateway, container
-loopback, and any explicitly configured `PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` proxy networks.
+The packaged app accepts clients from RFC1918 private networks (including direct `192.168.x.x`
+access), loopback, and the Home Assistant/container networks. Keep the app behind a firewall or
+trusted reverse proxy because Plotbox has no user accounts; custom deployments can narrow
+`PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` to specific CIDRs.
 
 Persistent state lives under Home Assistant's `/data` volume:
 
@@ -223,10 +225,13 @@ The current allowlisted actions are:
 - identity, machine-state, active-mode, and configuration queries;
 - a bounded limit-switch check that exits FluidNC limit-reporting mode;
 - realtime feed hold;
-- explicitly confirmed all-axis or single-axis homing;
-- explicitly confirmed relative X/Y/Z jogs, limited to 25 mm and 3000 mm/min per action;
-- an explicitly confirmed absolute-Z pen up/down/up cycle with bounded positions and feed.
-- named, explicitly confirmed calibration patterns: scale grid, circle/arc, diagonal/skew,
+- all-axis or single-axis homing;
+- relative X/Y/Z jogs using the speed and distance limits configured in FluidNC;
+- an absolute-Z pen up/down/up cycle with bounded positions and feed.
+- named calibration patterns: scale grid, circle/arc, diagonal/skew,
+
+Plotbox does not add a separate confirmation step or jog speed/distance ceiling to these
+controller actions. FluidNC remains responsible for the machine configuration and limits.
   backlash ladder, speed, Z-depth/pen pressure, lift delay, registration, pen swatches,
   line spacing, and hatch density. Each pattern has a bounded test area and is constructed
   server-side; there is no raw G-code entry.
@@ -264,9 +269,14 @@ regression.
 
 ## Product boundary
 
-This repository supports backend FluidNC WebSocket commissioning as described above. It still has no
-serial/Telnet transport, arbitrary command console, work-zero editor, firmware configuration writer,
-G-code upload/streaming, unattended plotting, or hardware job recovery. Validated G-code remains a
-file export; a project Print button is deferred until the commissioning boundary is proven.
+This repository supports backend FluidNC WebSocket commissioning as described above. From the editor,
+an operator can also select one of the app's validated G-code exports and explicitly send it to the
+configured FluidNC machine. Plotbox regenerates and independently round-trip validates that selected
+file immediately before streaming it. It never accepts raw G-code from the browser and will only begin
+when FluidNC reports `Idle`; a successful response means all lines were accepted, not that physical
+motion has finished.
+
+It still has no serial/Telnet transport, arbitrary command console, work-zero editor, start-from-current
+pen-position mode, firmware configuration writer, unattended plotting, or hardware job recovery.
 See [AGENTS.md](AGENTS.md), [architecture decisions](docs/DECISIONS.md), and the
 [dithered-halftone ExecPlan](docs/exec-plans/0010-raster-dithered-halftone.md).

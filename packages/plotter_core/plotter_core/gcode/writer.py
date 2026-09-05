@@ -12,6 +12,11 @@ def _format_number(value: float, precision: int) -> str:
     return rendered
 
 
+def _format_dwell_ms(milliseconds: int) -> str:
+    """Render a millisecond setting as FluidNC/Grbl G4 seconds."""
+    return _format_number(milliseconds / 1000, 3)
+
+
 def _slug(value: str) -> str:
     candidate = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return candidate or "pass"
@@ -36,7 +41,7 @@ class FluidncZWriter:
             f"F{_format_number(actuator.lift_feed_mm_min, 0)}"
         ]
         if actuator.dwell_after_up_ms:
-            lines.append(f"G4 P{actuator.dwell_after_up_ms}")
+            lines.append(f"G4 P{_format_dwell_ms(actuator.dwell_after_up_ms)}")
         return lines
 
     def _pen_down(self, override: float | None = None) -> list[str]:
@@ -52,7 +57,7 @@ class FluidncZWriter:
             f"F{_format_number(actuator.lower_feed_mm_min, 0)}"
         ]
         if actuator.dwell_after_down_ms:
-            lines.append(f"G4 P{actuator.dwell_after_down_ms}")
+            lines.append(f"G4 P{_format_dwell_ms(actuator.dwell_after_down_ms)}")
         return lines
 
     def _travel(self, point: Point) -> str:
@@ -101,7 +106,8 @@ class FluidncZWriter:
                     *self._pen_down(pen_down_override),
                 ]
             )
-            lines.extend(self._draw(point, feed) for point in path.points[1:])
+            if path.kind == "stroke":
+                lines.extend(self._draw(point, feed) for point in path.points[1:])
             lines.extend(self._pen_up())
         return lines
 

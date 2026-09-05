@@ -38,6 +38,14 @@ class ExportRequest(StrictModel):
     profile: MachineProfile | None = None
 
 
+class SendGcodeRequest(StrictModel):
+    """Select a generated export entry; clients cannot provide program text."""
+
+    profile: MachineProfile | None = None
+    filename: str = Field(min_length=1, max_length=200)
+    confirmed: Literal[True]
+
+
 class AssetUploadResponse(StrictModel):
     project: ProjectRecipe
     asset: SourceAsset
@@ -45,6 +53,7 @@ class AssetUploadResponse(StrictModel):
 
 class OsmSnapshotRequest(StrictModel):
     bounds: OsmBounds
+    background: bool = False
 
 
 class OsmSnapshotResponse(StrictModel):

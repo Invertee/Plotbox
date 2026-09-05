@@ -24,6 +24,7 @@ export interface DesignPath {
   commands: PathCommand[];
   closed: boolean;
   reversible: boolean;
+  metadata: Record<string, string | number | boolean>;
 }
 
 export interface DesignLayer {
@@ -208,10 +209,12 @@ export interface ProjectRecipe {
       | "hatch"
       | "crosshatch"
       | "squiggle"
+      | "circular-scribble"
       | "tone-contour"
       | "color-outline"
       | "color-hatch"
-      | "dither";
+      | "dither"
+      | "stipple";
     minimum_segment_length_mm: number;
     edge_threshold: number;
     edge_min_component_length_mm: number;
@@ -230,16 +233,29 @@ export interface ProjectRecipe {
     contour_levels: number;
     color_count: number;
     color_background_threshold: number;
-    dither_mark: "dots" | "crosses";
+    dither_mark: "dots" | "crosses" | "pen-dots";
     dither_pass_mode: "single" | "contrast-bands";
     dither_pass_count: number;
     dither_spacing_mm: number;
+    dither_pen_thickness_mm: number;
+    dither_dot_gap_mm: number;
     dither_min_mark_size_mm: number;
     dither_max_mark_size_mm: number;
     dither_contrast: number;
     dither_gamma: number;
     dither_threshold: number;
     dither_angle_degrees: number;
+    stipple_layout: "even" | "natural";
+    stipple_color_mode: "single" | "separate";
+    stipple_mark: "drawn-dots" | "pen-dots";
+    stipple_spacing_mm: number;
+    stipple_pen_thickness_mm: number;
+    stipple_dot_gap_mm: number;
+    stipple_min_dot_size_mm: number;
+    stipple_max_dot_size_mm: number;
+    stipple_contrast: number;
+    stipple_gamma: number;
+    stipple_threshold: number;
   };
   osm: OsmSettings;
   pen_palette: PenProfile[];
@@ -332,6 +348,8 @@ export interface PlannedPath {
   points: Point[];
   reversible: boolean;
   closed: boolean;
+  kind: "stroke" | "dot";
+  dot_diameter_mm: number | null;
 }
 
 export interface PlotPass {
@@ -415,6 +433,7 @@ export interface GcodeProgram {
   reconstructed_toolpath: {
     segments: ReconstructedSegment[];
     draw_paths: Point[][];
+    draw_dots: Point[];
     final_position: Point;
     final_z_mm: number;
     pause_count: number;
@@ -463,7 +482,13 @@ export interface JobState {
   project_id: string;
   project_revision: number;
   result_project_revision: number | null;
-  operation: "generate" | "import_svg" | "preprocess_raster" | "vectorize_raster";
+  operation:
+    | "generate"
+    | "generate_map"
+    | "download_map"
+    | "import_svg"
+    | "preprocess_raster"
+    | "vectorize_raster";
   stage: string;
   status: "queued" | "running" | "succeeded" | "cancelled" | "failed" | "stale";
   quality: "draft" | "standard" | "export";
@@ -530,6 +555,10 @@ export interface FluidNCSettings {
   port: number;
   tls: boolean;
   command_timeout_seconds: number;
+  safe_z_min_mm: number;
+  safe_z_max_mm: number;
+  pen_up_z_mm: number;
+  pen_down_z_mm: number;
 }
 
 export type FluidNCAction =
@@ -539,6 +568,7 @@ export type FluidNCAction =
   | "config"
   | "limits"
   | "hold"
+  | "alarm_reset"
   | "home"
   | "jog"
   | "pen_test"
@@ -559,7 +589,6 @@ export type FluidNCCommissioningTestId =
 
 export interface FluidNCCommissioningTestRequest {
   test_id: FluidNCCommissioningTestId;
-  confirmed?: boolean;
   origin_x_mm: number;
   origin_y_mm: number;
   width_mm: number;
@@ -579,8 +608,7 @@ export interface FluidNCCommissioningTestRequest {
 
 export interface FluidNCActionRequest {
   action: FluidNCAction;
-  confirmed?: boolean;
-  axis?: "X" | "Y" | "Z" | "ALL" | null;
+  axis?: "X" | "Y" | "Z" | "XY" | "ALL" | null;
   distance_mm?: number | null;
   feed_mm_min?: number | null;
   pen_up_mm?: number | null;
@@ -596,6 +624,17 @@ export interface FluidNCActionResult {
   response_lines: string[];
   controller_state: string | null;
   test_id?: FluidNCCommissioningTestId | null;
+}
+
+export interface FluidNCProgramResult {
+  schema_version: 1;
+  filename: string;
+  sha256: string;
+  success: boolean;
+  command_count: number;
+  accepted_command_count: number;
+  response_lines: string[];
+  controller_state: string | null;
 }
 
 export interface AxisCalibrationResult {

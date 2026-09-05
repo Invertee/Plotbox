@@ -25,6 +25,8 @@ environment:
   PLOTTERAPP_PROJECTS_ROOT: /data/projects
   PLOTTERAPP_FLUIDNC_CONFIG: /data/fluidnc.json
   PLOTTERAPP_WEB_ROOT: /app/web
-  PLOTTERAPP_ALLOWED_CLIENT_NETWORKS: 172.30.32.2/32,127.0.0.0/8
+  # Home Assistant Ingress/Nginx Proxy Manager and direct access from a trusted LAN.
+  # Keep the add-on behind a firewall or trusted reverse proxy; Plotbox has no user accounts.
+  PLOTTERAPP_ALLOWED_CLIENT_NETWORKS: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128,fc00::/7
 options: {}
 schema: {}

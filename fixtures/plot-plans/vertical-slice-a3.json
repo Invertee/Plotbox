@@ -10287,7 +10287,7 @@
       "start": null
     }
   ],
-  "normalized_sha256": "b35db84bdc2a201e05257a60619a5f242bcc82fad6a1cdec5e66409c65cc2eb8",
+  "normalized_sha256": "1a7d53cbc0a634a202095a02026a623cabb2b8756b53eabb40590105d72e63cc",
   "page": {
     "height_mm": 297.0,
     "margin_mm": 10.0,
@@ -10304,6 +10304,8 @@
       "ordered_paths": [
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-frame-00",
           "points": [
             {
@@ -10460,6 +10462,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-frame-01",
           "points": [
             {
@@ -10616,6 +10620,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-frame-02",
           "points": [
             {
@@ -10772,6 +10778,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-frame-03",
           "points": [
             {
@@ -10928,6 +10936,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-00",
           "points": [
             {
@@ -10948,6 +10958,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-01",
           "points": [
             {
@@ -10968,6 +10980,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-02",
           "points": [
             {
@@ -10988,6 +11002,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-03",
           "points": [
             {
@@ -11008,6 +11024,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-04",
           "points": [
             {
@@ -11028,6 +11046,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-05",
           "points": [
             {
@@ -11048,6 +11068,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-06",
           "points": [
             {
@@ -11068,6 +11090,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "structure-corridor-07",
           "points": [
             {
@@ -11099,6 +11123,8 @@
       "ordered_paths": [
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-signal-00",
           "points": [
             {
@@ -11495,6 +11521,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-signal-01",
           "points": [
             {
@@ -11891,6 +11919,8 @@
         },
         {
           "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-signal-02",
           "points": [
             {
@@ -12287,6 +12317,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-orbit-05",
           "points": [
             {
@@ -12555,6 +12587,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-orbit-04",
           "points": [
             {
@@ -12695,6 +12729,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-orbit-03",
           "points": [
             {
@@ -12835,6 +12871,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-orbit-02",
           "points": [
             {
@@ -13007,6 +13045,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-orbit-01",
           "points": [
             {
@@ -13147,6 +13187,8 @@
         },
         {
           "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
           "path_id": "accent-orbit-00",
           "points": [
             {

@@ -247,10 +247,12 @@ class RasterVectorizeSettings(StrictModel):
         "hatch",
         "crosshatch",
         "squiggle",
+        "circular-scribble",
         "tone-contour",
         "color-outline",
         "color-hatch",
         "dither",
+        "stipple",
     ] = "edge"
     minimum_segment_length_mm: float = Field(default=0.6, ge=0)
     edge_threshold: int = Field(default=12, ge=1, le=255)
@@ -270,16 +272,29 @@ class RasterVectorizeSettings(StrictModel):
     contour_levels: int = Field(default=6, ge=1, le=32)
     color_count: int = Field(default=2, ge=2, le=8)
     color_background_threshold: int = Field(default=248, ge=0, le=255)
-    dither_mark: Literal["dots", "crosses"] = "dots"
+    dither_mark: Literal["dots", "crosses", "pen-dots"] = "dots"
     dither_pass_mode: Literal["single", "contrast-bands"] = "single"
     dither_pass_count: int = Field(default=4, ge=1, le=8)
     dither_spacing_mm: float = Field(default=2.0, gt=0, le=50)
+    dither_pen_thickness_mm: float = Field(default=0.5, gt=0, le=25)
+    dither_dot_gap_mm: float = Field(default=0.5, ge=0, le=50)
     dither_min_mark_size_mm: float = Field(default=0.25, ge=0, le=25)
     dither_max_mark_size_mm: float = Field(default=1.8, gt=0, le=25)
     dither_contrast: float = Field(default=1.0, gt=0, le=4)
     dither_gamma: float = Field(default=1.0, ge=0.1, le=5)
     dither_threshold: float = Field(default=0.02, ge=0, le=1)
     dither_angle_degrees: float = Field(default=45.0, ge=-360, le=360)
+    stipple_layout: Literal["even", "natural"] = "natural"
+    stipple_color_mode: Literal["single", "separate"] = "single"
+    stipple_mark: Literal["drawn-dots", "pen-dots"] = "pen-dots"
+    stipple_spacing_mm: float = Field(default=1.8, gt=0, le=50)
+    stipple_pen_thickness_mm: float = Field(default=0.5, gt=0, le=25)
+    stipple_dot_gap_mm: float = Field(default=0.4, ge=0, le=50)
+    stipple_min_dot_size_mm: float = Field(default=0.25, ge=0, le=25)
+    stipple_max_dot_size_mm: float = Field(default=1.5, gt=0, le=25)
+    stipple_contrast: float = Field(default=1.0, gt=0, le=4)
+    stipple_gamma: float = Field(default=1.0, ge=0.1, le=5)
+    stipple_threshold: float = Field(default=0.02, ge=0, le=1)
 
     @model_validator(mode="after")
     def crosshatch_thresholds_descend(self) -> RasterVectorizeSettings:
@@ -294,6 +309,12 @@ class RasterVectorizeSettings(StrictModel):
             raise ValueError("crosshatch thresholds must be strictly descending")
         if self.dither_min_mark_size_mm > self.dither_max_mark_size_mm:
             raise ValueError("dither minimum mark size must not exceed maximum mark size")
+        if self.dither_pen_thickness_mm + self.dither_dot_gap_mm > 50:
+            raise ValueError("dither pen thickness plus dot gap must not exceed 50 mm")
+        if self.stipple_min_dot_size_mm > self.stipple_max_dot_size_mm:
+            raise ValueError("stipple minimum dot size must not exceed maximum dot size")
+        if self.stipple_pen_thickness_mm + self.stipple_dot_gap_mm > 50:
+            raise ValueError("stipple pen thickness plus dot gap must not exceed 50 mm")
         return self
 
 
@@ -542,9 +563,20 @@ class MachineProfile(StrictModel):
 class PlannedPath(StrictModel):
     path_id: str
     source_layer_id: str
-    points: list[Point] = Field(min_length=2)
+    points: list[Point] = Field(min_length=1)
     reversible: bool
     closed: bool
+    kind: Literal["stroke", "dot"] = "stroke"
+    dot_diameter_mm: float | None = None
+
+    @model_validator(mode="after")
+    def has_geometry_for_kind(self) -> PlannedPath:
+        if self.kind == "dot":
+            if len(self.points) != 1 or self.dot_diameter_mm is None or self.dot_diameter_mm <= 0:
+                raise ValueError("dot paths require one point and a positive dot diameter")
+        elif len(self.points) < 2:
+            raise ValueError("stroke paths require at least two points")
+        return self
 
 
 class TravelSegment(StrictModel):
@@ -629,6 +661,7 @@ class ReconstructedSegment(StrictModel):
 class ReconstructedToolpath(StrictModel):
     segments: list[ReconstructedSegment]
     draw_paths: list[list[Point]]
+    draw_dots: list[Point] = Field(default_factory=list)
     final_position: Point
     final_z_mm: float
     pause_count: int
@@ -726,6 +759,7 @@ class JobState(StrictModel):
     operation: Literal[
         "generate",
         "generate_map",
+        "download_map",
         "import_svg",
         "preprocess_raster",
         "vectorize_raster",

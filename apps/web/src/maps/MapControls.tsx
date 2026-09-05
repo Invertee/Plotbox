@@ -18,6 +18,13 @@ interface MapControlsProps {
 }
 
 const EARTH_RADIUS_M = 6_371_008.8;
+const MAX_REQUEST_AREA_KM2 = 100;
+const MAP_SIZE_PRESETS = [
+  { label: "Small", areaKm2: 1 },
+  { label: "Medium", areaKm2: 5 },
+  { label: "Large", areaKm2: 25 },
+  { label: "Extra large", areaKm2: 100 },
+] as const;
 
 function osmAreaKm2(bounds: OsmBounds): number {
   const height = ((bounds.north - bounds.south) * Math.PI * EARTH_RADIUS_M) / 180;
@@ -25,6 +32,83 @@ function osmAreaKm2(bounds: OsmBounds): number {
   const width =
     ((bounds.east - bounds.west) * Math.PI * EARTH_RADIUS_M * Math.cos(centerLatitude)) / 180;
   return Math.abs(width * height) / 1_000_000;
+}
+
+function sameBounds(first: OsmBounds, second: OsmBounds): boolean {
+  const tolerance = 0.000_000_1;
+  return (
+    Math.abs(first.south - second.south) < tolerance &&
+    Math.abs(first.west - second.west) < tolerance &&
+    Math.abs(first.north - second.north) < tolerance &&
+    Math.abs(first.east - second.east) < tolerance
+  );
+}
+
+function selectionFromMap(map: MapLibreMap, host: HTMLDivElement, pageAspect: number): OsmBounds {
+  let width = host.clientWidth * 0.68;
+  let height = width / pageAspect;
+  const maximumHeight = host.clientHeight * 0.72;
+  if (height > maximumHeight) {
+    height = maximumHeight;
+    width = height * pageAspect;
+  }
+  const centerX = host.clientWidth / 2;
+  const centerY = host.clientHeight / 2;
+  const northwest = map.unproject([centerX - width / 2, centerY - height / 2]);
+  const southeast = map.unproject([centerX + width / 2, centerY + height / 2]);
+  return {
+    south: southeast.lat,
+    west: northwest.lng,
+    north: northwest.lat,
+    east: southeast.lng,
+  };
+}
+
+function fitMapToSelection(
+  map: MapLibreMap,
+  host: HTMLDivElement,
+  bounds: OsmBounds,
+  pageAspect: number,
+): void {
+  let width = host.clientWidth * 0.68;
+  let height = width / pageAspect;
+  const maximumHeight = host.clientHeight * 0.72;
+  if (height > maximumHeight) {
+    height = maximumHeight;
+    width = height * pageAspect;
+  }
+  map.fitBounds(
+    [
+      [bounds.west, bounds.south],
+      [bounds.east, bounds.north],
+    ],
+    {
+      padding: {
+        top: (host.clientHeight - height) / 2,
+        right: (host.clientWidth - width) / 2,
+        bottom: (host.clientHeight - height) / 2,
+        left: (host.clientWidth - width) / 2,
+      },
+      duration: 0,
+    },
+  );
+}
+
+function boundsForArea(
+  center: { latitude: number; longitude: number },
+  areaKm2: number,
+  aspect: number,
+): OsmBounds {
+  const heightKm = Math.sqrt(areaKm2 / aspect);
+  const widthKm = heightKm * aspect;
+  const latitudeSpan = heightKm / 111.195;
+  const longitudeSpan = widthKm / (111.195 * Math.cos((center.latitude * Math.PI) / 180));
+  return {
+    south: Math.max(-85, center.latitude - latitudeSpan / 2),
+    west: Math.max(-180, center.longitude - longitudeSpan / 2),
+    north: Math.min(85, center.latitude + latitudeSpan / 2),
+    east: Math.min(180, center.longitude + longitudeSpan / 2),
+  };
 }
 
 export function MapControls({
@@ -41,8 +125,12 @@ export function MapControls({
 }: MapControlsProps) {
   const mapHost = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
-  const initialBounds = useRef(project.osm.selection.bounds);
+  const latestProject = useRef(project);
+  const latestOnChange = useRef(onChange);
   const [placeQuery, setPlaceQuery] = useState("");
+  const [selectionChanged, setSelectionChanged] = useState(false);
+  latestProject.current = project;
+  latestOnChange.current = onChange;
   const bounds = project.osm.selection.bounds;
   const center = {
     latitude: (bounds.south + bounds.north) / 2,
@@ -51,25 +139,33 @@ export function MapControls({
   const areaKm2 = useMemo(() => osmAreaKm2(bounds), [bounds]);
   const updateOsm = (changes: Partial<ProjectRecipe["osm"]>) =>
     onChange({ ...project, osm: { ...project.osm, ...changes } });
+  const updateSelection = (nextBounds: OsmBounds) => {
+    if (sameBounds(bounds, nextBounds)) return;
+    setSelectionChanged(true);
+    updateOsm({
+      selection: { ...project.osm.selection, bounds: nextBounds },
+      snapshot: null,
+    });
+  };
   const updateCenter = (field: "latitude" | "longitude", value: number) => {
     if (!Number.isFinite(value)) return;
     const latitudeSpan = bounds.north - bounds.south;
     const longitudeSpan = bounds.east - bounds.west;
     const latitude = field === "latitude" ? value : center.latitude;
     const longitude = field === "longitude" ? value : center.longitude;
-    updateOsm({
-      selection: {
-        ...project.osm.selection,
-        bounds: {
-          south: latitude - latitudeSpan / 2,
-          west: longitude - longitudeSpan / 2,
-          north: latitude + latitudeSpan / 2,
-          east: longitude + longitudeSpan / 2,
-        },
-      },
-      snapshot: null,
+    updateSelection({
+      south: latitude - latitudeSpan / 2,
+      west: longitude - longitudeSpan / 2,
+      north: latitude + latitudeSpan / 2,
+      east: longitude + longitudeSpan / 2,
     });
   };
+
+  useEffect(() => {
+    if (project.osm.snapshot && sameBounds(project.osm.snapshot.bounds, bounds)) {
+      setSelectionChanged(false);
+    }
+  }, [bounds, project.osm.snapshot]);
 
   useEffect(() => {
     if (!mapHost.current || typeof WebGLRenderingContext === "undefined") return;
@@ -77,14 +173,13 @@ export function MapControls({
     let map: MapLibreMap | undefined;
     void import("maplibre-gl").then(({ Map, NavigationControl }) => {
       if (disposed || !mapHost.current) return;
-      const selected = initialBounds.current;
       map = new Map({
         container: mapHost.current,
-        bounds: [
-          [selected.west, selected.south],
-          [selected.east, selected.north],
+        center: [
+          latestProject.current.osm.selection.bounds.west,
+          latestProject.current.osm.selection.bounds.south,
         ],
-        fitBoundsOptions: { padding: 18 },
+        zoom: 13,
         style: {
           version: 8,
           sources: {
@@ -107,6 +202,35 @@ export function MapControls({
       });
       mapInstance.current = map;
       map.addControl(new NavigationControl({ showCompass: true }), "top-right");
+      map.on("load", () => {
+        const current = latestProject.current;
+        if (!map || !mapHost.current) return;
+        fitMapToSelection(
+          map,
+          mapHost.current,
+          current.osm.selection.bounds,
+          current.page.width_mm / current.page.height_mm,
+        );
+      });
+      map.on("moveend", () => {
+        const current = latestProject.current;
+        if (!map || !mapHost.current) return;
+        const nextBounds = selectionFromMap(
+          map,
+          mapHost.current,
+          current.page.width_mm / current.page.height_mm,
+        );
+        if (sameBounds(current.osm.selection.bounds, nextBounds)) return;
+        setSelectionChanged(true);
+        latestOnChange.current({
+          ...current,
+          osm: {
+            ...current.osm,
+            selection: { ...current.osm.selection, bounds: nextBounds },
+            snapshot: null,
+          },
+        });
+      });
     });
     return () => {
       disposed = true;
@@ -117,45 +241,14 @@ export function MapControls({
 
   useEffect(() => {
     const map = mapInstance.current;
-    if (!map) return;
-    map.fitBounds(
-      [
-        [bounds.west, bounds.south],
-        [bounds.east, bounds.north],
-      ],
-      { padding: 18, duration: 0 },
-    );
-  }, [bounds.east, bounds.north, bounds.south, bounds.west]);
-
-  const useVisibleMapArea = () => {
-    const map = mapInstance.current;
     const host = mapHost.current;
     if (!map || !host) return;
-    const pageAspect = project.page.width_mm / project.page.height_mm;
-    let width = host.clientWidth * 0.68;
-    let height = width / pageAspect;
-    const maximumHeight = host.clientHeight * 0.72;
-    if (height > maximumHeight) {
-      height = maximumHeight;
-      width = height * pageAspect;
-    }
-    const centerX = host.clientWidth / 2;
-    const centerY = host.clientHeight / 2;
-    const northwest = map.unproject([centerX - width / 2, centerY - height / 2]);
-    const southeast = map.unproject([centerX + width / 2, centerY + height / 2]);
-    updateOsm({
-      selection: {
-        ...project.osm.selection,
-        bounds: {
-          south: southeast.lat,
-          west: northwest.lng,
-          north: northwest.lat,
-          east: southeast.lng,
-        },
-      },
-      snapshot: null,
-    });
-  };
+    fitMapToSelection(map, host, bounds, project.page.width_mm / project.page.height_mm);
+  }, [bounds, project.page.height_mm, project.page.width_mm]);
+
+  const snapshotMatchesSelection =
+    project.osm.snapshot !== null && sameBounds(project.osm.snapshot.bounds, bounds);
+  const needsDownload = selectionChanged || !snapshotMatchesSelection;
 
   return (
     <>
@@ -194,17 +287,11 @@ export function MapControls({
                 onClick={() => {
                   const latitudeSpan = bounds.north - bounds.south;
                   const longitudeSpan = bounds.east - bounds.west;
-                  updateOsm({
-                    selection: {
-                      ...project.osm.selection,
-                      bounds: {
-                        south: place.latitude - latitudeSpan / 2,
-                        west: place.longitude - longitudeSpan / 2,
-                        north: place.latitude + latitudeSpan / 2,
-                        east: place.longitude + longitudeSpan / 2,
-                      },
-                    },
-                    snapshot: null,
+                  updateSelection({
+                    south: place.latitude - latitudeSpan / 2,
+                    west: place.longitude - longitudeSpan / 2,
+                    north: place.latitude + latitudeSpan / 2,
+                    east: place.longitude + longitudeSpan / 2,
                   });
                 }}
               >
@@ -218,14 +305,14 @@ export function MapControls({
             )}
           </div>
         )}
-        <div className="map-selector">
+        <div className={`map-selector${busy ? " is-busy" : ""}`}>
           <div ref={mapHost} className="maplibre-host" aria-label="Interactive map selector" />
           <div
             className="page-ratio-overlay"
             style={{ aspectRatio: `${project.page.width_mm} / ${project.page.height_mm}` }}
             aria-hidden="true"
           />
-          <span>Page selection overlay</span>
+          <span>Orange box = download area</span>
         </div>
         <small className="map-attribution">
           Basemap ©{" "}
@@ -233,6 +320,9 @@ export function MapControls({
             OpenStreetMap contributors
           </a>
         </small>
+        <p className="field-help map-help">
+          Drag or zoom the map. The orange box updates the area automatically when you stop.
+        </p>
         <div className="field-row">
           <label>
             Latitude
@@ -298,15 +388,58 @@ export function MapControls({
           </label>
         </div>
         <p className={`map-area ${areaKm2 > 25 ? "over-limit" : ""}`}>
-          Approximate request area: <strong>{areaKm2.toFixed(2)} km²</strong> / 25 km²
-          {areaKm2 > 25 && " — zoom in, then use the page overlay"}
+          Download area: <strong>{areaKm2.toFixed(2)} km²</strong> / {MAX_REQUEST_AREA_KM2} km²
+          {areaKm2 > 25 && areaKm2 <= MAX_REQUEST_AREA_KM2 && " — larger downloads can take longer"}
+          {areaKm2 > MAX_REQUEST_AREA_KM2 && " — choose a smaller area before downloading"}
         </p>
+        <div className="map-size-controls" aria-label="Map area size">
+          <span>Quick size</span>
+          <div>
+            {MAP_SIZE_PRESETS.map((preset) => (
+              <button
+                type="button"
+                key={preset.areaKm2}
+                disabled={busy}
+                onClick={() =>
+                  updateSelection(
+                    boundsForArea(
+                      center,
+                      preset.areaKm2,
+                      project.page.width_mm / project.page.height_mm,
+                    ),
+                  )
+                }
+              >
+                {preset.label} ({preset.areaKm2} km²)
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="action-row map-actions">
-          <button type="button" disabled={busy} onClick={useVisibleMapArea}>
-            Use page overlay extent
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const map = mapInstance.current;
+              const host = mapHost.current;
+              if (map && host) {
+                fitMapToSelection(
+                  map,
+                  host,
+                  bounds,
+                  project.page.width_mm / project.page.height_mm,
+                );
+              }
+            }}
+          >
+            Show selected area
           </button>
-          <button type="button" disabled={busy || areaKm2 > 25} onClick={onFetch}>
-            {busy ? "Downloading map data…" : "Download and freeze map data"}
+          <button type="button" disabled={busy || areaKm2 > MAX_REQUEST_AREA_KM2} onClick={onFetch}>
+            {busy
+              ? "Downloading map data…"
+              : needsDownload
+                ? "Download and freeze map data"
+                : "Download map data again"}
           </button>
         </div>
       </fieldset>
@@ -435,9 +568,9 @@ export function MapControls({
       </fieldset>
 
       <section className="snapshot-card" aria-label="OSM snapshot status">
-        {project.osm.snapshot ? (
+        {project.osm.snapshot && snapshotMatchesSelection && !selectionChanged ? (
           <>
-            <strong>Frozen snapshot ready</strong>
+            <strong>Map data is ready</strong>
             <span>{project.osm.snapshot.element_count.toLocaleString()} elements</span>
             <code>{project.osm.snapshot.sha256.slice(0, 16)}</code>
             <small>
@@ -447,20 +580,29 @@ export function MapControls({
               <em>{lastFetchUsedCache ? "Reused cached query" : "Downloaded new snapshot"}</em>
             )}
           </>
+        ) : selectionChanged ? (
+          <>
+            <strong>Map area changed</strong>
+            <small>Download map data again before creating the map.</small>
+          </>
         ) : (
           <>
-            <strong>No frozen snapshot</strong>
-            <small>Fetching is explicit; changing render rules never redownloads map data.</small>
+            <strong>Map data has not been downloaded</strong>
+            <small>Download and freeze the selected area before creating the map.</small>
           </>
         )}
       </section>
       <button
         className="primary-button full"
         type="button"
-        disabled={busy || !project.osm.snapshot}
+        disabled={busy || needsDownload}
         onClick={onGenerate}
       >
-        {busy ? "Generating map…" : "Generate map and plan"}
+        {busy
+          ? "Generating map…"
+          : needsDownload
+            ? "Download map data first"
+            : "Generate map and plan"}
       </button>
     </>
   );

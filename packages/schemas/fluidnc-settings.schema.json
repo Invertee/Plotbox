@@ -15,12 +15,40 @@
       "title": "Host",
       "type": "string"
     },
+    "pen_down_z_mm": {
+      "default": -5.0,
+      "maximum": 100.0,
+      "minimum": -100.0,
+      "title": "Pen Down Z Mm",
+      "type": "number"
+    },
+    "pen_up_z_mm": {
+      "default": 0.0,
+      "maximum": 100.0,
+      "minimum": -100.0,
+      "title": "Pen Up Z Mm",
+      "type": "number"
+    },
     "port": {
       "default": 81,
       "maximum": 65535,
       "minimum": 1,
       "title": "Port",
       "type": "integer"
+    },
+    "safe_z_max_mm": {
+      "default": 0.0,
+      "maximum": 100.0,
+      "minimum": -100.0,
+      "title": "Safe Z Max Mm",
+      "type": "number"
+    },
+    "safe_z_min_mm": {
+      "default": -10.0,
+      "maximum": 100.0,
+      "minimum": -100.0,
+      "title": "Safe Z Min Mm",
+      "type": "number"
     },
     "schema_version": {
       "const": 1,

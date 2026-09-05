@@ -21,6 +21,8 @@ interface CanvasViewerProps {
   rasterPreview: RasterPreview | null;
   showTravel: boolean;
   overprint: boolean;
+  renderToken: number;
+  onRendered: (token: number) => void;
 }
 
 const WIDTH = 900;
@@ -53,6 +55,8 @@ export function CanvasViewer({
   rasterPreview,
   showTravel,
   overprint,
+  renderToken,
+  onRendered,
 }: CanvasViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [transform, setTransform] = useState(() => fitTransform(page, WIDTH, HEIGHT));
@@ -152,6 +156,24 @@ export function CanvasViewer({
         context.strokeStyle = layer.preview_color;
         context.lineWidth = Math.max(1, transform.scale * 0.35);
         for (const path of layer.paths) {
+          if (path.metadata.mark_kind === "pen-dot") {
+            const first = path.commands[0];
+            if (first?.kind === "move") {
+              const center = pageToCanvas(first.point, page, transform);
+              const diameter = Number(path.metadata.dot_diameter_mm ?? 0);
+              context.beginPath();
+              context.arc(
+                center.x,
+                center.y,
+                Math.max(1, (diameter * transform.scale) / 2),
+                0,
+                Math.PI * 2,
+              );
+              context.fillStyle = layer.preview_color;
+              context.fill();
+            }
+            continue;
+          }
           context.beginPath();
           for (const command of path.commands) {
             if (command.kind === "close") {
@@ -198,7 +220,23 @@ export function CanvasViewer({
         context.strokeStyle = plotPass.preview_color;
         context.lineWidth = Math.max(1, transform.scale * 0.32);
         for (const path of plotPass.ordered_paths) {
-          tracePoints(context, path.points, page, transform);
+          if (path.kind === "dot") {
+            const dot = path.points[0];
+            if (!dot) continue;
+            const center = pageToCanvas(dot, page, transform);
+            context.beginPath();
+            context.arc(
+              center.x,
+              center.y,
+              Math.max(1, ((path.dot_diameter_mm ?? 0) * transform.scale) / 2),
+              0,
+              Math.PI * 2,
+            );
+            context.fillStyle = plotPass.preview_color;
+            context.fill();
+          } else {
+            tracePoints(context, path.points, page, transform);
+          }
         }
       }
     }
@@ -210,6 +248,13 @@ export function CanvasViewer({
         context.lineWidth = segment.pen_down ? 1.4 : 1;
         context.setLineDash(segment.pen_down ? [] : [5, 5]);
         tracePoints(context, [segment.start, segment.end], page, transform);
+      }
+      for (const dot of reconstructed.reconstructed_toolpath.draw_dots) {
+        const center = pageToCanvas(dot, page, transform);
+        context.beginPath();
+        context.arc(center.x, center.y, 2, 0, Math.PI * 2);
+        context.fillStyle = "#d4512a";
+        context.fill();
       }
       context.setLineDash([]);
     }
@@ -225,6 +270,12 @@ export function CanvasViewer({
     showTravel,
     transform,
   ]);
+
+  useEffect(() => {
+    if (renderToken === 0) return;
+    const frame = window.requestAnimationFrame(() => onRendered(renderToken));
+    return () => window.cancelAnimationFrame(frame);
+  }, [onRendered, renderToken]);
 
   return (
     <div className="viewer-shell">

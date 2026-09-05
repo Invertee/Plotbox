@@ -9,6 +9,7 @@
         "config",
         "limits",
         "hold",
+        "alarm_reset",
         "home",
         "jog",
         "pen_test",

@@ -1,0 +1,61 @@
+{
+  "additionalProperties": false,
+  "description": "Result of delivering one already-validated program to the controller.\n\n``success`` means every command was acknowledged by FluidNC.  It intentionally does\nnot claim that the physical motion has finished: an accepted program can still be\nrunning, paused at an M0, or stopped later by the controller.",
+  "properties": {
+    "accepted_command_count": {
+      "title": "Accepted Command Count",
+      "type": "integer"
+    },
+    "command_count": {
+      "title": "Command Count",
+      "type": "integer"
+    },
+    "controller_state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Controller State"
+    },
+    "filename": {
+      "title": "Filename",
+      "type": "string"
+    },
+    "response_lines": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Response Lines",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sha256": {
+      "title": "Sha256",
+      "type": "string"
+    },
+    "success": {
+      "title": "Success",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "filename",
+    "sha256",
+    "success",
+    "command_count",
+    "accepted_command_count",
+    "response_lines"
+  ],
+  "title": "FluidNCProgramResult",
+  "type": "object"
+}

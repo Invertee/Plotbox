@@ -15,6 +15,15 @@ uart1:
   baud: 115200
   mode: 8N1
 
+# FYSETC E4 onboard microSD card over the ESP32's default SPI bus.
+spi:
+  miso_pin: gpio.19
+  mosi_pin: gpio.23
+  sck_pin: gpio.18
+
+sdcard:
+  cs_pin: gpio.5
+
 kinematics:
   corexy: {}
 
@@ -23,15 +32,18 @@ axes:
   x:
     steps_per_mm: 80.000        
     # Standard for GT2 belt with 20-tooth pulley. Change to 100 if 16-tooth.
-    max_rate_mm_per_min: 12000.000 
+    max_rate_mm_per_min: 15000.000 
     # 200 mm/s mapping speed
     acceleration_mm_per_sec2: 1500.000
-    max_travel_mm: 850.000
+    # The far-end X switch triggers at about 800.7 mm. Keep a 10 mm margin so
+    # soft limits reject moves before the physical hard limit is reached.
+    max_travel_mm: 790.000
     # Refuse commanded moves beyond the configured machine range.
     soft_limits: true
     homing:
       # Home X and Y in separate cycles because this is a CoreXY machine.
       cycle: 2
+      mpos_mm: 0.000
       positive_direction: false   
       # false = homes toward minimum (0). Change to true if it homes to max.
       seek_mm_per_min: 4000.000
@@ -57,12 +69,15 @@ axes:
 
   y:
     steps_per_mm: 80.000
-    max_rate_mm_per_min: 12000.000
+    max_rate_mm_per_min: 15000.000
     acceleration_mm_per_sec2: 1500.000
-    max_travel_mm: 850.000
+    # The far-end Y switch triggers at about 760.8 mm. Keep a 10 mm margin so
+    # soft limits reject moves before the physical hard limit is reached.
+    max_travel_mm: 750.000
     soft_limits: true
     homing:
       cycle: 3
+      mpos_mm: 0.000
       positive_direction: false
       seek_mm_per_min: 4000.000
       feed_mm_per_min: 1000.000
@@ -88,8 +103,13 @@ axes:
     # Faster pen lift/travel; test this with the pen clear of the work.
     max_rate_mm_per_min: 10000.000
     acceleration_mm_per_sec2: 2400.000
-    max_travel_mm: 10.000        
+    max_travel_mm: 100.000        
     # Caps "100%" as the ceiling limit
+    homing:
+      # Z has no limit switch in this configuration; assign its known position
+      # during $H without physically moving the axis.
+      cycle: -1
+      mpos_mm: 0.000
     motor0:
       tmc_2209:
         uart_num: 1
@@ -101,13 +121,16 @@ axes:
         # Lower current for a small pancake motor to prevent overheating
         hold_amps: 0.250
         homing_amps: 0.500
-        microsteps: 16            
+        microsteps: 8            
         # Lower for higher torque, reduces smoothness
         run_mode: StealthChop
 
 # Dashboard macros. FluidNC's Z range is -10..0, so keep every target inside
 # that configured range. '&' separates commands within one macro line.
 macros:
+  # FluidNC's Grbl homing-enable setting is stored separately from the YAML.
+  # Set it automatically at startup so $H is accepted after a reboot.
+  startup_line0: $22=1
   macro0: G90&G0Z0
   macro1: G90&G0Z-2.5
   macro2: G90&G0Z-5

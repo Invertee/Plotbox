@@ -28,7 +28,6 @@ class FluidNCCommissioningTestRequest(StrictModel):
     """Validated parameters for one fixed, bounded machine calibration pattern."""
 
     test_id: FluidNCCommissioningTestId
-    confirmed: bool = False
     origin_x_mm: float = Field(default=20.0, ge=-COORDINATE_LIMIT_MM, le=COORDINATE_LIMIT_MM)
     origin_y_mm: float = Field(default=20.0, ge=-COORDINATE_LIMIT_MM, le=COORDINATE_LIMIT_MM)
     width_mm: float = Field(default=100.0, gt=1.0, le=180.0)
@@ -81,9 +80,6 @@ class FluidNCCommissioningTestRequest(StrictModel):
 def build_commissioning_test_frames(
     request: FluidNCCommissioningTestRequest,
 ) -> tuple[list[str], list[str]]:
-    if not request.confirmed:
-        raise ValueError("commissioning tests require explicit motion confirmation")
-
     commands = [
         "G21",
         "G90",
@@ -339,7 +335,7 @@ def _stroke(
     commands.extend(_xy_draw(x, y, chosen_feed) for x, y in points[1:])
     commands.append(_z_move(request.z_up_mm, chosen_feed))
     if pre_down_delay_ms:
-        commands.insert(1, f"G4 P{pre_down_delay_ms}")
+        commands.insert(1, f"G4 P{_number(pre_down_delay_ms / 1000)}")
     return commands
 
 

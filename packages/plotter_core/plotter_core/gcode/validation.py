@@ -44,22 +44,27 @@ def _compare_paths(
 ) -> tuple[float, list[ValidationIssue]]:
     issues: list[ValidationIssue] = []
     maximum_error = 0.0
-    if len(expected_paths) != len(reconstructed.draw_paths):
+    expected_strokes = [
+        (index, path) for index, path in enumerate(expected_paths) if path.kind == "stroke"
+    ]
+    expected_dots = [
+        (index, path) for index, path in enumerate(expected_paths) if path.kind == "dot"
+    ]
+    if len(expected_strokes) != len(reconstructed.draw_paths):
         issues.append(
             ValidationIssue(
                 code="path-count-mismatch",
                 message=(
-                    f"planned {len(expected_paths)} draw paths but reconstructed "
+                    f"planned {len(expected_strokes)} draw paths but reconstructed "
                     f"{len(reconstructed.draw_paths)}"
                 ),
                 blocking=True,
             )
         )
-    for path_index, (expected, actual) in enumerate(
-        zip_longest(expected_paths, reconstructed.draw_paths)
-    ):
-        if expected is None or actual is None:
+    for expected_item, actual in zip_longest(expected_strokes, reconstructed.draw_paths):
+        if expected_item is None or actual is None:
             continue
+        path_index, expected = expected_item
         expected_points = [_export_point(point, profile) for point in expected.points]
         if len(expected_points) != len(actual):
             issues.append(
@@ -83,6 +88,32 @@ def _compare_paths(
                 ValidationIssue(
                     code="xy-round-trip-mismatch",
                     message=f"path {path_index} differs from the PlotPlan beyond tolerance",
+                    blocking=True,
+                )
+            )
+    if len(expected_dots) != len(reconstructed.draw_dots):
+        issues.append(
+            ValidationIssue(
+                code="dot-count-mismatch",
+                message=(
+                    f"planned {len(expected_dots)} pen dots but reconstructed "
+                    f"{len(reconstructed.draw_dots)}"
+                ),
+                blocking=True,
+            )
+        )
+    for expected_item, actual in zip_longest(expected_dots, reconstructed.draw_dots):
+        if expected_item is None or actual is None:
+            continue
+        path_index, expected = expected_item
+        expected_point = _export_point(expected.points[0], profile)
+        error = distance(expected_point, actual)
+        maximum_error = max(maximum_error, error)
+        if error > tolerance:
+            issues.append(
+                ValidationIssue(
+                    code="dot-round-trip-mismatch",
+                    message=f"dot path {path_index} differs from the PlotPlan beyond tolerance",
                     blocking=True,
                 )
             )

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "./api";
 import { nearestPen } from "./color";
@@ -11,6 +11,7 @@ import { ProjectList } from "./ProjectList";
 import type {
   DesignDocument,
   ExportBundle,
+  FluidNCProgramResult,
   GcodeProgram,
   JobState,
   MachineProfile,
@@ -33,6 +34,7 @@ type Operation =
   | "searching"
   | "planning"
   | "exporting"
+  | "sending"
   | "reopening"
   | "deleting";
 type ToolWorkspace = "artwork" | "image" | "map";
@@ -44,6 +46,46 @@ function errorMessage(error: unknown): string {
 
 function shortHash(value: string | undefined): string {
   return value ? value.slice(0, 12) : "—";
+}
+
+function readableJobStage(stage: string): string {
+  const labels: Record<string, string> = {
+    queued: "Waiting to start",
+    starting: "Starting",
+    "cache-lookup": "Checking saved work",
+    "raster-cache-lookup": "Checking saved image work",
+    "classify-osm": "Turning map data into lines",
+    "preparing-plot-plan": "Preparing plot plan",
+    "planning-toolpath": "Planning pen paths",
+    "rendering-toolpath": "Drawing plot preview",
+    complete: "Finished",
+  };
+  return labels[stage] ?? stage.replaceAll("-", " ");
+}
+
+function JobProgress({ job, onCancel }: { job: JobState; onCancel: () => void }) {
+  const isActive = ["queued", "running"].includes(job.status);
+  const itemCount =
+    job.completed_items !== null && job.total_items !== null
+      ? `${job.completed_items.toLocaleString()} of ${job.total_items.toLocaleString()} items`
+      : null;
+  return (
+    <div className="job-progress" aria-live="polite" aria-label="Work progress">
+      <div>
+        <strong>{readableJobStage(job.stage)}</strong>
+        <span>{Math.round(job.progress * 100)}%</span>
+      </div>
+      <progress aria-label="Work complete" value={job.progress} max={1} />
+      {itemCount && <small>{itemCount}</small>}
+      {isActive && <small>Updates as the work continues.</small>}
+      {isActive && (
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      )}
+      {job.cache_hit && <small>Used saved work for this request.</small>}
+    </div>
+  );
 }
 
 function downloadArchive(archiveBase64: string, filename: string): void {
@@ -411,10 +453,12 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="hatch">Hatch</option>
           <option value="crosshatch">Crosshatch</option>
           <option value="squiggle">Squiggle scanlines</option>
+          <option value="circular-scribble">Circular scribble</option>
           <option value="tone-contour">Tone contours</option>
           <option value="color-outline">Color region outline</option>
           <option value="color-hatch">Color region hatch</option>
           <option value="dither">Dithered halftone</option>
+          <option value="stipple">Stippled dots</option>
         </select>
       </label>
       <label>
@@ -618,6 +662,68 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </div>
         </>
       )}
+      {settings.algorithm === "circular-scribble" && (
+        <>
+          <div className="field-row">
+            <label>
+              Row spacing mm
+              <input
+                aria-label="Circular scribble row spacing"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={settings.squiggle_spacing_mm}
+                onChange={(event) => update({ squiggle_spacing_mm: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Largest loop mm
+              <input
+                aria-label="Circular scribble largest loop"
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={settings.squiggle_amplitude_mm}
+                onChange={(event) => update({ squiggle_amplitude_mm: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              Light-area loop spacing mm
+              <input
+                aria-label="Circular scribble light loop spacing"
+                type="number"
+                min="0.2"
+                step="0.1"
+                value={settings.squiggle_wavelength_mm}
+                onChange={(event) => update({ squiggle_wavelength_mm: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Dark areas change
+              <select
+                aria-label="Circular scribble tone modulation"
+                value={settings.squiggle_modulation}
+                onChange={(event) =>
+                  update({
+                    squiggle_modulation: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["squiggle_modulation"],
+                  })
+                }
+              >
+                <option value="amplitude">Loop size</option>
+                <option value="frequency">Loop spacing</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+          </div>
+          <p className="field-help">
+            Draws one continuous line. Dark areas use tighter, overlapping loops without lifting the
+            pen.
+          </p>
+        </>
+      )}
       {settings.algorithm === "tone-contour" && (
         <label>
           Contour levels
@@ -648,6 +754,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               >
                 <option value="dots">Dots</option>
                 <option value="crosses">Crosses</option>
+                <option value="pen-dots">Pen-tip dots</option>
               </select>
             </label>
             <label>
@@ -680,49 +787,81 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
                 onChange={(event) => update({ dither_pass_count: Number(event.target.value) })}
               />
             </label>
-            <label>
-              Grid spacing mm
-              <input
-                aria-label="Dither spacing"
-                type="number"
-                min="0.1"
-                max="50"
-                step="0.1"
-                value={settings.dither_spacing_mm}
-                onChange={(event) => update({ dither_spacing_mm: Number(event.target.value) })}
-              />
-            </label>
+            {settings.dither_mark === "pen-dots" ? (
+              <label>
+                Clear gap between dots mm
+                <input
+                  aria-label="Dither dot gap"
+                  type="number"
+                  min="0"
+                  max="50"
+                  step="0.05"
+                  value={settings.dither_dot_gap_mm}
+                  onChange={(event) => update({ dither_dot_gap_mm: Number(event.target.value) })}
+                />
+              </label>
+            ) : (
+              <label>
+                Grid spacing mm
+                <input
+                  aria-label="Dither spacing"
+                  type="number"
+                  min="0.1"
+                  max="50"
+                  step="0.1"
+                  value={settings.dither_spacing_mm}
+                  onChange={(event) => update({ dither_spacing_mm: Number(event.target.value) })}
+                />
+              </label>
+            )}
           </div>
-          <div className="field-row">
+          {settings.dither_mark === "pen-dots" ? (
             <label>
-              Minimum mark mm
+              Pen-tip thickness mm
               <input
-                aria-label="Dither minimum mark size"
-                type="number"
-                min="0"
-                max="25"
-                step="0.05"
-                value={settings.dither_min_mark_size_mm}
-                onChange={(event) =>
-                  update({ dither_min_mark_size_mm: Number(event.target.value) })
-                }
-              />
-            </label>
-            <label>
-              Maximum mark mm
-              <input
-                aria-label="Dither maximum mark size"
+                aria-label="Dither pen thickness"
                 type="number"
                 min="0.05"
                 max="25"
                 step="0.05"
-                value={settings.dither_max_mark_size_mm}
+                value={settings.dither_pen_thickness_mm}
                 onChange={(event) =>
-                  update({ dither_max_mark_size_mm: Number(event.target.value) })
+                  update({ dither_pen_thickness_mm: Number(event.target.value) })
                 }
               />
             </label>
-          </div>
+          ) : (
+            <div className="field-row">
+              <label>
+                Minimum mark mm
+                <input
+                  aria-label="Dither minimum mark size"
+                  type="number"
+                  min="0"
+                  max="25"
+                  step="0.05"
+                  value={settings.dither_min_mark_size_mm}
+                  onChange={(event) =>
+                    update({ dither_min_mark_size_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Maximum mark mm
+                <input
+                  aria-label="Dither maximum mark size"
+                  type="number"
+                  min="0.05"
+                  max="25"
+                  step="0.05"
+                  value={settings.dither_max_mark_size_mm}
+                  onChange={(event) =>
+                    update({ dither_max_mark_size_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          )}
           <div className="field-row">
             <label>
               Dither contrast
@@ -775,8 +914,209 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             )}
           </div>
           <p className="field-help">
-            Ordered dithering varies mark density and size from the processed image. Contrast bands
-            create separate logical layers for different pens; assign them in Pen passes.
+            Ordered dithering varies mark density from the processed image. Pen-tip dots lower and
+            lift at each selected cell; their pitch is pen thickness plus the clear gap. Contrast
+            bands create separate logical layers for different pens; assign them in Pen passes.
+          </p>
+        </>
+      )}
+      {settings.algorithm === "stipple" && (
+        <>
+          <div className="field-row">
+            <label>
+              Dot layout
+              <select
+                aria-label="Stipple dot layout"
+                value={settings.stipple_layout}
+                onChange={(event) =>
+                  update({
+                    stipple_layout: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["stipple_layout"],
+                  })
+                }
+              >
+                <option value="natural">Natural dots</option>
+                <option value="even">Even dots</option>
+              </select>
+            </label>
+            <label>
+              Colours
+              <select
+                aria-label="Stipple colour mode"
+                value={settings.stipple_color_mode}
+                onChange={(event) =>
+                  update({
+                    stipple_color_mode: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["stipple_color_mode"],
+                  })
+                }
+              >
+                <option value="single">One pen</option>
+                <option value="separate">Separate source colours</option>
+              </select>
+            </label>
+          </div>
+          {settings.stipple_color_mode === "separate" && (
+            <div className="field-row">
+              <label>
+                Colour passes
+                <input
+                  aria-label="Stipple colour passes"
+                  type="number"
+                  min="2"
+                  max="8"
+                  value={settings.color_count}
+                  onChange={(event) => update({ color_count: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Ignore near-white
+                <input
+                  aria-label="Stipple colour background threshold"
+                  type="number"
+                  min="0"
+                  max="255"
+                  value={settings.color_background_threshold}
+                  onChange={(event) =>
+                    update({ color_background_threshold: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          )}
+          <div className="field-row">
+            <label>
+              Dot type
+              <select
+                aria-label="Stipple dot type"
+                value={settings.stipple_mark}
+                onChange={(event) =>
+                  update({
+                    stipple_mark: event.target
+                      .value as ProjectRecipe["raster_vectorize"]["stipple_mark"],
+                  })
+                }
+              >
+                <option value="pen-dots">Pen-tip dots</option>
+                <option value="drawn-dots">Drawn circles</option>
+              </select>
+            </label>
+            {settings.stipple_mark === "pen-dots" ? (
+              <label>
+                Clear gap mm
+                <input
+                  aria-label="Stipple dot gap"
+                  type="number"
+                  min="0"
+                  max="50"
+                  step="0.05"
+                  value={settings.stipple_dot_gap_mm}
+                  onChange={(event) => update({ stipple_dot_gap_mm: Number(event.target.value) })}
+                />
+              </label>
+            ) : (
+              <label>
+                Dot spacing mm
+                <input
+                  aria-label="Stipple spacing"
+                  type="number"
+                  min="0.1"
+                  max="50"
+                  step="0.1"
+                  value={settings.stipple_spacing_mm}
+                  onChange={(event) => update({ stipple_spacing_mm: Number(event.target.value) })}
+                />
+              </label>
+            )}
+          </div>
+          {settings.stipple_mark === "pen-dots" ? (
+            <label>
+              Pen-tip thickness mm
+              <input
+                aria-label="Stipple pen thickness"
+                type="number"
+                min="0.05"
+                max="25"
+                step="0.05"
+                value={settings.stipple_pen_thickness_mm}
+                onChange={(event) =>
+                  update({ stipple_pen_thickness_mm: Number(event.target.value) })
+                }
+              />
+            </label>
+          ) : (
+            <div className="field-row">
+              <label>
+                Smallest dot mm
+                <input
+                  aria-label="Stipple minimum dot size"
+                  type="number"
+                  min="0"
+                  max="25"
+                  step="0.05"
+                  value={settings.stipple_min_dot_size_mm}
+                  onChange={(event) =>
+                    update({ stipple_min_dot_size_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Largest dot mm
+                <input
+                  aria-label="Stipple maximum dot size"
+                  type="number"
+                  min="0.05"
+                  max="25"
+                  step="0.05"
+                  value={settings.stipple_max_dot_size_mm}
+                  onChange={(event) =>
+                    update({ stipple_max_dot_size_mm: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          )}
+          <div className="field-row">
+            <label>
+              Contrast
+              <input
+                aria-label="Stipple contrast"
+                type="number"
+                min="0.1"
+                max="4"
+                step="0.1"
+                value={settings.stipple_contrast}
+                onChange={(event) => update({ stipple_contrast: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Gamma
+              <input
+                aria-label="Stipple gamma"
+                type="number"
+                min="0.1"
+                max="5"
+                step="0.1"
+                value={settings.stipple_gamma}
+                onChange={(event) => update({ stipple_gamma: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <label>
+            Minimum darkness
+            <input
+              aria-label="Stipple minimum darkness"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value={settings.stipple_threshold}
+              onChange={(event) => update({ stipple_threshold: Number(event.target.value) })}
+            />
+          </label>
+          <p className="field-help">
+            Stippling makes dots more common in dark parts of the image. Separate source colours
+            creates one layer and pen pass for each colour, ready to assign in Pen passes.
           </p>
         </>
       )}
@@ -820,15 +1160,22 @@ export function App() {
   const [appArea, setAppArea] = useState<AppArea>("projects");
   const [operation, setOperation] = useState<Operation>("idle");
   const [project, setProject] = useState<ProjectRecipe | null>(null);
+  const projectRef = useRef<ProjectRecipe | null>(null);
+  projectRef.current = project;
   const [modes, setModes] = useState<ModeManifest[]>([]);
   const [recentProjects, setRecentProjects] = useState<ProjectRecipe[]>([]);
   const [design, setDesign] = useState<DesignDocument | null>(null);
   const [plan, setPlan] = useState<PlotPlan | null>(null);
   const [profile, setProfile] = useState<MachineProfile | null>(null);
   const [bundle, setBundle] = useState<ExportBundle | null>(null);
+  const [sendResult, setSendResult] = useState<FluidNCProgramResult | null>(null);
+  const [selectedProgramFilename, setSelectedProgramFilename] = useState("combined.nc");
   const [svgBundle, setSvgBundle] = useState<SvgExportBundle | null>(null);
   const [rasterPreview, setRasterPreview] = useState<RasterPreview | null>(null);
   const [activeJob, setActiveJob] = useState<JobState | null>(null);
+  const [previewRenderToken, setPreviewRenderToken] = useState(0);
+  const nextPreviewRenderToken = useRef(0);
+  const previewRenderWaiters = useRef(new Map<number, () => void>());
   const [soloPassId, setSoloPassId] = useState<string | null>(null);
   const [draggingPassIndex, setDraggingPassIndex] = useState<number | null>(null);
   const [viewerMode, setViewerMode] = useState<ViewerMode>("design");
@@ -872,6 +1219,32 @@ export function App() {
     }
   };
 
+  const waitForPreviewRender = () =>
+    new Promise<void>((resolve) => {
+      const token = ++nextPreviewRenderToken.current;
+      previewRenderWaiters.current.set(token, resolve);
+      setPreviewRenderToken(token);
+    });
+
+  const completePreviewRender = (token: number) => {
+    const resolve = previewRenderWaiters.current.get(token);
+    if (!resolve) return;
+    previewRenderWaiters.current.delete(token);
+    resolve();
+  };
+
+  const setPlanningProgress = (job: JobState, stage: string, progress: number) => {
+    setActiveJob({
+      ...job,
+      status: "running",
+      stage,
+      progress,
+      completed_items: null,
+      total_items: null,
+      finished_at: null,
+    });
+  };
+
   const createProject = (name = "A3 two-pass test") =>
     run("creating", async () => {
       const created = await api.createProject(name);
@@ -879,6 +1252,7 @@ export function App() {
       setDesign(null);
       setPlan(null);
       setBundle(null);
+      setSendResult(null);
       setSvgBundle(null);
       setRasterPreview(null);
       setActiveJob(null);
@@ -926,13 +1300,20 @@ export function App() {
       setProject(saved);
       const started = await api.startGeneration(saved.project_id, saved.mode.quality);
       setActiveJob(started);
-      const completed = await api.watchJob(started.job_id, setActiveJob);
+      const completed = await api.watchJob(started.job_id, (job) => {
+        if (job.status === "succeeded") {
+          setPlanningProgress(job, "preparing-plot-plan", 0.85);
+        } else {
+          setActiveJob(job);
+        }
+      });
       if (completed.status === "cancelled") return;
       if (completed.status !== "succeeded") {
         throw new Error(completed.error ?? `Generation ended as ${completed.status}`);
       }
       const current = await api.getProject(saved.project_id);
       const generated = await api.getDesign(saved.project_id);
+      setPlanningProgress(completed, "planning-toolpath", 0.9);
       const planned = await api.plan(saved.project_id);
       setProject(current);
       setDesign(generated);
@@ -949,6 +1330,9 @@ export function App() {
         setRasterPreview(null);
       }
       setViewerMode("toolpath");
+      setPlanningProgress(completed, "rendering-toolpath", 0.99);
+      await waitForPreviewRender();
+      setActiveJob(completed);
     });
   };
 
@@ -970,6 +1354,7 @@ export function App() {
       setDesign(null);
       setPlan(null);
       setBundle(null);
+      setSendResult(null);
       setSvgBundle(null);
       setViewerMode("design");
     });
@@ -983,6 +1368,7 @@ export function App() {
       setDesign(null);
       setPlan(null);
       setBundle(null);
+      setSendResult(null);
       setSvgBundle(null);
       setRasterPreview(null);
       setToolWorkspace("image");
@@ -990,27 +1376,27 @@ export function App() {
   };
 
   const fetchMapSnapshot = () => {
-    if (!project) return Promise.resolve();
+    const current = projectRef.current;
+    if (!current) return Promise.resolve();
     return run("uploading", async () => {
-      const saved = await api.patchProject(project.project_id, persistedChanges(project));
-      const result = await api.fetchOsmSnapshot(saved.project_id, project.osm.selection.bounds);
-      setProject({
-        ...result.project,
-        osm: {
-          ...result.project.osm,
-          features: project.osm.features,
-          render: project.osm.render,
-          selection: {
-            ...result.project.osm.selection,
-            rotation_degrees: project.osm.selection.rotation_degrees,
-            lock_mode: project.osm.selection.lock_mode,
-          },
-        },
-      });
-      setLastMapFetchUsedCache(result.cache_hit);
+      const saved = await api.patchProject(current.project_id, persistedChanges(current));
+      setProject(saved);
+      const started = await api.startOsmSnapshotDownload(
+        saved.project_id,
+        current.osm.selection.bounds,
+      );
+      setActiveJob(started);
+      const completed = await api.watchJob(started.job_id, setActiveJob);
+      if (completed.status === "cancelled") return;
+      if (completed.status !== "succeeded") {
+        throw new Error(completed.error ?? `Map download ended as ${completed.status}`);
+      }
+      setProject(await api.getProject(saved.project_id));
+      setLastMapFetchUsedCache(completed.cache_hit);
       setDesign(null);
       setPlan(null);
       setBundle(null);
+      setSendResult(null);
       setSvgBundle(null);
     });
   };
@@ -1035,6 +1421,7 @@ export function App() {
             : "artwork",
       );
       setBundle(null);
+      setSendResult(null);
       setSvgBundle(null);
       setRasterPreview(null);
       setDesign(null);
@@ -1100,7 +1487,38 @@ export function App() {
       setProject(saved);
       setPlan(planned);
       setBundle(exported);
+      setSendResult(null);
+      setSelectedProgramFilename(
+        exported.programs.some((program) => program.filename === "combined.nc")
+          ? "combined.nc"
+          : (exported.programs[0]?.filename ?? ""),
+      );
       setViewerMode("reconstruction");
+    });
+  };
+
+  const sendGcode = () => {
+    if (!project || !plan || !profile || !bundle || !selectedProgramFilename) {
+      return Promise.resolve();
+    }
+    const selectedProgram = bundle.programs.find(
+      (program) => program.filename === selectedProgramFilename,
+    );
+    if (!selectedProgram) return Promise.resolve();
+    const confirmed = window.confirm(
+      `Send ${selectedProgram.filename} to the configured FluidNC machine?\n\n` +
+        "The controller must be Idle. This queues real motion and cannot start from the current pen position yet.",
+    );
+    if (!confirmed) return Promise.resolve();
+    return run("sending", async () => {
+      const validationError = validateProfile(profile, project.page);
+      if (validationError) throw new Error(validationError);
+      const saved = await api.patchProject(project.project_id, persistedChanges(project));
+      const planned = await api.plan(saved.project_id);
+      const result = await api.sendGcode(saved.project_id, profile, selectedProgramFilename);
+      setProject(saved);
+      setPlan(planned);
+      setSendResult(result);
     });
   };
 
@@ -1123,6 +1541,7 @@ export function App() {
       setProject(saved);
       setPlan(planned);
       setBundle(null);
+      setSendResult(null);
       setSvgBundle(null);
       setViewerMode("toolpath");
     });
@@ -1601,23 +2020,31 @@ export function App() {
                 ))}
 
               {toolWorkspace === "map" && (
-                <MapControls
-                  project={project}
-                  busy={busy}
-                  lastFetchUsedCache={lastMapFetchUsedCache}
-                  places={mapPlaces}
-                  lastPlaceSearchUsedCache={lastPlaceSearchUsedCache}
-                  searchBusy={operation === "searching"}
-                  onChange={(updated) => {
-                    setDesign(null);
-                    setPlan(null);
-                    setBundle(null);
-                    setProject(updated);
-                  }}
-                  onFetch={() => void fetchMapSnapshot()}
-                  onSearch={(query) => void searchMapPlaces(query)}
-                  onGenerate={() => void generateAndPlan()}
-                />
+                <>
+                  <MapControls
+                    project={project}
+                    busy={busy}
+                    lastFetchUsedCache={lastMapFetchUsedCache}
+                    places={mapPlaces}
+                    lastPlaceSearchUsedCache={lastPlaceSearchUsedCache}
+                    searchBusy={operation === "searching"}
+                    onChange={(updated) => {
+                      setDesign(null);
+                      setPlan(null);
+                      setBundle(null);
+                      setProject(updated);
+                    }}
+                    onFetch={() => void fetchMapSnapshot()}
+                    onSearch={(query) => void searchMapPlaces(query)}
+                    onGenerate={() => void generateAndPlan()}
+                  />
+                  {activeJob && (
+                    <JobProgress
+                      job={activeJob}
+                      onCancel={() => void api.cancelJob(activeJob.job_id)}
+                    />
+                  )}
+                </>
               )}
 
               {toolWorkspace !== "map" && (
@@ -1709,19 +2136,10 @@ export function App() {
                     </button>
                   )}
                   {activeJob && (
-                    <div className="job-progress" aria-live="polite">
-                      <div>
-                        <strong>{activeJob.stage}</strong>
-                        <span>{Math.round(activeJob.progress * 100)}%</span>
-                      </div>
-                      <progress value={activeJob.progress} max={1} />
-                      {["queued", "running"].includes(activeJob.status) && (
-                        <button type="button" onClick={() => void api.cancelJob(activeJob.job_id)}>
-                          Cancel job
-                        </button>
-                      )}
-                      {activeJob.cache_hit && <small>Reused cached conversion</small>}
-                    </div>
+                    <JobProgress
+                      job={activeJob}
+                      onCancel={() => void api.cancelJob(activeJob.job_id)}
+                    />
                   )}
                 </fieldset>
               )}
@@ -1870,6 +2288,8 @@ export function App() {
                 rasterPreview={showSourceOverlay ? rasterPreview : null}
                 showTravel={showTravel}
                 overprint={showOverprint}
+                renderToken={previewRenderToken}
+                onRendered={completePreviewRender}
               />
               <div className="hash-strip">
                 <span>
@@ -2267,6 +2687,52 @@ export function App() {
                   >
                     Download .zip
                   </button>
+                  <label>
+                    Validated file to send
+                    <select
+                      aria-label="Validated file to send"
+                      value={selectedProgramFilename}
+                      disabled={busy}
+                      onChange={(event) => setSelectedProgramFilename(event.target.value)}
+                    >
+                      {bundle.programs.map((program) => (
+                        <option key={program.filename} value={program.filename}>
+                          {program.filename}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="field-help">
+                    Sent files are regenerated and round-trip validated again. The configured
+                    controller must report Idle; acceptance means queued, not physically complete.
+                  </p>
+                  <p className="field-help">
+                    Placement currently uses the machine work origin. Starting from the current pen
+                    position and calibrated work-origin selection are the next safety controls.
+                  </p>
+                  <button
+                    className="send-button"
+                    type="button"
+                    disabled={busy || !selectedProgramFilename}
+                    onClick={() => void sendGcode()}
+                  >
+                    {operation === "sending" ? "Sending to FluidNC…" : "Send to configured FluidNC"}
+                  </button>
+                  {sendResult && (
+                    <div
+                      className={sendResult.success ? "send-result" : "send-result failed"}
+                      role="status"
+                    >
+                      <strong>
+                        {sendResult.success ? "Program accepted" : "Controller rejected program"}
+                      </strong>
+                      <span>
+                        {sendResult.accepted_command_count} / {sendResult.command_count} commands
+                        accepted
+                      </span>
+                      <code>{shortHash(sendResult.sha256)}</code>
+                    </div>
+                  )}
                   <ul>
                     {bundle.manifest.entries.map((entry) => (
                       <li key={entry.filename}>

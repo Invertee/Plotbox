@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
-import type { MachineProfile, ModeManifest, ProjectRecipe } from "./types";
+import { api } from "./api";
+import type { JobState, MachineProfile, ModeManifest, ProjectRecipe } from "./types";
 
 const project: ProjectRecipe = {
   schema_version: 1,
@@ -87,12 +88,25 @@ const project: ProjectRecipe = {
     dither_pass_mode: "single",
     dither_pass_count: 4,
     dither_spacing_mm: 2,
+    dither_pen_thickness_mm: 0.5,
+    dither_dot_gap_mm: 0.5,
     dither_min_mark_size_mm: 0.25,
     dither_max_mark_size_mm: 1.8,
     dither_contrast: 1,
     dither_gamma: 1,
     dither_threshold: 0.02,
     dither_angle_degrees: 45,
+    stipple_layout: "natural",
+    stipple_color_mode: "single",
+    stipple_mark: "pen-dots",
+    stipple_spacing_mm: 1.8,
+    stipple_pen_thickness_mm: 0.5,
+    stipple_dot_gap_mm: 0.4,
+    stipple_min_dot_size_mm: 0.25,
+    stipple_max_dot_size_mm: 1.5,
+    stipple_contrast: 1,
+    stipple_gamma: 1,
+    stipple_threshold: 0.02,
   },
   osm: {
     selection: {
@@ -248,6 +262,7 @@ function response(value: unknown, status = 200): Response {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -331,17 +346,34 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("Raster vectorization algorithm")).toHaveValue("edge");
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "squiggle");
     expect(screen.getByLabelText("Raster squiggle wavelength")).toHaveValue(5);
+    await user.selectOptions(
+      screen.getByLabelText("Raster vectorization algorithm"),
+      "circular-scribble",
+    );
+    expect(screen.getByLabelText("Circular scribble row spacing")).toHaveValue(1.5);
+    expect(screen.getByLabelText("Circular scribble largest loop")).toHaveValue(1);
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "dither");
     expect(screen.getByLabelText("Dither mark shape")).toHaveValue("dots");
     await user.selectOptions(screen.getByLabelText("Dither mark shape"), "crosses");
     await user.selectOptions(screen.getByLabelText("Dither pass split"), "contrast-bands");
     expect(screen.getByLabelText("Dither tone passes")).toHaveValue(4);
     expect(screen.getByLabelText("Dither cross angle")).toBeVisible();
+    await user.selectOptions(screen.getByLabelText("Dither mark shape"), "pen-dots");
+    expect(screen.getByLabelText("Dither pen thickness")).toHaveValue(0.5);
+    expect(screen.getByLabelText("Dither dot gap")).toHaveValue(0.5);
+    await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "stipple");
+    expect(screen.getByLabelText("Stipple dot layout")).toHaveValue("natural");
+    expect(screen.getByLabelText("Stipple colour mode")).toHaveValue("single");
+    expect(screen.getByLabelText("Stipple pen thickness")).toHaveValue(0.5);
+    await user.selectOptions(screen.getByLabelText("Stipple colour mode"), "separate");
+    expect(screen.getByLabelText("Stipple colour passes")).toHaveValue(2);
     expect(screen.getByRole("button", { name: "Preview raster preprocessing" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Vectorize and plan" })).toBeEnabled();
   });
 
   it("switches to focused mapping tools and freezes an explicit OSM snapshot", async () => {
+    let requestedSnapshotBounds: ProjectRecipe["osm"]["selection"]["bounds"] | null = null;
+    let fetchedProject: ProjectRecipe | null = null;
     const mapProject: ProjectRecipe = {
       ...project,
       revision: 3,
@@ -362,6 +394,30 @@ describe("workspace shell", () => {
         },
       },
     };
+    const downloadJob: JobState = {
+      schema_version: 1,
+      job_id: "map-download-job",
+      project_id: project.project_id,
+      project_revision: 3,
+      result_project_revision: null,
+      operation: "download_map",
+      stage: "queued",
+      status: "queued",
+      quality: "export",
+      progress: 0,
+      completed_items: null,
+      total_items: null,
+      input_hash: "a".repeat(64),
+      result_hash: null,
+      cache_hit: false,
+      cancel_requested: false,
+      warnings: [],
+      timing: { queued_ms: 0, run_ms: 0 },
+      error: null,
+      created_at: "2026-07-29T12:00:00Z",
+      started_at: null,
+      finished_at: null,
+    };
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const path =
         typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -377,9 +433,25 @@ describe("workspace shell", () => {
         return Promise.resolve(response({ ...project, mode: mapProject.mode }));
       }
       if (path === "/api/projects/ui-project/osm/snapshot") {
-        return Promise.resolve(
-          response({ project: mapProject, snapshot: mapProject.osm.snapshot, cache_hit: false }),
-        );
+        if (typeof init?.body !== "string") {
+          return Promise.reject(new Error("Map snapshot body must be JSON text"));
+        }
+        const requestedBounds = (
+          JSON.parse(init.body) as { bounds: ProjectRecipe["osm"]["selection"]["bounds"] }
+        ).bounds;
+        requestedSnapshotBounds = requestedBounds;
+        fetchedProject = {
+          ...mapProject,
+          osm: {
+            ...mapProject.osm,
+            selection: { ...mapProject.osm.selection, bounds: requestedBounds },
+            snapshot: { ...mapProject.osm.snapshot!, bounds: requestedBounds },
+          },
+        };
+        return Promise.resolve(response(downloadJob, 202));
+      }
+      if (path === "/api/projects/ui-project") {
+        return Promise.resolve(response(fetchedProject ?? mapProject));
       }
       if (path === "/api/osm/places?query=Cambridge") {
         return Promise.resolve(
@@ -400,6 +472,27 @@ describe("workspace shell", () => {
       return Promise.reject(new Error(`unexpected request: ${path}`));
     });
     vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(api, "watchJob").mockImplementation((_jobId, onState) => {
+      onState({
+        ...downloadJob,
+        status: "running",
+        stage: "downloading map data",
+        progress: 0.5,
+        completed_items: 2,
+        total_items: 4,
+      });
+      const complete = {
+        ...downloadJob,
+        status: "succeeded" as const,
+        stage: "complete",
+        progress: 1,
+        result_project_revision: 4,
+        result_hash: "b".repeat(64),
+        finished_at: "2026-07-29T12:00:01Z",
+      };
+      onState(complete);
+      return Promise.resolve(complete);
+    });
     const user = userEvent.setup();
     render(<App />);
 
@@ -425,11 +518,19 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("Map centre latitude")).toHaveValue(52.2053);
     expect(screen.getByLabelText("Map centre longitude")).toHaveValue(0.1218);
     expect(screen.getByText("New search results")).toBeVisible();
+    expect(screen.getByText("Map area changed")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Download map data first" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Download and freeze map data" }));
-    expect(await screen.findByText("Frozen snapshot ready")).toBeVisible();
+    expect(await screen.findByText("Map data is ready")).toBeVisible();
     expect(screen.getByText("42 elements")).toBeVisible();
     expect(screen.getByText("Downloaded new snapshot")).toBeVisible();
+    expect(screen.getByText("Finished")).toBeVisible();
     expect(screen.getByRole("button", { name: "Generate map and plan" })).toBeEnabled();
+    expect(requestedSnapshotBounds).not.toBeNull();
+    if (!requestedSnapshotBounds) throw new Error("Map request bounds were not captured");
+    const capturedBounds = requestedSnapshotBounds as ProjectRecipe["osm"]["selection"]["bounds"];
+    expect((capturedBounds.south + capturedBounds.north) / 2).toBeCloseTo(52.2053, 5);
+    expect((capturedBounds.west + capturedBounds.east) / 2).toBeCloseTo(0.1218, 5);
   });
 
   it("renames, opens, returns to, and deletes projects from the project list", async () => {
@@ -537,18 +638,10 @@ describe("workspace shell", () => {
     expect(await screen.findByLabelText("FluidNC hostname")).toHaveValue("fluidnc.local");
     await user.click(screen.getByRole("button", { name: "Test connection" }));
     expect(await screen.findByText("LATEST CONTROLLER RESPONSE")).toBeVisible();
-    expect(screen.getByText("Idle")).toBeVisible();
+    expect(screen.getAllByText("Idle")[0]).toBeVisible();
 
-    expect(screen.getByRole("button", { name: "Run guarded jog" })).toBeDisabled();
-    await user.click(
-      screen.getByLabelText("I have cleared the selected axis and can stop the machine."),
-    );
     await user.click(screen.getByRole("button", { name: "Run guarded jog" }));
-    await waitFor(() =>
-      expect(actionRequests.some((body) => body.action === "jog" && body.confirmed === true)).toBe(
-        true,
-      ),
-    );
+    await waitFor(() => expect(actionRequests.some((body) => body.action === "jog")).toBe(true));
 
     await user.clear(screen.getByLabelText("Measured calibration distance"));
     await user.type(screen.getByLabelText("Measured calibration distance"), "98");

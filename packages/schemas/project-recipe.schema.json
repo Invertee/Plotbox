@@ -790,10 +790,12 @@
             "hatch",
             "crosshatch",
             "squiggle",
+            "circular-scribble",
             "tone-contour",
             "color-outline",
             "color-hatch",
-            "dither"
+            "dither",
+            "stipple"
           ],
           "title": "Algorithm",
           "type": "string"
@@ -879,6 +881,13 @@
           "title": "Dither Contrast",
           "type": "number"
         },
+        "dither_dot_gap_mm": {
+          "default": 0.5,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Dither Dot Gap Mm",
+          "type": "number"
+        },
         "dither_gamma": {
           "default": 1.0,
           "maximum": 5,
@@ -890,7 +899,8 @@
           "default": "dots",
           "enum": [
             "dots",
-            "crosses"
+            "crosses",
+            "pen-dots"
           ],
           "title": "Dither Mark",
           "type": "string"
@@ -924,6 +934,13 @@
           ],
           "title": "Dither Pass Mode",
           "type": "string"
+        },
+        "dither_pen_thickness_mm": {
+          "default": 0.5,
+          "exclusiveMinimum": 0,
+          "maximum": 25,
+          "title": "Dither Pen Thickness Mm",
+          "type": "number"
         },
         "dither_spacing_mm": {
           "default": 2.0,
@@ -1015,6 +1032,89 @@
           "exclusiveMinimum": 0,
           "maximum": 100,
           "title": "Squiggle Wavelength Mm",
+          "type": "number"
+        },
+        "stipple_color_mode": {
+          "default": "single",
+          "enum": [
+            "single",
+            "separate"
+          ],
+          "title": "Stipple Color Mode",
+          "type": "string"
+        },
+        "stipple_contrast": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 4,
+          "title": "Stipple Contrast",
+          "type": "number"
+        },
+        "stipple_dot_gap_mm": {
+          "default": 0.4,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Stipple Dot Gap Mm",
+          "type": "number"
+        },
+        "stipple_gamma": {
+          "default": 1.0,
+          "maximum": 5,
+          "minimum": 0.1,
+          "title": "Stipple Gamma",
+          "type": "number"
+        },
+        "stipple_layout": {
+          "default": "natural",
+          "enum": [
+            "even",
+            "natural"
+          ],
+          "title": "Stipple Layout",
+          "type": "string"
+        },
+        "stipple_mark": {
+          "default": "pen-dots",
+          "enum": [
+            "drawn-dots",
+            "pen-dots"
+          ],
+          "title": "Stipple Mark",
+          "type": "string"
+        },
+        "stipple_max_dot_size_mm": {
+          "default": 1.5,
+          "exclusiveMinimum": 0,
+          "maximum": 25,
+          "title": "Stipple Max Dot Size Mm",
+          "type": "number"
+        },
+        "stipple_min_dot_size_mm": {
+          "default": 0.25,
+          "maximum": 25,
+          "minimum": 0,
+          "title": "Stipple Min Dot Size Mm",
+          "type": "number"
+        },
+        "stipple_pen_thickness_mm": {
+          "default": 0.5,
+          "exclusiveMinimum": 0,
+          "maximum": 25,
+          "title": "Stipple Pen Thickness Mm",
+          "type": "number"
+        },
+        "stipple_spacing_mm": {
+          "default": 1.8,
+          "exclusiveMinimum": 0,
+          "maximum": 50,
+          "title": "Stipple Spacing Mm",
+          "type": "number"
+        },
+        "stipple_threshold": {
+          "default": 0.02,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Stipple Threshold",
           "type": "number"
         }
       },

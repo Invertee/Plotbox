@@ -81,6 +81,27 @@
           "title": "Closed",
           "type": "boolean"
         },
+        "dot_diameter_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dot Diameter Mm"
+        },
+        "kind": {
+          "default": "stroke",
+          "enum": [
+            "stroke",
+            "dot"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
         "path_id": {
           "title": "Path Id",
           "type": "string"
@@ -89,7 +110,7 @@
           "items": {
             "$ref": "#/$defs/Point"
           },
-          "minItems": 2,
+          "minItems": 1,
           "title": "Points",
           "type": "array"
         },

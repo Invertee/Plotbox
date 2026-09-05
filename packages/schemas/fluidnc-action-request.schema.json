@@ -4,11 +4,6 @@
       "additionalProperties": false,
       "description": "Validated parameters for one fixed, bounded machine calibration pattern.",
       "properties": {
-        "confirmed": {
-          "default": false,
-          "title": "Confirmed",
-          "type": "boolean"
-        },
         "delay_step_ms": {
           "default": 100,
           "maximum": 2000,
@@ -149,6 +144,7 @@
         "config",
         "limits",
         "hold",
+        "alarm_reset",
         "home",
         "jog",
         "pen_test",
@@ -164,6 +160,7 @@
             "X",
             "Y",
             "Z",
+            "XY",
             "ALL"
           ],
           "type": "string"
@@ -174,11 +171,6 @@
       ],
       "default": null,
       "title": "Axis"
-    },
-    "confirmed": {
-      "default": false,
-      "title": "Confirmed",
-      "type": "boolean"
     },
     "distance_mm": {
       "anyOf": [

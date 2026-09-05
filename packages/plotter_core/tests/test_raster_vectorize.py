@@ -6,8 +6,16 @@ from pathlib import Path
 
 import pytest
 from PIL import Image, ImageDraw
+from plotter_core import planning as planning_module
+from plotter_core.gcode import export_gcode_bundle
 from plotter_core.importers.raster_vectorize import vectorize_raster
-from plotter_core.models import LineCommand, MoveCommand, PassSettings, ProjectRecipe
+from plotter_core.models import (
+    LineCommand,
+    MachineProfile,
+    MoveCommand,
+    PassSettings,
+    ProjectRecipe,
+)
 from plotter_core.planning import build_plot_plan
 
 ALGORITHMS = ("edge", "centerline", "hatch", "crosshatch", "squiggle", "tone-contour")
@@ -214,6 +222,33 @@ def test_dither_crosses_emit_two_strokes_per_ordered_mark() -> None:
     assert all(not path.closed and len(path.commands) == 2 for path in document.layers[0].paths)
 
 
+def test_dither_pen_dots_use_tip_thickness_and_round_trip_as_pen_taps() -> None:
+    recipe = _recipe("dither")
+    recipe.raster_vectorize.dither_mark = "pen-dots"
+    recipe.raster_vectorize.dither_pen_thickness_mm = 0.7
+    recipe.raster_vectorize.dither_dot_gap_mm = 0.3
+    document = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="9" * 64,
+    )
+    plan = build_plot_plan(recipe, document)
+    dots = plan.passes[0].ordered_paths
+    bundle = export_gcode_bundle(recipe, plan, MachineProfile())
+    source_centers = [path.commands[0].point for path in document.layers[0].paths]
+
+    assert document.layers[0].metadata["dither_mark"] == "pen-dots"
+    assert dots
+    assert all(path.kind == "dot" and path.dot_diameter_mm == 0.7 for path in dots)
+    assert all(len(path.points) == 1 for path in dots)
+    assert [path.points[0] for path in dots] == source_centers
+    assert all(program.validation.valid for program in bundle.programs)
+    assert next(
+        program for program in bundle.programs if program.filename == "01-black.nc"
+    ).reconstructed_toolpath.draw_dots
+
+
 def test_dither_contrast_bands_emit_stable_layers_for_pen_mapping() -> None:
     recipe = _recipe("dither")
     recipe.raster_vectorize.dither_pass_mode = "contrast-bands"
@@ -239,6 +274,81 @@ def test_dither_contrast_bands_emit_stable_layers_for_pen_mapping() -> None:
     ]
     assert all(layer.metadata["tone_band_count"] == 3 for layer in first.layers)
     assert first.metadata.normalized_sha256 == DITHER_GOLDEN_HASHES["contrast-bands"]
+
+
+@pytest.mark.parametrize("layout", ("even", "natural"))
+def test_stipple_is_deterministic_and_uses_configured_pen_tip(layout: str) -> None:
+    recipe = _recipe("stipple")
+    recipe.raster_vectorize.stipple_layout = layout  # type: ignore[assignment]
+    recipe.raster_vectorize.stipple_pen_thickness_mm = 0.7
+    first = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="a" * 64,
+    )
+    second = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="a" * 64,
+    )
+    plan = build_plot_plan(recipe, first)
+
+    assert first.metadata.normalized_sha256 == second.metadata.normalized_sha256
+    assert first.layers[0].metadata["algorithm"] == "stipple"
+    assert first.layers[0].paths
+    assert all(
+        path.kind == "dot" and path.dot_diameter_mm == 0.7 for path in plan.passes[0].ordered_paths
+    )
+
+
+def test_stipple_uses_fast_grid_path_planning(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Dense independent dots must not enter quadratic nearest-neighbour ordering."""
+
+    recipe = _recipe("stipple")
+    document = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="a" * 64,
+    )
+    original_order_paths = planning_module._order_paths
+    grid_order_flags: list[bool] = []
+
+    def record_order(
+        paths: list[planning_module.PlannedPath],
+        start: planning_module.Point,
+        *,
+        grid_order: bool = False,
+    ) -> list[planning_module.PlannedPath]:
+        grid_order_flags.append(grid_order)
+        return original_order_paths(paths, start, grid_order=grid_order)
+
+    monkeypatch.setattr(planning_module, "_order_paths", record_order)
+
+    build_plot_plan(recipe, document)
+
+    assert grid_order_flags == [True]
+
+
+def test_stipple_separates_source_colours_into_pen_ready_layers() -> None:
+    recipe = _recipe("stipple")
+    recipe.raster_vectorize.stipple_color_mode = "separate"
+    recipe.raster_vectorize.color_count = 2
+    document = vectorize_raster(
+        (ROOT / "fixtures" / "raster" / "two-color-poster.png").read_bytes(),
+        "image/png",
+        recipe,
+        source_sha256="3" * 64,
+    )
+
+    assert len(document.layers) == 2
+    assert all(layer.paths for layer in document.layers)
+    assert all(layer.semantic_role.startswith("source-color-") for layer in document.layers)
+    assert all(
+        path.metadata["mark_kind"] == "pen-dot" for layer in document.layers for path in layer.paths
+    )
 
 
 def test_squiggles_are_long_continuous_scanline_paths() -> None:

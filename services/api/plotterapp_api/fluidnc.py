@@ -10,8 +10,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, Protocol
 
-from plotter_core.models import StrictModel
-from pydantic import Field, field_validator
+from plotter_core.models import GcodeProgram, StrictModel
+from pydantic import Field, field_validator, model_validator
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import WebSocketException
 
@@ -25,6 +25,7 @@ FLUIDNC_CONFIG_ENV = "PLOTTERAPP_FLUIDNC_CONFIG"
 MAX_RESPONSE_BYTES = 64 * 1024
 MAX_RESPONSE_LINES = 500
 MAX_LINE_LENGTH = 500
+MAX_PROGRAM_COMMANDS = 100_000
 
 FluidNCAction = Literal[
     "identify",
@@ -33,6 +34,7 @@ FluidNCAction = Literal[
     "config",
     "limits",
     "hold",
+    "alarm_reset",
     "home",
     "jog",
     "pen_test",
@@ -46,6 +48,10 @@ class FluidNCSettings(StrictModel):
     port: int = Field(default=81, ge=1, le=65535)
     tls: bool = False
     command_timeout_seconds: float = Field(default=15.0, ge=1.0, le=120.0)
+    safe_z_min_mm: float = Field(default=-10.0, ge=-100.0, le=100.0)
+    safe_z_max_mm: float = Field(default=0.0, ge=-100.0, le=100.0)
+    pen_up_z_mm: float = Field(default=0.0, ge=-100.0, le=100.0)
+    pen_down_z_mm: float = Field(default=-5.0, ge=-100.0, le=100.0)
 
     @field_validator("host")
     @classmethod
@@ -59,6 +65,14 @@ class FluidNCSettings(StrictModel):
             raise ValueError("FluidNC host contains unsupported characters")
         return host
 
+    @model_validator(mode="after")
+    def validate_safe_z_range(self) -> FluidNCSettings:
+        if self.safe_z_min_mm >= self.safe_z_max_mm:
+            raise ValueError("safe Z minimum must be below the safe Z maximum")
+        if not self.safe_z_min_mm <= self.pen_down_z_mm < self.pen_up_z_mm <= self.safe_z_max_mm:
+            raise ValueError("pen up/down Z values must be within the configured safe Z range")
+        return self
+
     @property
     def websocket_url(self) -> str:
         scheme = "wss" if self.tls else "ws"
@@ -68,8 +82,7 @@ class FluidNCSettings(StrictModel):
 
 class FluidNCActionRequest(StrictModel):
     action: FluidNCAction
-    confirmed: bool = False
-    axis: Literal["X", "Y", "Z", "ALL"] | None = None
+    axis: Literal["X", "Y", "Z", "XY", "ALL"] | None = None
     distance_mm: float | None = None
     feed_mm_min: float | None = None
     pen_up_mm: float | None = None
@@ -85,6 +98,24 @@ class FluidNCActionResult(StrictModel):
     response_lines: list[str]
     controller_state: str | None = None
     test_id: FluidNCCommissioningTestId | None = None
+
+
+class FluidNCProgramResult(StrictModel):
+    """Result of delivering one already-validated program to the controller.
+
+    ``success`` means every command was acknowledged by FluidNC.  It intentionally does
+    not claim that the physical motion has finished: an accepted program can still be
+    running, paused at an M0, or stopped later by the controller.
+    """
+
+    schema_version: Literal[1] = 1
+    filename: str
+    sha256: str
+    success: bool
+    command_count: int
+    accepted_command_count: int
+    response_lines: list[str]
+    controller_state: str | None = None
 
 
 class AxisCalibrationRequest(StrictModel):
@@ -105,6 +136,8 @@ class FluidNCGatewayProtocol(Protocol):
     def save_settings(self, settings: FluidNCSettings) -> FluidNCSettings: ...
 
     async def execute(self, request: FluidNCActionRequest) -> FluidNCActionResult: ...
+
+    async def stream_program(self, program: GcodeProgram) -> FluidNCProgramResult: ...
 
 
 def default_fluidnc_config_path() -> Path:
@@ -147,13 +180,13 @@ def build_action_frames(request: FluidNCActionRequest) -> tuple[list[str], list[
         return ["$Limits\n"], ["$Limits", "! (exit limit mode)"]
     if request.action == "hold":
         return ["!"], ["! (feed hold)"]
+    if request.action == "alarm_reset":
+        return ["$X\n"], ["$X (clear alarm / unlock)"]
     if request.action == "home":
-        _require_confirmation(request)
         home_axis = request.axis or "ALL"
         command = "$H" if home_axis == "ALL" else f"$H={home_axis}"
         return [f"{command}\n"], [command]
     if request.action == "jog":
-        _require_confirmation(request)
         jog_axis = request.axis
         if jog_axis not in {"X", "Y", "Z"}:
             raise ValueError("jog requires axis X, Y, or Z")
@@ -161,14 +194,11 @@ def build_action_frames(request: FluidNCActionRequest) -> tuple[list[str], list[
         feed = request.feed_mm_min
         if distance is None or not math.isfinite(distance) or distance == 0:
             raise ValueError("jog distance must be a finite non-zero value")
-        if abs(distance) > 25:
-            raise ValueError("jog distance is limited to 25 mm per action")
-        if feed is None or not math.isfinite(feed) or not 1 <= feed <= 3_000:
-            raise ValueError("jog feed must be between 1 and 3000 mm/min")
+        if feed is None or not math.isfinite(feed) or feed <= 0:
+            raise ValueError("jog feed must be a finite positive value")
         command = f"$J=G91 G21 F{_number(feed)} {jog_axis}{_number(distance)}"
         return [f"{command}\n"], [command]
     if request.action == "pen_test":
-        _require_confirmation(request)
         up = request.pen_up_mm
         down = request.pen_down_mm
         feed = request.feed_mm_min
@@ -189,16 +219,10 @@ def build_action_frames(request: FluidNCActionRequest) -> tuple[list[str], list[
         ]
         return [f"{command}\n" for command in commands], commands
     if request.action == "commissioning_test":
-        _require_confirmation(request)
         if request.test is None:
             raise ValueError("commissioning_test requires a named test definition")
         return build_commissioning_test_frames(request.test)
     raise ValueError(f"unsupported FluidNC action: {request.action}")
-
-
-def _require_confirmation(request: FluidNCActionRequest) -> None:
-    if not request.confirmed:
-        raise ValueError(f"{request.action} requires explicit motion confirmation")
 
 
 def _number(value: float) -> str:
@@ -216,6 +240,20 @@ def _parse_controller_state(lines: Sequence[str]) -> str | None:
 def _normalize_message(message: str | bytes) -> list[str]:
     text = message.decode("utf-8", errors="replace") if isinstance(message, bytes) else message
     return [line.strip()[:MAX_LINE_LENGTH] for line in text.splitlines() if line.strip()]
+
+
+def _program_frames(text: str) -> list[str]:
+    """Convert a validated export to executable controller frames.
+
+    Semicolon comments and blank lines carry no controller state, so omitting them makes
+    the acknowledgement count correspond to commands actually delivered.  All other
+    lines are retained verbatim (apart from their line ending), including M0 messages.
+    """
+    return [
+        f"{line}\n"
+        for raw_line in text.splitlines()
+        if (line := raw_line.strip()) and not line.startswith(";")
+    ]
 
 
 class FluidNCGateway:
@@ -270,6 +308,94 @@ class FluidNCGateway:
             response_lines=lines,
             controller_state=_parse_controller_state(lines),
             test_id=request.test.test_id if request.test is not None else None,
+        )
+
+    async def stream_program(self, program: GcodeProgram) -> FluidNCProgramResult:
+        """Deliver a generated program one acknowledged line at a time.
+
+        This gateway deliberately accepts a ``GcodeProgram`` rather than raw text.  The
+        API creates that object only through the exporter, after its independent round-trip
+        validator passes.  Keeping the raw G-code boundary out of the request prevents the
+        editor send endpoint from becoming an arbitrary command console.
+        """
+        if not program.validation.valid:
+            raise ValueError("refusing to stream a G-code program that failed validation")
+        frames = _program_frames(program.text)
+        if not frames:
+            raise ValueError("refusing to stream an empty G-code program")
+        if len(frames) > MAX_PROGRAM_COMMANDS:
+            raise ValueError(
+                f"refusing to stream more than {MAX_PROGRAM_COMMANDS} G-code commands"
+            )
+
+        settings = self.settings()
+        lines: list[str] = []
+        accepted = 0
+        try:
+            async with connect(
+                settings.websocket_url,
+                open_timeout=settings.command_timeout_seconds,
+                close_timeout=2,
+                ping_interval=20,
+                ping_timeout=10,
+                max_size=MAX_RESPONSE_BYTES,
+                max_queue=16,
+                compression=None,
+                proxy=None,
+            ) as connection:
+                # Never append a job to a controller that has not positively reported Idle.
+                await connection.send("?")
+                status_lines = await self._receive_response(
+                    connection,
+                    settings.command_timeout_seconds,
+                    allow_empty=False,
+                )
+                lines.extend(status_lines[-MAX_RESPONSE_LINES:])
+                controller_state = _parse_controller_state(status_lines)
+                if controller_state != "Idle":
+                    raise ValueError(
+                        "controller must report Idle before sending a project program "
+                        f"(reported {controller_state or 'no machine state'})"
+                    )
+
+                for frame in frames:
+                    await connection.send(frame)
+                    response = await self._receive_response(
+                        connection,
+                        settings.command_timeout_seconds,
+                        allow_empty=False,
+                    )
+                    lines.extend(response)
+                    lines = lines[-MAX_RESPONSE_LINES:]
+                    if any(
+                        line.lower().startswith("error") or line.upper().startswith("ALARM")
+                        for line in response
+                    ):
+                        await connection.send("!")
+                        lines.extend(
+                            await self._receive_response(connection, 1.0, allow_empty=True)
+                        )
+                        return FluidNCProgramResult(
+                            filename=program.filename,
+                            sha256=program.sha256,
+                            success=False,
+                            command_count=len(frames),
+                            accepted_command_count=accepted,
+                            response_lines=lines[-MAX_RESPONSE_LINES:],
+                            controller_state=_parse_controller_state(lines),
+                        )
+                    accepted += 1
+        except (OSError, TimeoutError, WebSocketException) as error:
+            raise ConnectionError(f"FluidNC G-code stream failed: {error}") from error
+
+        return FluidNCProgramResult(
+            filename=program.filename,
+            sha256=program.sha256,
+            success=True,
+            command_count=len(frames),
+            accepted_command_count=accepted,
+            response_lines=lines[-MAX_RESPONSE_LINES:],
+            controller_state=_parse_controller_state(lines),
         )
 
     async def _exchange(
