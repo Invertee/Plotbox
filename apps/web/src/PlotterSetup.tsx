@@ -1,3 +1,4 @@
+import { NumericInput } from "./NumericInput";
 import { useEffect, useMemo, useState } from "react";
 
 import { api } from "./api";
@@ -493,7 +494,7 @@ export function PlotterSetup() {
             </div>
             <label>
               Step distance mm
-              <input
+              <NumericInput
                 aria-label="Jog distance"
                 type="number"
                 step="0.1"
@@ -503,7 +504,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Jog speed mm/min
-              <input
+              <NumericInput
                 aria-label="Jog feed"
                 type="number"
                 step="1"
@@ -558,7 +559,7 @@ export function PlotterSetup() {
           <div className="field-row">
             <label>
               WebSocket port
-              <input
+              <NumericInput
                 aria-label="FluidNC WebSocket port"
                 type="number"
                 min="1"
@@ -569,7 +570,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Timeout seconds
-              <input
+              <NumericInput
                 aria-label="FluidNC command timeout"
                 type="number"
                 min="1"
@@ -592,7 +593,7 @@ export function PlotterSetup() {
           <div className="field-row">
             <label>
               Safe Z minimum
-              <input
+              <NumericInput
                 aria-label="Safe Z minimum"
                 type="number"
                 step="0.1"
@@ -604,7 +605,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Safe Z maximum
-              <input
+              <NumericInput
                 aria-label="Safe Z maximum"
                 type="number"
                 step="0.1"
@@ -618,7 +619,7 @@ export function PlotterSetup() {
           <div className="field-row">
             <label>
               Plot pen-up Z
-              <input
+              <NumericInput
                 aria-label="Plot pen up Z"
                 type="number"
                 step="0.1"
@@ -630,7 +631,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Plot pen-down Z
-              <input
+              <NumericInput
                 aria-label="Plot pen down Z"
                 type="number"
                 step="0.1"
@@ -739,7 +740,7 @@ export function PlotterSetup() {
           <div className="field-row three">
             <label>
               Pen up Z
-              <input
+              <NumericInput
                 aria-label="Test pen up Z"
                 type="number"
                 min="-20"
@@ -751,7 +752,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Pen down Z
-              <input
+              <NumericInput
                 aria-label="Test pen down Z"
                 type="number"
                 min="-20"
@@ -763,7 +764,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Feed mm/min
-              <input
+              <NumericInput
                 aria-label="Test pen feed"
                 type="number"
                 min="1"
@@ -819,7 +820,7 @@ export function PlotterSetup() {
           <div className="field-row three">
             <label>
               Origin X mm
-              <input
+              <NumericInput
                 aria-label="Test origin X"
                 type="number"
                 min="-500"
@@ -833,7 +834,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Origin Y mm
-              <input
+              <NumericInput
                 aria-label="Test origin Y"
                 type="number"
                 min="-500"
@@ -847,7 +848,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Width mm
-              <input
+              <NumericInput
                 aria-label="Test width"
                 type="number"
                 min="1"
@@ -863,7 +864,7 @@ export function PlotterSetup() {
           <div className="field-row three">
             <label>
               Height mm
-              <input
+              <NumericInput
                 aria-label="Test height"
                 type="number"
                 min="1"
@@ -877,7 +878,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Drawing feed mm/min
-              <input
+              <NumericInput
                 aria-label="Test drawing feed"
                 type="number"
                 min="60"
@@ -890,7 +891,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Rows / steps
-              <input
+              <NumericInput
                 aria-label="Test rows or steps"
                 type="number"
                 min="2"
@@ -904,7 +905,7 @@ export function PlotterSetup() {
           <div className="field-row three">
             <label>
               Pen up Z
-              <input
+              <NumericInput
                 aria-label="Calibration pen up Z"
                 type="number"
                 min="-20"
@@ -918,7 +919,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Pen down Z
-              <input
+              <NumericInput
                 aria-label="Calibration pen down Z"
                 type="number"
                 min="-20"
@@ -932,7 +933,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Base spacing mm
-              <input
+              <NumericInput
                 aria-label="Calibration base spacing"
                 type="number"
                 min="0.5"
@@ -948,7 +949,7 @@ export function PlotterSetup() {
           {selectedCommissioningTest.field === "step" && (
             <label>
               Direction step mm
-              <input
+              <NumericInput
                 aria-label="Backlash direction step"
                 type="number"
                 min="0.1"
@@ -965,7 +966,7 @@ export function PlotterSetup() {
             <div className="field-row two">
               <label>
                 Slow feed mm/min
-                <input
+                <NumericInput
                   aria-label="Speed test starting feed"
                   type="number"
                   min="60"
@@ -978,7 +979,7 @@ export function PlotterSetup() {
               </label>
               <label>
                 Fast feed mm/min
-                <input
+                <NumericInput
                   aria-label="Speed test ending feed"
                   type="number"
                   min="60"
@@ -995,7 +996,7 @@ export function PlotterSetup() {
             <div className="field-row two">
               <label>
                 First depth Z
-                <input
+                <NumericInput
                   aria-label="Z-depth ladder starting Z"
                   type="number"
                   min="-20"
@@ -1009,7 +1010,7 @@ export function PlotterSetup() {
               </label>
               <label>
                 Last depth Z
-                <input
+                <NumericInput
                   aria-label="Z-depth ladder ending Z"
                   type="number"
                   min="-20"
@@ -1026,7 +1027,7 @@ export function PlotterSetup() {
           {selectedCommissioningTest.field === "delay" && (
             <label>
               Additional lift delay per row ms
-              <input
+              <NumericInput
                 aria-label="Lift delay step"
                 type="number"
                 min="0"
@@ -1061,7 +1062,7 @@ export function PlotterSetup() {
           <div className="field-row three">
             <label>
               Current steps/mm
-              <input
+              <NumericInput
                 aria-label="Current steps per millimetre"
                 type="number"
                 min="0.001"
@@ -1071,7 +1072,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Commanded mm
-              <input
+              <NumericInput
                 aria-label="Commanded calibration distance"
                 type="number"
                 min="0.001"
@@ -1081,7 +1082,7 @@ export function PlotterSetup() {
             </label>
             <label>
               Measured mm
-              <input
+              <NumericInput
                 aria-label="Measured calibration distance"
                 type="number"
                 min="0.001"

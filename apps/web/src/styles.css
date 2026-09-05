@@ -1592,3 +1592,44 @@ code {
   font-size: 11px;
   white-space: pre-wrap;
 }
+
+/* Slider controls — version 0.3.2 */
+.slider-control {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.slider-track {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.slider-track input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+  accent-color: #dd5f3f;
+}
+.slider-track input[type="range"]:focus-visible {
+  outline: 2px solid #dd5f3f;
+  outline-offset: 4px;
+}
+.slider-value {
+  min-width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+.slider-tooltip {
+  display: none;
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #52616b;
+}
+.slider-control:hover .slider-tooltip,
+.slider-control:focus-within .slider-tooltip {
+  display: block;
+}

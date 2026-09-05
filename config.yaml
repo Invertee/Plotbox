@@ -1,5 +1,5 @@
 name: Plotbox
-version: "0.3.1"
+version: "0.3.2"
 slug: plotbox
 description: Artwork generation, validated G-code export, and guarded FluidNC commissioning
 arch:

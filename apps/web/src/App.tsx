@@ -1,3 +1,4 @@
+import { NumericInput } from "./NumericInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "./api";
@@ -127,7 +128,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       <div className="field-row">
         <label>
           Crop X
-          <input
+          <NumericInput
             aria-label="Raster crop X"
             type="number"
             min="0"
@@ -139,7 +140,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         </label>
         <label>
           Crop Y
-          <input
+          <NumericInput
             aria-label="Raster crop Y"
             type="number"
             min="0"
@@ -153,7 +154,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       <div className="field-row">
         <label>
           Crop width
-          <input
+          <NumericInput
             aria-label="Raster crop width"
             type="number"
             min="0.01"
@@ -165,7 +166,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         </label>
         <label>
           Crop height
-          <input
+          <NumericInput
             aria-label="Raster crop height"
             type="number"
             min="0.01"
@@ -215,7 +216,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       </div>
       <label>
         Scale %
-        <input
+        <NumericInput
           aria-label="Raster scale percent"
           type="number"
           min="1"
@@ -255,7 +256,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       <div className="field-row">
         <label>
           Contrast
-          <input
+          <NumericInput
             aria-label="Raster contrast"
             type="number"
             min="0.1"
@@ -267,7 +268,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         </label>
         <label>
           Gamma
-          <input
+          <NumericInput
             aria-label="Raster gamma"
             type="number"
             min="0.1"
@@ -281,7 +282,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       <div className="field-row">
         <label>
           Blur px
-          <input
+          <NumericInput
             aria-label="Raster blur"
             type="number"
             min="0"
@@ -293,7 +294,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         </label>
         <label>
           Sharpen
-          <input
+          <NumericInput
             aria-label="Raster sharpen"
             type="number"
             min="0"
@@ -324,7 +325,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       {settings.threshold_mode === "global" && (
         <label>
           Threshold level
-          <input
+          <NumericInput
             aria-label="Raster threshold level"
             type="number"
             min="0"
@@ -338,7 +339,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         <div className="field-row">
           <label>
             Window px
-            <input
+            <NumericInput
               aria-label="Adaptive threshold window"
               type="number"
               min="3"
@@ -350,7 +351,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
           </label>
           <label>
             Offset
-            <input
+            <NumericInput
               aria-label="Adaptive threshold offset"
               type="number"
               min="-64"
@@ -380,7 +381,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         </label>
         <label>
           Radius px
-          <input
+          <NumericInput
             aria-label="Raster morphology radius"
             type="number"
             min="0"
@@ -394,7 +395,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
       <div className="field-row">
         <label>
           Samples / pen width
-          <input
+          <NumericInput
             aria-label="Raster samples per pen width"
             type="number"
             min="1"
@@ -408,7 +409,7 @@ function RasterControls({ project, onChange }: RasterControlsProps) {
         </label>
         <label>
           Max megapixels
-          <input
+          <NumericInput
             aria-label="Raster maximum megapixels"
             type="number"
             min="0.1"
@@ -464,7 +465,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
       </label>
       <label>
         Minimum segment mm
-        <input
+        <NumericInput
           aria-label="Raster minimum segment length"
           type="number"
           min="0"
@@ -477,7 +478,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
         <div className="field-row">
           <label>
             Edge threshold
-            <input
+            <NumericInput
               aria-label="Raster edge threshold"
               type="number"
               min="1"
@@ -488,7 +489,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </label>
           <label>
             Min component mm
-            <input
+            <NumericInput
               aria-label="Raster edge minimum component"
               type="number"
               min="0"
@@ -505,7 +506,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
         <div className="field-row">
           <label>
             Ink threshold
-            <input
+            <NumericInput
               aria-label="Raster centerline threshold"
               type="number"
               min="0"
@@ -516,7 +517,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </label>
           <label>
             Prune branches mm
-            <input
+            <NumericInput
               aria-label="Raster centerline prune length"
               type="number"
               min="0"
@@ -534,7 +535,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Hatch spacing mm
-              <input
+              <NumericInput
                 aria-label="Raster hatch spacing"
                 type="number"
                 min="0.1"
@@ -545,7 +546,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Hatch angle
-              <input
+              <NumericInput
                 aria-label="Raster hatch angle"
                 type="number"
                 value={settings.hatch_angle_degrees}
@@ -555,7 +556,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </div>
           <label>
             Tone threshold
-            <input
+            <NumericInput
               aria-label="Raster hatch tone threshold"
               type="number"
               min="0"
@@ -571,7 +572,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Hatch spacing mm
-              <input
+              <NumericInput
                 aria-label="Raster crosshatch spacing"
                 type="number"
                 min="0.1"
@@ -582,7 +583,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Base angle
-              <input
+              <NumericInput
                 aria-label="Raster crosshatch angle"
                 type="number"
                 value={settings.hatch_angle_degrees}
@@ -592,7 +593,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </div>
           <label>
             Angle step
-            <input
+            <NumericInput
               aria-label="Raster crosshatch angle step"
               type="number"
               min="1"
@@ -610,7 +611,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Scan spacing mm
-              <input
+              <NumericInput
                 aria-label="Raster squiggle spacing"
                 type="number"
                 min="0.1"
@@ -621,7 +622,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Amplitude mm
-              <input
+              <NumericInput
                 aria-label="Raster squiggle amplitude"
                 type="number"
                 min="0"
@@ -634,7 +635,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Wavelength mm
-              <input
+              <NumericInput
                 aria-label="Raster squiggle wavelength"
                 type="number"
                 min="0.1"
@@ -668,7 +669,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Row spacing mm
-              <input
+              <NumericInput
                 aria-label="Circular scribble row spacing"
                 type="number"
                 min="0.1"
@@ -679,7 +680,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Largest loop mm
-              <input
+              <NumericInput
                 aria-label="Circular scribble largest loop"
                 type="number"
                 min="0.1"
@@ -692,7 +693,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Light-area loop spacing mm
-              <input
+              <NumericInput
                 aria-label="Circular scribble light loop spacing"
                 type="number"
                 min="0.2"
@@ -721,7 +722,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </div>
           <label>
             Minimum darkness
-            <input
+            <NumericInput
               aria-label="Circular scribble minimum darkness"
               type="number"
               min="0"
@@ -740,7 +741,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
       {settings.algorithm === "tone-contour" && (
         <label>
           Contour levels
-          <input
+          <NumericInput
             aria-label="Raster contour levels"
             type="number"
             min="1"
@@ -790,7 +791,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Tone passes
-              <input
+              <NumericInput
                 aria-label="Dither tone passes"
                 type="number"
                 min="1"
@@ -803,7 +804,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             {settings.dither_mark === "pen-dots" ? (
               <label>
                 Clear gap between dots mm
-                <input
+                <NumericInput
                   aria-label="Dither dot gap"
                   type="number"
                   min="0"
@@ -816,7 +817,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             ) : (
               <label>
                 Grid spacing mm
-                <input
+                <NumericInput
                   aria-label="Dither spacing"
                   type="number"
                   min="0.1"
@@ -831,7 +832,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           {settings.dither_mark === "pen-dots" ? (
             <label>
               Pen-tip thickness mm
-              <input
+              <NumericInput
                 aria-label="Dither pen thickness"
                 type="number"
                 min="0.05"
@@ -847,7 +848,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             <div className="field-row">
               <label>
                 Minimum mark mm
-                <input
+                <NumericInput
                   aria-label="Dither minimum mark size"
                   type="number"
                   min="0"
@@ -861,7 +862,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </label>
               <label>
                 Maximum mark mm
-                <input
+                <NumericInput
                   aria-label="Dither maximum mark size"
                   type="number"
                   min="0.05"
@@ -878,7 +879,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Dither contrast
-              <input
+              <NumericInput
                 aria-label="Dither contrast"
                 type="number"
                 min="0.1"
@@ -890,7 +891,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Dither gamma
-              <input
+              <NumericInput
                 aria-label="Dither gamma"
                 type="number"
                 min="0.1"
@@ -904,7 +905,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Mark threshold
-              <input
+              <NumericInput
                 aria-label="Dither mark threshold"
                 type="number"
                 min="0"
@@ -917,7 +918,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             {settings.dither_mark === "crosses" && (
               <label>
                 Cross angle °
-                <input
+                <NumericInput
                   aria-label="Dither cross angle"
                   type="number"
                   value={settings.dither_angle_degrees}
@@ -973,7 +974,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             <div className="field-row">
               <label>
                 Colour passes
-                <input
+                <NumericInput
                   aria-label="Stipple colour passes"
                   type="number"
                   min="2"
@@ -984,7 +985,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </label>
               <label>
                 Ignore near-white
-                <input
+                <NumericInput
                   aria-label="Stipple colour background threshold"
                   type="number"
                   min="0"
@@ -1017,7 +1018,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             {settings.stipple_mark === "pen-dots" ? (
               <label>
                 Clear gap mm
-                <input
+                <NumericInput
                   aria-label="Stipple dot gap"
                   type="number"
                   min="0"
@@ -1030,7 +1031,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             ) : (
               <label>
                 Dot spacing mm
-                <input
+                <NumericInput
                   aria-label="Stipple spacing"
                   type="number"
                   min="0.1"
@@ -1045,7 +1046,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           {settings.stipple_mark === "pen-dots" ? (
             <label>
               Pen-tip thickness mm
-              <input
+              <NumericInput
                 aria-label="Stipple pen thickness"
                 type="number"
                 min="0.05"
@@ -1061,7 +1062,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             <div className="field-row">
               <label>
                 Smallest dot mm
-                <input
+                <NumericInput
                   aria-label="Stipple minimum dot size"
                   type="number"
                   min="0"
@@ -1075,7 +1076,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </label>
               <label>
                 Largest dot mm
-                <input
+                <NumericInput
                   aria-label="Stipple maximum dot size"
                   type="number"
                   min="0.05"
@@ -1092,7 +1093,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Contrast
-              <input
+              <NumericInput
                 aria-label="Stipple contrast"
                 type="number"
                 min="0.1"
@@ -1104,7 +1105,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Gamma
-              <input
+              <NumericInput
                 aria-label="Stipple gamma"
                 type="number"
                 min="0.1"
@@ -1117,7 +1118,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </div>
           <label>
             Minimum darkness
-            <input
+            <NumericInput
               aria-label="Stipple minimum darkness"
               type="number"
               min="0"
@@ -1173,7 +1174,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             <div className="field-row">
               <label>
                 Colour passes
-                <input
+                <NumericInput
                   aria-label="Adaptive stipple colour passes"
                   type="number"
                   min="2"
@@ -1184,7 +1185,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </label>
               <label>
                 Ignore near-white
-                <input
+                <NumericInput
                   aria-label="Adaptive stipple colour background threshold"
                   type="number"
                   min="0"
@@ -1201,7 +1202,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             <div className="field-row">
               <label>
                 Pen-tip thickness mm
-                <input
+                <NumericInput
                   aria-label="Adaptive stipple pen thickness"
                   type="number"
                   min="0.05"
@@ -1215,7 +1216,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               </label>
               <label>
                 Clear gap mm
-                <input
+                <NumericInput
                   aria-label="Adaptive stipple dot gap"
                   type="number"
                   min="0"
@@ -1232,7 +1233,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             <>
               <label>
                 Candidate spacing mm
-                <input
+                <NumericInput
                   aria-label="Adaptive stipple spacing"
                   type="number"
                   min="0.1"
@@ -1247,7 +1248,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               <div className="field-row">
                 <label>
                   Light dot size mm
-                  <input
+                  <NumericInput
                     aria-label="Adaptive stipple minimum dot size"
                     type="number"
                     min="0"
@@ -1261,7 +1262,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
                 </label>
                 <label>
                   Dark dot size mm
-                  <input
+                  <NumericInput
                     aria-label="Adaptive stipple maximum dot size"
                     type="number"
                     min="0.05"
@@ -1279,7 +1280,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Local area radius mm
-              <input
+              <NumericInput
                 aria-label="Adaptive stipple local radius"
                 type="number"
                 min="0.1"
@@ -1293,7 +1294,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Local contrast
-              <input
+              <NumericInput
                 aria-label="Adaptive stipple local contrast"
                 type="number"
                 min="0"
@@ -1309,7 +1310,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Light-area density
-              <input
+              <NumericInput
                 aria-label="Adaptive stipple light density"
                 type="number"
                 min="0"
@@ -1323,7 +1324,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Dark-area density
-              <input
+              <NumericInput
                 aria-label="Adaptive stipple dark density"
                 type="number"
                 min="0"
@@ -1339,7 +1340,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <div className="field-row">
             <label>
               Contrast
-              <input
+              <NumericInput
                 aria-label="Adaptive stipple contrast"
                 type="number"
                 min="0.1"
@@ -1353,7 +1354,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
             </label>
             <label>
               Gamma
-              <input
+              <NumericInput
                 aria-label="Adaptive stipple gamma"
                 type="number"
                 min="0.1"
@@ -1366,7 +1367,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </div>
           <label>
             Minimum darkness
-            <input
+            <NumericInput
               aria-label="Adaptive stipple minimum darkness"
               type="number"
               min="0"
@@ -1389,7 +1390,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
         <div className="field-row">
           <label>
             Source colors
-            <input
+            <NumericInput
               aria-label="Raster source color count"
               type="number"
               min="2"
@@ -1400,7 +1401,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           </label>
           <label>
             Ignore near-white
-            <input
+            <NumericInput
               aria-label="Raster color background threshold"
               type="number"
               min="0"
@@ -1437,6 +1438,8 @@ export function App() {
   const [selectedProgramFilename, setSelectedProgramFilename] = useState("combined.nc");
   const [svgBundle, setSvgBundle] = useState<SvgExportBundle | null>(null);
   const [rasterPreview, setRasterPreview] = useState<RasterPreview | null>(null);
+  const rasterPreviewRef = useRef(rasterPreview);
+  rasterPreviewRef.current = rasterPreview;
   const [activeJob, setActiveJob] = useState<JobState | null>(null);
   const [previewRenderToken, setPreviewRenderToken] = useState(0);
   const nextPreviewRenderToken = useRef(0);
@@ -1452,6 +1455,80 @@ export function App() {
   const [mapPlaces, setMapPlaces] = useState<OsmPlaceResult[]>([]);
   const [lastPlaceSearchUsedCache, setLastPlaceSearchUsedCache] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const previewQueue = useRef<Promise<void>>(Promise.resolve());
+  const completedPreviewKey = useRef<string | null>(null);
+  const [previewUpdating, setPreviewUpdating] = useState(false);
+  const previewKey =
+    project?.mode.mode_id === "import.raster" && project.source_asset_id
+      ? JSON.stringify({
+          projectId: project.project_id,
+          source_asset_id: project.source_asset_id,
+          raster_preprocess: project.raster_preprocess,
+          page: project.page,
+          pen_palette: project.pen_palette,
+          quality: project.mode.quality,
+        })
+      : null;
+
+  useEffect(() => {
+    if (!previewKey || operation !== "idle" || appArea !== "editor") {
+      setPreviewUpdating(false);
+      return;
+    }
+    if (completedPreviewKey.current === previewKey && rasterPreviewRef.current) {
+      setPreviewUpdating(false);
+      return;
+    }
+    const input = JSON.parse(previewKey) as {
+      projectId: string;
+      source_asset_id: string;
+      raster_preprocess: ProjectRecipe["raster_preprocess"];
+      page: ProjectRecipe["page"];
+      pen_palette: ProjectRecipe["pen_palette"];
+      quality: ProjectRecipe["mode"]["quality"];
+    };
+    let obsolete = false;
+    let jobId: string | undefined;
+    setPreviewUpdating(true);
+    const timer = window.setTimeout(() => {
+      previewQueue.current = previewQueue.current.then(async () => {
+        if (obsolete) return;
+        try {
+          await api.patchProject(input.projectId, {
+            source_asset_id: input.source_asset_id,
+            raster_preprocess: input.raster_preprocess,
+            page: input.page,
+            pen_palette: input.pen_palette,
+          });
+          if (obsolete) return;
+          const started = await api.startRasterPreprocess(input.projectId, input.quality);
+          jobId = started.job_id;
+          if (obsolete) await api.cancelJob(jobId);
+          const completed = await api.watchJob(jobId, () => {});
+          jobId = undefined;
+          if (obsolete) return;
+          if (completed.status !== "succeeded") {
+            throw new Error(completed.error ?? `Preprocessing ended as ${completed.status}`);
+          }
+          const preview = await api.getRasterPreview(input.projectId);
+          if (!obsolete) {
+            completedPreviewKey.current = previewKey;
+            setRasterPreview(preview);
+          }
+        } catch (reason) {
+          if (!obsolete) setError(errorMessage(reason));
+        } finally {
+          if (!obsolete) setPreviewUpdating(false);
+        }
+      });
+    }, 150);
+    return () => {
+      obsolete = true;
+      window.clearTimeout(timer);
+      if (jobId) void api.cancelJob(jobId).catch(() => {});
+    };
+  }, [previewKey, operation, appArea]);
 
   useEffect(() => {
     void Promise.all([api.health(), api.profiles(), api.listProjects(), api.modes()])
@@ -1476,6 +1553,7 @@ export function App() {
     setOperation(nextOperation);
     setError(null);
     try {
+      await previewQueue.current;
       await action();
     } catch (reason) {
       setError(errorMessage(reason));
@@ -1598,30 +1676,6 @@ export function App() {
       setPlanningProgress(completed, "rendering-toolpath", 0.99);
       await waitForPreviewRender();
       setActiveJob(completed);
-    });
-  };
-
-  const preprocessRaster = () => {
-    if (!project) return Promise.resolve();
-    return run("generating", async () => {
-      const saved = await api.patchProject(project.project_id, persistedChanges(project));
-      setProject(saved);
-      const started = await api.startRasterPreprocess(saved.project_id, saved.mode.quality);
-      setActiveJob(started);
-      const completed = await api.watchJob(started.job_id, setActiveJob);
-      if (completed.status === "cancelled") return;
-      if (completed.status !== "succeeded") {
-        throw new Error(completed.error ?? `Preprocessing ended as ${completed.status}`);
-      }
-      const preview = await api.getRasterPreview(saved.project_id);
-      setProject(await api.getProject(saved.project_id));
-      setRasterPreview(preview);
-      setDesign(null);
-      setPlan(null);
-      setBundle(null);
-      setSendResult(null);
-      setSvgBundle(null);
-      setViewerMode("design");
     });
   };
 
@@ -2090,7 +2144,7 @@ export function App() {
                 <div className="field-row">
                   <label>
                     Width mm
-                    <input
+                    <NumericInput
                       aria-label="Page width"
                       type="number"
                       value={project.page.width_mm}
@@ -2107,7 +2161,7 @@ export function App() {
                   </label>
                   <label>
                     Height mm
-                    <input
+                    <NumericInput
                       aria-label="Page height"
                       type="number"
                       value={project.page.height_mm}
@@ -2125,7 +2179,7 @@ export function App() {
                 </div>
                 <label>
                   Safe margin mm
-                  <input
+                  <NumericInput
                     aria-label="Safe margin"
                     type="number"
                     value={project.page.margin_mm}
@@ -2222,7 +2276,7 @@ export function App() {
                     <div className="field-row">
                       <label>
                         Hatch spacing
-                        <input
+                        <NumericInput
                           aria-label="Hatch spacing"
                           type="number"
                           min="0.1"
@@ -2241,7 +2295,7 @@ export function App() {
                       </label>
                       <label>
                         Hatch angle
-                        <input
+                        <NumericInput
                           aria-label="Hatch angle"
                           type="number"
                           value={project.svg_import.hatch_angle_degrees}
@@ -2374,9 +2428,11 @@ export function App() {
                   )}
                   {project.mode.mode_id === "import.raster" ? (
                     <div className="action-row">
-                      <button type="button" disabled={busy} onClick={() => void preprocessRaster()}>
-                        {operation === "generating" ? "Working…" : "Preview raster preprocessing"}
-                      </button>
+                      <span className="field-help" role="status">
+                        {previewUpdating
+                          ? "Updating preprocessing preview…"
+                          : "Preprocessing preview updates automatically"}
+                      </span>
                       <button
                         className="primary-button"
                         type="button"
@@ -2719,7 +2775,7 @@ export function App() {
                         </label>
                         <label>
                           Draw feed
-                          <input
+                          <NumericInput
                             aria-label={`${plotPass.name} draw feed`}
                             type="number"
                             value={plotPass.draw_feed_mm_min}
@@ -2799,7 +2855,7 @@ export function App() {
                   <div className="field-row">
                     <label>
                       Work width
-                      <input
+                      <NumericInput
                         aria-label="Work width"
                         type="number"
                         value={profile.work_width_mm}
@@ -2810,7 +2866,7 @@ export function App() {
                     </label>
                     <label>
                       Work height
-                      <input
+                      <NumericInput
                         aria-label="Work height"
                         type="number"
                         value={profile.work_height_mm}
@@ -2823,7 +2879,7 @@ export function App() {
                   <div className="field-row">
                     <label>
                       Z up
-                      <input
+                      <NumericInput
                         aria-label="Z up"
                         type="number"
                         value={profile.pen_actuator.up_mm}
@@ -2840,7 +2896,7 @@ export function App() {
                     </label>
                     <label>
                       Z down
-                      <input
+                      <NumericInput
                         aria-label="Z down"
                         type="number"
                         value={profile.pen_actuator.down_mm}
@@ -2859,7 +2915,7 @@ export function App() {
                   <div className="field-row">
                     <label>
                       Travel feed
-                      <input
+                      <NumericInput
                         aria-label="Travel feed"
                         type="number"
                         value={profile.motion.travel_feed_mm_min}
@@ -2876,7 +2932,7 @@ export function App() {
                     </label>
                     <label>
                       Precision
-                      <input
+                      <NumericInput
                         aria-label="Precision"
                         type="number"
                         value={profile.precision_decimals}

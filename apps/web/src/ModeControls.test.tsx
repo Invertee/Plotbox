@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -155,23 +155,21 @@ const settings: ProjectRecipe["mode"] = {
 
 afterEach(cleanup);
 
-it("renders common mode fields and emits typed changes", async () => {
+it("renders common mode fields and emits typed changes", () => {
   const onChange = vi.fn<(settings: ProjectRecipe["mode"]) => void>();
-  const user = userEvent.setup();
   render(<GeneratedModeControls manifest={manifest} settings={settings} onChange={onChange} />);
 
   expect(screen.getByLabelText("Seed")).toHaveValue("alpha");
-  expect(screen.getByLabelText("Density")).toHaveValue(1);
-  expect(screen.getByLabelText("Count")).toHaveValue(2);
+  expect(screen.getByLabelText("Density")).toHaveValue("1");
+  expect(screen.getByLabelText("Count")).toHaveValue("2");
   expect(screen.getByLabelText("Enabled")).toBeChecked();
   expect(screen.getByLabelText("Family")).toHaveValue("a");
   expect(screen.getByLabelText("Color")).toHaveValue("#112233");
   expect(screen.getByLabelText("Role")).toHaveValue("accent");
-  expect(screen.getByLabelText("Band minimum")).toHaveValue(1);
-  expect(screen.getByLabelText("Band maximum")).toHaveValue(3);
+  expect(screen.getByLabelText("Band minimum")).toHaveValue("1");
+  expect(screen.getByLabelText("Band maximum")).toHaveValue("3");
 
-  await user.clear(screen.getByLabelText("Density"));
-  await user.type(screen.getByLabelText("Density"), "1.5");
+  fireEvent.change(screen.getByRole("slider", { name: "Density" }), { target: { value: "1.5" } });
   expect(onChange.mock.lastCall?.[0].parameters.density).toBe(1.5);
 });
 

@@ -1,3 +1,4 @@
+import { NumericInput } from "./NumericInput";
 import type {
   ModeManifest,
   ModeParameterDefinition,
@@ -64,7 +65,8 @@ export function GeneratedModeControls({
     if (definition.kind === "boolean") {
       return (
         <label className="checkbox-row" key={definition.key}>
-          <input
+          <NumericInput
+            title={definition.description || undefined}
             aria-label={definition.label}
             aria-describedby={describedBy}
             type="checkbox"
@@ -80,6 +82,7 @@ export function GeneratedModeControls({
         <label key={definition.key}>
           {definition.label}
           <select
+            title={definition.description || undefined}
             aria-label={definition.label}
             aria-describedby={describedBy}
             value={String(value)}
@@ -108,7 +111,8 @@ export function GeneratedModeControls({
             {[0, 1].map((index) => (
               <label key={index}>
                 {index === 0 ? "Minimum" : "Maximum"}
-                <input
+                <NumericInput
+                  title={definition.description || undefined}
                   aria-label={`${definition.label} ${index === 0 ? "minimum" : "maximum"}`}
                   type="number"
                   min={definition.minimum ?? undefined}
@@ -117,7 +121,10 @@ export function GeneratedModeControls({
                   value={range[index] ?? 0}
                   onChange={(event) => {
                     const next = [...range];
-                    next[index] = Number(event.target.value);
+                    next[index] =
+                      index === 0
+                        ? Math.min(Number(event.target.value), range[1] ?? 0)
+                        : Math.max(Number(event.target.value), range[0] ?? 0);
                     update(definition, next);
                   }}
                 />
@@ -130,7 +137,8 @@ export function GeneratedModeControls({
     return (
       <label key={definition.key}>
         {definition.label}
-        <input
+        <NumericInput
+          title={definition.description || undefined}
           aria-label={definition.label}
           aria-describedby={describedBy}
           type={

@@ -134,7 +134,9 @@ test("PNG is preprocessed, vectorized, planned, and reopened", async ({ page }) 
   await page.getByLabel("Raster grayscale channel").selectOption("red");
   await page.getByLabel("Raster threshold mode").selectOption("adaptive");
   await page.getByLabel("Generation quality").selectOption("draft");
-  await page.getByRole("button", { name: "Preview raster preprocessing" }).click();
+  await expect(
+    page.getByText("Preprocessing preview updates automatically", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Raster preprocessing", { exact: true })).toBeVisible();
   await expect(page.getByTestId("raster-preview-stats")).toContainText("mm/px", {
     timeout: 15_000,
@@ -174,7 +176,7 @@ test("two-color poster maps source roles to pens and previews overprint", async 
     .getByLabel("Choose source file")
     .setInputFiles(path.resolve("../../fixtures/raster/two-color-poster.png"));
   await page.getByLabel("Raster vectorization algorithm").selectOption("color-outline");
-  await page.getByLabel("Raster source color count").fill("2");
+  await page.getByRole("slider", { name: "Raster source color count" }).press("Home");
   await page.getByLabel("Generation quality").selectOption("draft");
   await expect(page.getByLabel("Generation quality")).toHaveValue("draft");
   await page.getByRole("button", { name: "Vectorize and plan" }).click();

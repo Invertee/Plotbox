@@ -119,3 +119,20 @@ def test_generator_honors_cancellation_checkpoints() -> None:
             _recipe("builtin.flow-field"),
             cancellation=CancelImmediately(),
         )
+
+
+@pytest.mark.parametrize("preset_id", ["curl-ribbons", "noise", "radial", "vortex"])
+def test_flow_presets_generate_reproducible_plot_paths(preset_id: str) -> None:
+    plugin = get_mode_registry().get("builtin.flow-field")
+    preset = next(item for item in plugin.manifest.presets if item.preset_id == preset_id)
+    recipe = _recipe("builtin.flow-field")
+    recipe.mode = recipe.mode.model_copy(
+        update={"parameters": preset.parameters, "seed": preset.seed}
+    )
+    first = get_mode_registry().generate(recipe)
+    second = get_mode_registry().generate(recipe)
+    assert first.metadata.normalized_sha256 == second.metadata.normalized_sha256
+    assert any(layer.paths for layer in first.layers)
+    for point in _points(recipe):
+        assert recipe.page.safe_min.x <= point.x <= recipe.page.safe_max.x
+        assert recipe.page.safe_min.y <= point.y <= recipe.page.safe_max.y

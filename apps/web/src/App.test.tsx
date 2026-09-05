@@ -1,10 +1,10 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 import { api } from "./api";
-import type { JobState, MachineProfile, ModeManifest, ProjectRecipe } from "./types";
+import type { JobState, MachineProfile, ModeManifest, ProjectRecipe, RasterPreview } from "./types";
 
 const project: ProjectRecipe = {
   schema_version: 1,
@@ -325,6 +325,20 @@ describe("workspace shell", () => {
       assets: [rasterAsset],
       source_asset_id: rasterAsset.asset_id,
     };
+    const job = { job_id: "preview-job", status: "succeeded" } as JobState;
+    vi.spyOn(api, "patchProject").mockResolvedValue(rasterProject);
+    const startPreview = vi.spyOn(api, "startRasterPreprocess").mockResolvedValue(job);
+    vi.spyOn(api, "watchJob").mockResolvedValue(job);
+    vi.spyOn(api, "cancelJob").mockResolvedValue(job);
+    vi.spyOn(api, "getRasterPreview").mockResolvedValue({
+      processed_width_px: 32,
+      processed_height_px: 24,
+      mm_per_pixel_x: 1,
+      mm_per_pixel_y: 1,
+      placement: { x_mm: 10, y_mm: 10, width_mm: 32, height_mm: 24 },
+      preview_png_base64: "",
+      warnings: [],
+    } as unknown as RasterPreview);
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const path =
         typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -356,7 +370,7 @@ describe("workspace shell", () => {
     expect(await screen.findByRole("group", { name: "Raster preprocessing" })).toBeVisible();
     expect(screen.getByText("scan.png")).toBeVisible();
     expect(screen.getByLabelText("Raster fit mode")).toHaveValue("contain");
-    expect(screen.getByLabelText("Raster samples per pen width")).toHaveValue(3);
+    expect(screen.getByLabelText("Raster samples per pen width")).toHaveValue("3");
     expect(screen.getByLabelText("Raster vectorization algorithm")).toHaveValue("edge");
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "squiggle");
     expect(screen.getByLabelText("Raster squiggle wavelength")).toHaveValue(5);
@@ -366,34 +380,68 @@ describe("workspace shell", () => {
     );
     expect(screen.getByLabelText("Circular scribble row spacing")).toHaveValue(1.5);
     expect(screen.getByLabelText("Circular scribble largest loop")).toHaveValue(1);
-    expect(screen.getByLabelText("Circular scribble minimum darkness")).toHaveValue(0.03);
+    expect(screen.getByLabelText("Circular scribble minimum darkness")).toHaveValue("0.03");
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "dither");
     expect(screen.getByLabelText("Dither mark shape")).toHaveValue("dots");
     await user.selectOptions(screen.getByLabelText("Dither mark shape"), "crosses");
     await user.selectOptions(screen.getByLabelText("Dither pass split"), "contrast-bands");
-    expect(screen.getByLabelText("Dither tone passes")).toHaveValue(4);
+    expect(screen.getByLabelText("Dither tone passes")).toHaveValue("4");
     expect(screen.getByLabelText("Dither cross angle")).toBeVisible();
     await user.selectOptions(screen.getByLabelText("Dither mark shape"), "pen-dots");
-    expect(screen.getByLabelText("Dither pen thickness")).toHaveValue(0.5);
-    expect(screen.getByLabelText("Dither dot gap")).toHaveValue(0.5);
+    expect(screen.getByLabelText("Dither pen thickness")).toHaveValue("0.5");
+    expect(screen.getByLabelText("Dither dot gap")).toHaveValue("0.5");
     await user.selectOptions(screen.getByLabelText("Raster vectorization algorithm"), "stipple");
     expect(screen.getByLabelText("Stipple dot layout")).toHaveValue("natural");
     expect(screen.getByLabelText("Stipple colour mode")).toHaveValue("single");
-    expect(screen.getByLabelText("Stipple pen thickness")).toHaveValue(0.5);
+    expect(screen.getByLabelText("Stipple pen thickness")).toHaveValue("0.5");
     await user.selectOptions(screen.getByLabelText("Stipple colour mode"), "separate");
-    expect(screen.getByLabelText("Stipple colour passes")).toHaveValue(2);
+    expect(screen.getByLabelText("Stipple colour passes")).toHaveValue("2");
     await user.selectOptions(
       screen.getByLabelText("Raster vectorization algorithm"),
       "adaptive-stipple",
     );
     expect(screen.getByLabelText("Adaptive stipple colour mode")).toHaveValue("single");
-    expect(screen.getByLabelText("Adaptive stipple local radius")).toHaveValue(5);
-    expect(screen.getByLabelText("Adaptive stipple light density")).toHaveValue(0.35);
-    expect(screen.getByLabelText("Adaptive stipple dark density")).toHaveValue(1);
+    expect(screen.getByLabelText("Adaptive stipple local radius")).toHaveValue("5");
+    expect(screen.getByLabelText("Adaptive stipple light density")).toHaveValue("0.35");
+    expect(screen.getByLabelText("Adaptive stipple dark density")).toHaveValue("1");
     await user.selectOptions(screen.getByLabelText("Adaptive stipple colour mode"), "separate");
-    expect(screen.getByLabelText("Adaptive stipple colour passes")).toHaveValue(2);
-    expect(screen.getByRole("button", { name: "Preview raster preprocessing" })).toBeEnabled();
+    expect(screen.getByLabelText("Adaptive stipple colour passes")).toHaveValue("2");
+    expect(
+      screen.queryByRole("button", { name: "Preview raster preprocessing" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vectorize and plan" })).toBeEnabled();
+    await waitFor(() => expect(startPreview).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("raster-preview-stats")).toHaveTextContent("32"));
+    fireEvent.change(screen.getByRole("slider", { name: "Raster contrast" }), {
+      target: { value: "1.5" },
+    });
+    fireEvent.change(screen.getByRole("slider", { name: "Raster contrast" }), {
+      target: { value: "2" },
+    });
+    await waitFor(() => expect(startPreview).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(api.patchProject).mock.lastCall?.[1]).toMatchObject({
+      raster_preprocess: { contrast: 2 },
+    });
+    await waitFor(() => expect(api.getRasterPreview).toHaveBeenCalledTimes(2));
+    let finishOldJob!: (state: JobState) => void;
+    vi.mocked(api.watchJob).mockImplementationOnce(
+      () =>
+        new Promise<JobState>((resolve) => {
+          finishOldJob = resolve;
+        }),
+    );
+    fireEvent.change(screen.getByRole("slider", { name: "Raster contrast" }), {
+      target: { value: "3" },
+    });
+    await waitFor(() => expect(api.watchJob).toHaveBeenCalledTimes(3));
+    fireEvent.change(screen.getByRole("slider", { name: "Raster contrast" }), {
+      target: { value: "4" },
+    });
+    await waitFor(() => expect(api.cancelJob).toHaveBeenCalledWith("preview-job"));
+    finishOldJob(job);
+    await waitFor(() => expect(startPreview).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(api.getRasterPreview).toHaveBeenCalledTimes(3));
+    expect(screen.getByRole("slider", { name: "Raster contrast" })).toHaveValue("4");
   });
 
   it("switches to focused mapping tools and freezes an explicit OSM snapshot", async () => {
@@ -540,8 +588,8 @@ describe("workspace shell", () => {
         name: "Cambridge, Cambridgeshire, England",
       }),
     );
-    expect(screen.getByLabelText("Map centre latitude")).toHaveValue(52.2053);
-    expect(screen.getByLabelText("Map centre longitude")).toHaveValue(0.1218);
+    expect(screen.getByLabelText("Map centre latitude")).toHaveValue("52.2053");
+    expect(screen.getByLabelText("Map centre longitude")).toHaveValue("0.1218");
     expect(screen.getByText("New search results")).toBeVisible();
     expect(screen.getByText("Map area changed")).toBeVisible();
     expect(screen.getByRole("button", { name: "Download map data first" })).toBeDisabled();

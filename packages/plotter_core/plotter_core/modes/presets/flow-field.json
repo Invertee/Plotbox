@@ -9,6 +9,62 @@
     "description": "Dense curling streamlines with comfortable plot spacing.",
     "parameter_schema_version": 1,
     "seed": "flow-curl-01",
-    "parameters": {"field": "curl", "density": 1.0, "step_mm": 2.0, "spacing_mm": 2.5}
+    "parameters": {
+      "field": "curl",
+      "density": 1.0,
+      "step_mm": 2.0,
+      "spacing_mm": 2.5
+    }
+  },
+  {
+    "schema_version": 1,
+    "preset_id": "noise",
+    "version": 1,
+    "mode_id": "builtin.flow-field",
+    "mode_version": "1.0.0",
+    "name": "Wandering threads",
+    "description": "Organic wandering lines across the page.",
+    "parameter_schema_version": 1,
+    "seed": "flow-noise-01",
+    "parameters": {
+      "field": "noise",
+      "density": 1.0,
+      "step_mm": 2.0,
+      "spacing_mm": 2.5
+    }
+  },
+  {
+    "schema_version": 1,
+    "preset_id": "radial",
+    "version": 1,
+    "mode_id": "builtin.flow-field",
+    "mode_version": "1.0.0",
+    "name": "Sunburst",
+    "description": "Streamlines radiating from the page centre.",
+    "parameter_schema_version": 1,
+    "seed": "flow-radial-01",
+    "parameters": {
+      "field": "radial",
+      "density": 1.0,
+      "step_mm": 2.0,
+      "spacing_mm": 2.5
+    }
+  },
+  {
+    "schema_version": 1,
+    "preset_id": "vortex",
+    "version": 1,
+    "mode_id": "builtin.flow-field",
+    "mode_version": "1.0.0",
+    "name": "Vortex rings",
+    "description": "Circular streamlines orbiting the page centre.",
+    "parameter_schema_version": 1,
+    "seed": "flow-vortex-01",
+    "parameters": {
+      "field": "vortex",
+      "density": 1.0,
+      "step_mm": 2.0,
+      "spacing_mm": 2.5
+    }
   }
 ]

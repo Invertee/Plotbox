@@ -1,3 +1,4 @@
+import { NumericInput } from "../NumericInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Map as MapLibreMap } from "maplibre-gl";
@@ -326,7 +327,7 @@ export function MapControls({
         <div className="field-row">
           <label>
             Latitude
-            <input
+            <NumericInput
               aria-label="Map centre latitude"
               type="number"
               step="0.0001"
@@ -338,7 +339,7 @@ export function MapControls({
           </label>
           <label>
             Longitude
-            <input
+            <NumericInput
               aria-label="Map centre longitude"
               type="number"
               step="0.0001"
@@ -352,7 +353,7 @@ export function MapControls({
         <div className="field-row">
           <label>
             Page rotation
-            <input
+            <NumericInput
               aria-label="Map page rotation"
               type="number"
               min="-180"
@@ -488,7 +489,7 @@ export function MapControls({
         {project.osm.render.road_line_treatment !== "centerline" && (
           <label>
             Physical road width mm
-            <input
+            <NumericInput
               aria-label="Map road width"
               type="number"
               min="0.1"
@@ -532,7 +533,7 @@ export function MapControls({
         <div className="field-row">
           <label>
             Hatch spacing mm
-            <input
+            <NumericInput
               aria-label="Map polygon hatch spacing"
               type="number"
               min="0.1"
@@ -550,7 +551,7 @@ export function MapControls({
           </label>
           <label>
             Hatch angle
-            <input
+            <NumericInput
               aria-label="Map polygon hatch angle"
               type="number"
               value={project.osm.render.polygon_hatch_angle_degrees}

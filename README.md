@@ -64,9 +64,8 @@ removes only the selected project directory, including its local sources, caches
 3. For SVG, select fill treatment (`ignore`, `outline`, `hatch`, or `crosshatch`) and stroke
    treatment (`centerline`, `outline`, or `parallel`).
 4. For raster sources, crop, rotate, fit, scale, choose a grayscale channel, and tune invert,
-   contrast, gamma, blur, sharpen, global/adaptive threshold, and morphology settings. Preview the
-   preprocessing result, then choose and tune a raster vectorization algorithm.
-5. Choose draft, standard, or export quality and start generation, preprocessing, or vectorization.
+   contrast, gamma, blur, sharpen, global/adaptive threshold, and morphology settings. The preprocessing preview updates automatically as settings change. Choose and tune a raster vectorization algorithm.
+5. Choose draft, standard, or export quality and start generation or vectorization.
    Progress is streamed from the local service; Cancel stops work at the next cooperative
    checkpoint.
 6. Inspect the source overlay, physical raster sampling readout, or vector design/import warnings.
@@ -281,3 +280,13 @@ It still has no serial/Telnet transport, arbitrary command console, work-zero ed
 pen-position mode, firmware configuration writer, unattended plotting, or hardware job recovery.
 See [AGENTS.md](AGENTS.md), [architecture decisions](docs/DECISIONS.md), and the
 [dithered-halftone ExecPlan](docs/exec-plans/0010-raster-dithered-halftone.md).
+
+## Flow Field generator
+
+Choose **Artwork → Flow Field** for seeded generative streamlines. Start with Curl ribbons,
+Wandering threads, Sunburst, or Vortex rings, then drag density, integration step, and collision
+spacing to tune the drawing. Hover or focus a slider for help. Use **Regenerate seed** for a new
+composition and **Generate design** to create plot-ready paths for the normal pen and export workflow.
+
+Release 0.3.2 adds slider controls and automatic raster preprocessing previews. Production frontend
+assets use Vite content hashes so updated JavaScript and CSS receive new cache URLs.

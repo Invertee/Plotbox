@@ -237,6 +237,7 @@ def flow_field_plugin() -> BuiltinModePlugin:
             ModeParameter(
                 key="density",
                 label="Streamline density",
+                description="Increase to seed more streamlines and create a denser drawing.",
                 kind="number",
                 group="composition",
                 default=1.0,
@@ -247,6 +248,10 @@ def flow_field_plugin() -> BuiltinModePlugin:
             ModeParameter(
                 key="step_mm",
                 label="Integration step",
+                description=(
+                    "Distance in millimetres between line samples. "
+                    "Smaller steps make smoother curves."
+                ),
                 kind="number",
                 group="composition",
                 default=2.0,
@@ -258,6 +263,10 @@ def flow_field_plugin() -> BuiltinModePlugin:
             ModeParameter(
                 key="spacing_mm",
                 label="Collision spacing",
+                description=(
+                    "Minimum sampled separation in millimetres "
+                    "before a line stops near another line."
+                ),
                 kind="number",
                 group="composition",
                 default=2.5,
