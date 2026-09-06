@@ -277,6 +277,8 @@ class RasterVectorizeSettings(StrictModel):
     spiral_amplitude_mm: float = Field(default=0.7, ge=0, le=5)
     spiral_wavelength_mm: float = Field(default=8.0, ge=1, le=30)
     spiral_frequency_gain: float = Field(default=4.0, ge=0, le=12)
+    single_line_ink_density: float = Field(default=1.0, ge=0.25, le=2)
+    arc_overlap: float = Field(default=0.7, ge=0, le=1)
     single_line_point_count: int = Field(default=1200, ge=100, le=4000)
     single_line_gamma: float = Field(default=1.0, ge=0.2, le=3)
     single_line_min_darkness: float = Field(default=0.02, ge=0, le=1)

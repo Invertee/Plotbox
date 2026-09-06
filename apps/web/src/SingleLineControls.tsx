@@ -36,12 +36,12 @@ const controls = [
     help: "Increase wave frequency in darker areas to build up shading.",
   },
   {
-    key: "single_line_point_count",
-    label: "Single-line point count",
-    minimum: 100,
-    maximum: 4000,
-    step: 100,
-    help: "Number of image-weighted route points. More points improve detail and take longer to optimize.",
+    key: "single_line_ink_density",
+    label: "Single-line ink density",
+    minimum: 0.25,
+    maximum: 2,
+    step: 0.05,
+    help: "At 1, line density follows image tone and the selected pen width. Increase to deepen shadows; decrease for a lighter drawing.",
   },
   {
     key: "single_line_gamma",
@@ -57,7 +57,7 @@ const controls = [
     minimum: 0,
     maximum: 1,
     step: 0.01,
-    help: "Ignore route points in areas lighter than this darkness threshold.",
+    help: "Leave areas lighter than this threshold unshaded. The continuous line may still pass through them.",
   },
   {
     key: "single_line_edge_bias",
@@ -65,7 +65,7 @@ const controls = [
     minimum: 0,
     maximum: 2,
     step: 0.1,
-    help: "Place extra route points near changes in tone to preserve image features.",
+    help: "Use smaller routing regions around tonal edges to preserve facial features and fine detail.",
   },
   {
     key: "arc_min_radius_mm",
@@ -73,7 +73,7 @@ const controls = [
     minimum: 0.1,
     maximum: 5,
     step: 0.1,
-    help: "Radius of the smaller, tighter loops used in dark areas, in millimetres.",
+    help: "Radius of shadow loops in millimetres. Very small loops are enlarged to suit the selected pen width.",
   },
   {
     key: "arc_max_radius_mm",
@@ -81,15 +81,15 @@ const controls = [
     minimum: 0.1,
     maximum: 12,
     step: 0.1,
-    help: "Radius of the larger overlapping loops used in light areas, in millimetres.",
+    help: "Largest radius of lighter loops in millimetres. Lower this to preserve small features; loops fade out in highlights.",
   },
   {
-    key: "arc_loop_spacing_mm",
-    label: "Arc loop spacing",
-    minimum: 0.5,
-    maximum: 12,
-    step: 0.1,
-    help: "Travel per loop in light areas. Dark areas use one tenth of this spacing for tighter shading.",
+    key: "arc_overlap",
+    label: "Arc overlap",
+    minimum: 0,
+    maximum: 1,
+    step: 0.05,
+    help: "Higher values pack loops closer together so shadows can become nearly solid. Density also adapts to image tone and pen width.",
   },
   {
     key: "tsp_smoothing",
@@ -116,8 +116,8 @@ export function SingleLineControls({
         {spiral
           ? "One spiral grows from the centre. Darker areas create stronger, faster waves. The image is fitted inside a circular drawing."
           : arcs
-            ? "One image-guided line creates overlapping loops. Dark regions use smaller, more tightly packed arcs."
-            : "One continuous route visits tone-weighted points. Crossings are removed before optional corner rounding."}
+            ? "One continuous line fills the image with overlapping arcs. Shadow coverage follows image tone and pen width, with smaller loops in dark areas."
+            : "One continuous, non-crossing route uses closely spaced marks in shadows and wider spacing in highlights. Optional smoothing rounds the corners."}
       </p>
       {controls
         .filter(
@@ -152,7 +152,7 @@ export function SingleLineControls({
         plan.
         {spiral
           ? " Increase turn spacing if the drawing is too dense."
-          : " Higher point counts take longer to optimize."}
+          : " Set the pen width to match your actual pen. Dense drawings automatically reduce fine detail if needed to finish the whole image."}
       </p>
     </div>
   );

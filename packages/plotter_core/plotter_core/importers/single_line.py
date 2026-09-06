@@ -1,4 +1,4 @@
-"""Version 1.0.0 — bounded, deterministic continuous-line raster styles.
+"""Version 2.0.0 — bounded, deterministic continuous-line raster styles.
 
 The arc scribble is an original implementation inspired by the virtual-path and
 tone-controlled loops described by Chiu et al. (2015), not a port of their code.
@@ -7,12 +7,13 @@ tone-controlled loops described by Chiu et al. (2015), not a port of their code.
 from __future__ import annotations
 
 import math
-import random
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 
 from PIL import Image
 
+from plotter_core.importers.raster import effective_pen_width_mm
+from plotter_core.importers.tonal_route import DensityMap, build_tonal_route
 from plotter_core.models import ProjectRecipe, RasterPlacement
 
 XY = tuple[float, float]
@@ -87,45 +88,6 @@ def spiral_wave(
     return points
 
 
-def _sites(tone: Tone, recipe: ProjectRecipe, inset: float, callback: Progress) -> list[XY]:
-    settings, p = recipe.raster_vectorize, tone.placement
-    width, height = p.width_mm - 2 * inset, p.height_mm - 2 * inset
-    if min(width, height) <= 0:
-        raise ValueError("Maximum loop size is too large for this image placement.")
-    count = settings.single_line_point_count
-    rng = random.Random(f"single-line-v1/{recipe.mode.seed}")
-    # Poisson-style rejection keeps distinct sites far above export rounding precision.
-    gap = max(0.02, math.sqrt(width * height / count) * 0.18)
-    buckets: dict[tuple[int, int], list[XY]] = defaultdict(list)
-    points: list[XY] = []
-    for attempt in range(count * 80):
-        if len(points) >= count:
-            break
-        if attempt % 256 == 0:
-            _progress(callback, "tone-weighted-points", attempt, count * 80)
-        x, y = p.x_mm + inset + rng.random() * width, p.y_mm + inset + rng.random() * height
-        dark = tone(x, y)
-        if dark < settings.single_line_min_darkness:
-            continue
-        edge = abs(tone(x + gap, y) - tone(x - gap, y))
-        edge += abs(tone(x, y + gap) - tone(x, y - gap))
-        weight = min(1.0, dark + settings.single_line_edge_bias * edge)
-        if rng.random() > weight:
-            continue
-        cell = (int(x / gap), int(y / gap))
-        neighbours = (
-            point
-            for ix in range(cell[0] - 1, cell[0] + 2)
-            for iy in range(cell[1] - 1, cell[1] + 2)
-            for point in buckets[(ix, iy)]
-        )
-        if any(math.dist((x, y), point) < gap for point in neighbours):
-            continue
-        points.append((x, y))
-        buckets[cell].append((x, y))
-    return points
-
-
 def _orientation(a: XY, b: XY, c: XY) -> float:
     return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
 
@@ -176,30 +138,6 @@ def crossing_pair(points: Sequence[XY], callback: Progress = None) -> tuple[int,
     return None
 
 
-def _tour(points: list[XY], callback: Progress) -> list[XY]:
-    if len(points) < 3:
-        return points
-    remaining = set(range(1, len(points)))
-    route = [0]
-    while remaining:
-        if len(route) % 32 == 0:
-            _progress(callback, "building-travelling-salesman-route", len(route), len(points))
-        last = points[route[-1]]
-        nearest = min(remaining, key=lambda i: (math.dist(last, points[i]), i))
-        route.append(nearest)
-        remaining.remove(nearest)
-    ordered = [points[i] for i in route]
-    # Each reversal shortens a crossed Euclidean tour. Never return a crossing on budget expiry.
-    for swap in range(len(points) * 8):
-        _progress(callback, "uncrossing-travelling-salesman-route", swap, len(points) * 8)
-        crossing = crossing_pair([*ordered, ordered[0]], callback)
-        if crossing is None:
-            return ordered
-        a, b = crossing
-        ordered[a + 1 : b + 1] = reversed(ordered[a + 1 : b + 1])
-    raise ValueError("Route optimization limit reached. Reduce single-line point count and retry.")
-
-
 def _segment_distance(point: XY, a: XY, b: XY) -> float:
     dx, dy = b[0] - a[0], b[1] - a[1]
     denominator = dx * dx + dy * dy
@@ -209,10 +147,11 @@ def _segment_distance(point: XY, a: XY, b: XY) -> float:
     return math.dist(point, (a[0] + t * dx, a[1] + t * dy))
 
 
-def _rounded_tour(points: list[XY], amount: float, callback: Progress) -> list[XY]:
-    closed = [*points, points[0]]
+def _rounded_route(
+    points: list[XY], amount: float, callback: Progress, budget: int = MAX_VERTICES
+) -> list[XY]:
     if amount <= 0 or len(points) < 3:
-        return closed
+        return points
     span = max(
         max(p[0] for p in points) - min(p[0] for p in points),
         max(p[1] for p in points) - min(p[1] for p in points),
@@ -232,14 +171,16 @@ def _rounded_tour(points: list[XY], amount: float, callback: Progress) -> list[X
             )
         ]
 
-    for i in range(len(points)):
-        for cell in cells(closed[i], closed[i + 1]):
+    for i in range(len(points) - 1):
+        for cell in cells(points[i], points[i + 1]):
             grid[cell].add(i)
-    rounded: list[XY] = []
-    for i, b in enumerate(points):
+    rounded: list[XY] = [points[0]]
+    samples = max(2, min(7, (budget - 2) // len(points)))
+    for i in range(1, len(points) - 1):
+        b = points[i]
         if i % 128 == 0:
             _progress(callback, "rounding-travelling-salesman-corners", i, len(points))
-        a, c = points[i - 1], points[(i + 1) % len(points)]
+        a, c = points[i - 1], points[i + 1]
         before, after = math.dist(a, b), math.dist(b, c)
         radius = min(before, after) * amount
         nearby = {
@@ -252,66 +193,188 @@ def _rounded_tour(points: list[XY], amount: float, callback: Progress) -> list[X
         }
         # Keep the curve inside a local disk clear of every nonincident edge.
         # Clearance disks are also disjoint, so rounding nearby corners cannot cross.
-        for edge in nearby - {i, (i - 1) % len(points)}:
-            radius = min(radius, 0.4 * _segment_distance(b, closed[edge], closed[edge + 1]))
+        for edge in nearby - {i, i - 1}:
+            radius = min(radius, 0.4 * _segment_distance(b, points[edge], points[edge + 1]))
         if radius <= 1e-8:
             rounded.append(b)
             continue
         entry = (b[0] + (a[0] - b[0]) * radius / before, b[1] + (a[1] - b[1]) * radius / before)
         leave = (b[0] + (c[0] - b[0]) * radius / after, b[1] + (c[1] - b[1]) * radius / after)
-        for sample in range(7):
-            t = sample / 6
+        for sample in range(samples):
+            t = sample / (samples - 1)
             rounded.append(
                 (
                     (1 - t) ** 2 * entry[0] + 2 * (1 - t) * t * b[0] + t * t * leave[0],
                     (1 - t) ** 2 * entry[1] + 2 * (1 - t) * t * b[1] + t * t * leave[1],
                 )
             )
-    rounded.append(rounded[0])
+    rounded.append(points[-1])
     # Retain an explicit final check as protection against floating-point degeneracy.
-    return rounded if crossing_pair(rounded, callback) is None else closed
+    return rounded if crossing_pair(rounded, callback) is None else points
+
+
+def _arc_geometry(
+    darkness: float, recipe: ProjectRecipe, pen_width: float
+) -> tuple[float, float, float]:
+    settings = recipe.raster_vectorize
+    if darkness <= settings.single_line_min_darkness:
+        return 0.0, pen_width, pen_width
+    minimum = max(settings.arc_min_radius_mm, pen_width * 1.2)
+    maximum = max(minimum, settings.arc_max_radius_mm)
+    # Loops fade out in highlights; white connectors do not acquire thick circular sleeves.
+    fade = min(1.0, darkness / 0.22)
+    radius = (minimum + (maximum - minimum) * (1 - darkness)) * fade
+    # Sub-pen loop advances redraw the same ink. Bound overlap in physical units instead.
+    pitch = max(pen_width, radius * (2.6 - settings.arc_overlap))
+    length_factor = math.sqrt(1 + (math.tau * radius / pitch) ** 2)
+    ink_width = min(2 * radius + pen_width, pen_width * length_factor)
+    return radius, pitch, max(pen_width, ink_width)
+
+
+class _CurveBudgetReached(Exception):
+    pass
 
 
 def _arc_scribble(
-    route: list[XY], tone: Tone, recipe: ProjectRecipe, callback: Progress
+    route: list[XY],
+    tone: Tone,
+    recipe: ProjectRecipe,
+    pen_width: float,
+    callback: Progress,
 ) -> list[XY]:
-    settings = recipe.raster_vectorize
-    samples = {"draft": 12, "standard": 20, "export": 28}[recipe.mode.quality]
+    settings, placement = recipe.raster_vectorize, tone.placement
+    tolerance = pen_width * {"draft": 0.14, "standard": 0.08, "export": 0.04}[recipe.mode.quality]
     points: list[XY] = []
     phase = 0.0
-    for i, a in enumerate(route):
-        b = route[(i + 1) % len(route)]
+    for i in range(len(route) - 1):
+        a, b = route[i], route[i + 1]
         length = math.dist(a, b)
         travelled = 0.0
         while travelled < length:
             t = travelled / length
             x, y = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
             dark = tone(x, y)
-            radius = settings.arc_min_radius_mm + (
-                settings.arc_max_radius_mm - settings.arc_min_radius_mm
-            ) * (1 - dark)
-            advance = settings.arc_loop_spacing_mm * (1 - 0.9 * dark)
-            step = min(length - travelled, advance / samples)
-            phase += math.tau * step / advance
-            _append(points, (x + radius * math.cos(phase), y + radius * math.sin(phase)))
+            dark = (
+                0.0
+                if dark <= settings.single_line_min_darkness
+                else min(1.0, dark * settings.single_line_ink_density)
+            )
+            radius, pitch, _ = _arc_geometry(dark, recipe, pen_width)
+            clearance = max(
+                0.0,
+                min(
+                    x - placement.x_mm,
+                    y - placement.y_mm,
+                    placement.x_mm + placement.width_mm - x,
+                    placement.y_mm + placement.height_mm - y,
+                ),
+            )
+            radius = min(radius, clearance)
+            point = (x + radius * math.cos(phase), y + radius * math.sin(phase))
+            if not points or math.dist(points[-1], point) > 1e-8:
+                if len(points) >= MAX_VERTICES - 1:
+                    raise _CurveBudgetReached
+                points.append(point)
+            angle = min(
+                math.pi / 3, 2 * math.acos(max(-1.0, 1 - tolerance / max(radius, tolerance)))
+            )
+            step = min(
+                length - travelled,
+                pitch * angle / math.tau if radius > pen_width * 0.1 else max(pen_width, 0.5),
+            )
+            phase += math.tau * step / pitch
             travelled += step
             if len(points) % 512 == 0:
-                _progress(callback, "drawing-overlapping-arcs", i, len(route))
+                _progress(callback, "filling-tonal-arcs", i, len(route) - 1)
+    if route:
+        points.append(route[-1])
     return points
 
 
+def _drawing_pen_width(recipe: ProjectRecipe) -> float:
+    """Use the same layer selection as the planner, ignoring unrelated colour passes."""
+    layer_id = f"layer-raster-{recipe.raster_vectorize.algorithm}"
+    pens = {pen.pen_id: pen.tip_width_mm for pen in recipe.pen_palette}
+    widths = [
+        pens[plot_pass.pen_profile_id]
+        for plot_pass in recipe.passes
+        if plot_pass.enabled
+        and plot_pass.pen_profile_id in pens
+        and (
+            layer_id in plot_pass.source_layer_ids
+            if plot_pass.source_layer_ids
+            else plot_pass.semantic_role == "structure"
+        )
+    ]
+    return min(widths) if widths else effective_pen_width_mm(recipe)
+
+
 def single_line_paths(
-    image: Image.Image, recipe: ProjectRecipe, placement: RasterPlacement, callback: Progress = None
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    placement: RasterPlacement,
+    callback: Progress = None,
+    *,
+    warnings: list[str] | None = None,
 ) -> list[list[XY]]:
     settings = recipe.raster_vectorize
     if settings.algorithm == "spiral-wave":
         return [spiral_wave(image, recipe, placement, callback)]
+    pen_width = _drawing_pen_width(recipe)
     tone = Tone(image, placement, settings.single_line_gamma)
-    inset = settings.arc_max_radius_mm if settings.algorithm == "arc-scribble" else 0.02
-    sites = _sites(tone, recipe, inset, callback)
-    if len(sites) < 3:
-        return []
-    route = _tour(sites, callback)
-    if settings.algorithm == "arc-scribble":
-        return [_arc_scribble(route, tone, recipe, callback)]
-    return [_rounded_tour(route, settings.tsp_smoothing * 0.4, callback)]
+    arcs = settings.algorithm == "arc-scribble"
+    detail_scale = 1.0
+    adjusted = False
+
+    def coverage(value: int) -> float:
+        dark = (1 - value / 255) ** settings.single_line_gamma
+        return (
+            0.0
+            if dark <= settings.single_line_min_darkness
+            else min(1.0, dark * settings.single_line_ink_density)
+        )
+
+    while True:
+        drawing_width = pen_width * detail_scale
+
+        def ink_width(dark: float, width_mm: float = drawing_width) -> float:
+            width = _arc_geometry(dark, recipe, width_mm)[2] if arcs else width_mm
+            # Raster coverage calibration: compensate for joins and repeated ink in
+            # loops, with extra density near black to close the remaining paper gaps.
+            return width * (0.68 if arcs else 0.8) * (1 - 0.16 * dark**4)
+
+        field = DensityMap(image, placement, coverage, ink_width)
+        point_budget = (
+            MAX_VERTICES // 2 if arcs or settings.tsp_smoothing > 0 else int(MAX_VERTICES * 0.9)
+        )
+        route, limited = build_tonal_route(
+            field,
+            pen_width,
+            recipe.mode.seed,
+            1 + settings.single_line_edge_bias,
+            point_budget,
+            callback,
+        )
+        adjusted = adjusted or limited
+        if not route:
+            return []
+        if not arcs:
+            adjusted = adjusted or (settings.tsp_smoothing > 0 and len(route) * 7 > MAX_VERTICES)
+            result = _rounded_route(route, settings.tsp_smoothing * 0.4, callback, MAX_VERTICES)
+            break
+        try:
+            result = _arc_scribble(route, tone, recipe, drawing_width, callback)
+            break
+        except _CurveBudgetReached:
+            # Rebuild the whole image with wider, less redundant curves. Tone remains
+            # absolute and the complete image is covered on every successful attempt.
+            detail_scale *= 1.5
+            adjusted = True
+            _progress(callback, "adapting-curve-detail", 0, 1)
+    if adjusted and warnings is not None:
+        warnings.append(
+            "Detail was reduced to finish the complete image within the output budget; "
+            "shading may be lighter. "
+            "A wider pen or smaller image placement allows finer tonal detail."
+        )
+    return [result]

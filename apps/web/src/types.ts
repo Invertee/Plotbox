@@ -238,6 +238,8 @@ export interface ProjectRecipe {
     spiral_amplitude_mm: number;
     spiral_wavelength_mm: number;
     spiral_frequency_gain: number;
+    single_line_ink_density: number;
+    arc_overlap: number;
     single_line_point_count: number;
     single_line_gamma: number;
     single_line_min_darkness: number;

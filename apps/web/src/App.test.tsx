@@ -85,6 +85,8 @@ const project: ProjectRecipe = {
     spiral_amplitude_mm: 0.7,
     spiral_wavelength_mm: 8.0,
     spiral_frequency_gain: 4.0,
+    single_line_ink_density: 1,
+    arc_overlap: 0.7,
     single_line_point_count: 1200,
     single_line_gamma: 1.0,
     single_line_min_darkness: 0.02,
@@ -402,13 +404,17 @@ describe("workspace shell", () => {
     fireEvent.change(spiralSpacing, { target: { value: "2.4" } });
     expect(spiralSpacing).toHaveValue("2.4");
     expect(
-      screen.queryByRole("slider", { name: "Single-line point count" }),
+      screen.queryByRole("slider", { name: "Single-line ink density" }),
     ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Raster minimum segment length")).toBeDisabled();
     await user.selectOptions(
       screen.getByLabelText("Raster vectorization algorithm"),
       "arc-scribble",
     );
+    expect(screen.getByRole("slider", { name: "Single-line ink density" })).toHaveValue("1");
+    const overlap = screen.getByRole("slider", { name: "Arc overlap" });
+    fireEvent.change(overlap, { target: { value: "1" } });
+    expect(overlap).toHaveValue("1");
     expect(screen.getByRole("slider", { name: "Arc dark radius" })).toHaveValue("0.4");
     expect(screen.getByRole("slider", { name: "Arc dark radius" })).toHaveAttribute("max", "3");
     await user.selectOptions(

@@ -303,15 +303,19 @@ SVG, and validated G-code workflow.
 | Style | Drawing | Main controls |
 | --- | --- | --- |
 | Single-line spiral waves | A centre-outward spiral with stronger, faster waves over dark areas | Turn spacing, wave height, wavelength, dark frequency, tone gamma |
-| Single-line overlapping arcs | An image-guided route decorated with overlapping loops, smaller and tighter in shadows | Point count, edge detail, tone gamma, dark/light radius, loop spacing |
-| Single-line travelling salesman | A tone-weighted point tour with intersections removed, optionally rounded | Point count, edge detail, tone gamma, minimum darkness, corner smoothing |
+| Single-line overlapping arcs | An image-guided route decorated with overlapping loops, smaller and tighter in shadows | Ink density, edge detail, tone gamma, dark/light radius, overlap |
+| Single-line travelling salesman | A tone-weighted point tour with intersections removed, optionally rounded | Ink density, edge detail, tone gamma, minimum darkness, corner smoothing |
 
 The spiral uses the largest circle inside the fitted image, so rectangular image corners are omitted.
 Wave height is limited to 45% of turn spacing. Increasing frequency adds shadow density; preprocessing
 contrast and gamma are useful for portraits. Spiral quality controls the samples per wave.
 
-The route modes use deterministic, tone-weighted point placement and nearest-neighbour routing with
-2-opt crossing removal. The travelling-salesman mode is a heuristic, not an exact shortest-tour solver.
+Since v0.3.5, route density is derived from absolute image darkness, gamma, physical placement and
+the selected pen width. Ink density 1 targets the source tones; values above 1 darken the drawing.
+Dark images receive more ink than light images instead of sharing a fixed point count. Stratified
+sites in adaptive image tiles avoid random clumps, while local TSP tours with 2-opt shortening
+join through neighbouring tile portals into one open line. This is a hierarchical heuristic; it
+does not solve a global shortest tour. The open endpoints avoid a closing diagonal across the image.
 Corner smoothing uses sampled quadratic curves and is reduced if it would create a centreline
 intersection. Closely spaced strokes can still touch when drawn with a thick physical pen.
 
@@ -321,7 +325,12 @@ and the [MarginallyClever reference](https://github.com/MarginallyClever/chiuEtA
 It does not copy that implementation or reproduce every stage of the paper. The existing
 **Circular scribble scanlines** option remains available.
 
-Route points are bounded at 4,000 and continuous output at 400,000 vertices. Exceeding the detail
-budget reports an error rather than silently cutting off the line. Background progress and
-cancellation remain available. Minimum-segment filtering is disabled for these styles to preserve
-continuity; empty sources produce no route. New settings have defaults when older projects are loaded.
+Arc overlap controls loop packing, and tighter shadow loops can fill nearly all the paper. Curve
+sampling follows pen width and quality to avoid redundant tiny segments. Set the pen width to match
+the pen you will use. Very thin pens on large images may need more detail than the 400,000-vertex
+budget allows: the route modes automatically rebuild the complete image at coarser detail and show
+a diagnostic. This can lighten the result; a wider pen or smaller placement retains finer tones.
+Spiral generation is unchanged and still reports an error for excessive wave detail. Background
+progress and cancellation remain available. Minimum-segment filtering is disabled to preserve
+continuity; empty sources produce no route. Older projects load the new controls with defaults;
+legacy point-count and loop-spacing fields remain readable but no longer govern these two modes.

@@ -183,9 +183,10 @@ def _job_work(recipe: ProjectRecipe) -> tuple[str, str, DesignOperation]:
 
         return (
             "import.raster",
-            "1.4.0"
-            if recipe.raster_vectorize.algorithm
-            in {"spiral-wave", "arc-scribble", "travelling-salesman"}
+            "1.5.0"
+            if recipe.raster_vectorize.algorithm in {"arc-scribble", "travelling-salesman"}
+            else "1.4.0"
+            if recipe.raster_vectorize.algorithm == "spiral-wave"
             else "1.3.0"
             if recipe.raster_vectorize.algorithm == "adaptive-stipple"
             else "1.2.0"

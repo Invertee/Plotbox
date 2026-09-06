@@ -1595,6 +1595,7 @@ def vectorize_raster(
     color_results: list[ColorVectorizationResult] | None = None
     dither_results: list[VectorizationResult] | None = None
     color_warnings: list[RasterPreviewWarning] = []
+    single_line_warnings: list[str] = []
     color_stipple = (
         algorithm == "stipple" and recipe.raster_vectorize.stipple_color_mode == "separate"
     ) or (
@@ -1637,7 +1638,9 @@ def vectorize_raster(
             result = _circular_scribble_paths(image, recipe, preview, checkpoint)
         elif algorithm in {"spiral-wave", "arc-scribble", "travelling-salesman"}:
             result = VectorizationResult(
-                paths=single_line_paths(image, recipe, preview.placement, checkpoint)
+                paths=single_line_paths(
+                    image, recipe, preview.placement, checkpoint, warnings=single_line_warnings
+                )
             )
         elif algorithm == "dither":
             dither_results = _dither_paths(image, recipe, preview, checkpoint)
@@ -1662,6 +1665,10 @@ def vectorize_raster(
             ),
         )
     ]
+    diagnostics.extend(
+        DesignDiagnostic(code="single-line-detail-adapted", message=message)
+        for message in single_line_warnings
+    )
     if algorithm == "spiral-wave":
         diagnostics.append(
             DesignDiagnostic(
@@ -1878,6 +1885,8 @@ def vectorize_raster(
                 if algorithm == "circular-scribble"
                 else RASTER_VECTORIZER_VERSION
                 if algorithm in {"color-outline", "color-hatch"}
+                else "2.0.0"
+                if algorithm in {"arc-scribble", "travelling-salesman"}
                 else "1.0.0"
             ),
             seed="",
