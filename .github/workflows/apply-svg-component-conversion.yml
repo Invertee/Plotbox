@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
@@ -14,7 +16,7 @@ concurrency:
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'stage svg component conversion v0.4.0'
+    if: github.event_name == 'schedule' || github.event.head_commit.message == 'stage svg component conversion v0.4.0'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
