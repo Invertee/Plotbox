@@ -1,27 +1,24 @@
 name: apply-svg-component-conversion
 
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: "*/5 * * * *"
+  workflow_run:
+    workflows:
+      - verify
+    types:
+      - completed
 
 permissions:
   contents: write
 
-concurrency:
-  group: apply-svg-component-conversion
-  cancel-in-progress: false
-
 jobs:
   apply-and-verify:
-    if: github.event_name == 'schedule' || github.event.head_commit.message == 'stage svg component conversion v0.4.0'
+    if: github.event.workflow_run.id == 33931895977
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -37,13 +34,13 @@ jobs:
       - run: python -m uv sync --all-extras --locked
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @plotterapp/web exec playwright install --with-deps chromium
-      - name: Apply SVG component conversion
+      - name: Apply prepared SVG component conversion
         run: |
           gzip -dc scripts/apply_svg_component_conversion_v0_4_0.py.gz > /tmp/apply_svg_component_conversion_v0_4_0.py
           python /tmp/apply_svg_component_conversion_v0_4_0.py
           uv run python scripts/export_schemas.py
           git restore --source=HEAD -- plotterapp.egg-info || true
-      - name: Format changed files
+      - name: Format prepared changes
         run: |
           uv run ruff format \
             packages/plotter_core/plotter_core/models.py \
@@ -59,24 +56,14 @@ jobs:
             src/types.ts \
             src/styles.css \
             ../../README.md
-      - name: Verify repository
+      - name: Verify prepared implementation
         run: make verify
-      - name: Commit implementation to main
+      - name: Commit prepared implementation to main
         run: |
-          git add \
-            README.md \
-            apps/web/src/App.tsx \
-            apps/web/src/SvgConversionControls.tsx \
-            apps/web/src/SvgConversionControls.test.tsx \
-            apps/web/src/types.ts \
-            apps/web/src/styles.css \
-            packages/plotter_core/plotter_core/models.py \
-            packages/plotter_core/plotter_core/projects.py \
-            packages/plotter_core/plotter_core/importers/svg.py \
-            packages/plotter_core/tests/test_svg_import.py \
-            packages/schemas \
-            services/api/plotterapp_api/main.py \
-            services/api/tests/test_api.py
+          rm -f scripts/.svg-component-trigger-v0.4.0
+          rm -f scripts/apply_svg_component_conversion_v0_4_0.py.gz
+          rm -f .github/workflows/apply-svg-component-conversion.yml
+          git add -A
           git diff --cached --check
           if git diff --cached --quiet; then
             echo "No SVG component conversion changes were produced"
