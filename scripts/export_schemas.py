@@ -22,10 +22,12 @@ from plotterapp_api.fluidnc import (
     FluidNCActionRequest,
     FluidNCActionResult,
     FluidNCProgramResult,
+    FluidNCProjectRunResult,
     FluidNCSettings,
+    SkewCalibrationRequest,
 )
 from plotterapp_api.fluidnc_tests import FluidNCCommissioningTestRequest
-from plotterapp_api.schemas import SendGcodeRequest
+from plotterapp_api.schemas import SendGcodeRequest, SendProjectToSdRequest
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "packages" / "schemas"
@@ -46,9 +48,12 @@ MODELS = {
     "fluidnc-action-request": FluidNCActionRequest,
     "fluidnc-action-result": FluidNCActionResult,
     "fluidnc-program-result": FluidNCProgramResult,
+    "fluidnc-project-run-result": FluidNCProjectRunResult,
     "axis-calibration-request": AxisCalibrationRequest,
     "axis-calibration-result": AxisCalibrationResult,
+    "skew-calibration-request": SkewCalibrationRequest,
     "send-gcode-request": SendGcodeRequest,
+    "send-project-to-sd-request": SendProjectToSdRequest,
 }
 
 

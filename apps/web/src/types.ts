@@ -171,10 +171,24 @@ export interface ProjectRecipe {
   assets: SourceAsset[];
   source_asset_id: string | null;
   svg_import: {
-    fill_mode: "ignore" | "outline" | "hatch" | "crosshatch";
+    fill_mode: "ignore" | "outline" | "hatch" | "crosshatch" | "dots" | "stipple";
     stroke_mode: "centerline" | "outline" | "parallel";
     hatch_spacing_mm: number;
     hatch_angle_degrees: number;
+    dot_spacing_mm: number;
+    dot_diameter_mm: number;
+    part_effects: Record<
+      string,
+      {
+        fill_mode?: "ignore" | "outline" | "hatch" | "crosshatch" | "dots" | "stipple" | null;
+        stroke_mode?: "centerline" | "outline" | "parallel" | null;
+        hatch_spacing_mm?: number | null;
+        hatch_angle_degrees?: number | null;
+        dot_spacing_mm?: number | null;
+        dot_diameter_mm?: number | null;
+      }
+    >;
+    part_order: string[];
     fit_to_page: boolean;
   };
   raster_preprocess: {
@@ -208,6 +222,7 @@ export interface ProjectRecipe {
       | "centerline"
       | "hatch"
       | "crosshatch"
+      | "adaptive-crosshatch"
       | "squiggle"
       | "circular-scribble"
       | "spiral-wave"
@@ -328,6 +343,9 @@ export interface OsmSnapshotMetadata {
   bounds: OsmBounds;
 }
 
+export type OsmPolygonTreatment =
+  "outline" | "hatch" | "outline-hatch" | "crosshatch" | "stipple" | "ripple";
+
 export interface OsmSettings {
   selection: {
     bounds: OsmBounds;
@@ -340,18 +358,101 @@ export interface OsmSettings {
     water: boolean;
     rail: boolean;
     parks: boolean;
+    road_motorways: boolean;
+    road_primary: boolean;
+    road_secondary: boolean;
+    road_residential: boolean;
+    road_service: boolean;
+    footpaths: boolean;
+    pedestrian_paths: boolean;
+    cycleways: boolean;
+    tracks: boolean;
+    water_areas: boolean;
+    waterways: boolean;
+    coastline: boolean;
+    woodland: boolean;
+    farmland: boolean;
+    meadow: boolean;
+    residential_landuse: boolean;
+    industrial_landuse: boolean;
+    cemetery: boolean;
+    parking: boolean;
+    wetlands: boolean;
+    boundaries: boolean;
+    power_lines: boolean;
+    power_nodes: boolean;
+    aeroway: boolean;
+    maritime: boolean;
+    points_of_interest: boolean;
+    poi_worship: boolean;
+    poi_stations: boolean;
+    poi_peaks: boolean;
+    poi_historic: boolean;
+    poi_castles: boolean;
+    poi_lighthouses: boolean;
+    poi_wind_turbines: boolean;
+    poi_schools: boolean;
+    poi_hospitals: boolean;
+    poi_trees: boolean;
+    poi_monuments: boolean;
   };
   render: {
-    road_line_treatment: "centerline" | "casing" | "parallel";
+    road_line_treatment: "centerline" | "casing" | "parallel" | "classified" | "dashed" | "dotted";
     road_width_mm: number;
-    building_treatment: "outline" | "hatch";
-    water_treatment: "outline" | "hatch";
-    park_treatment: "outline" | "hatch";
+    rail_treatment: "single" | "double" | "sleepers" | "classified";
+    rail_width_mm: number;
+    rail_sleeper_spacing_mm: number;
+    building_treatment: OsmPolygonTreatment;
+    water_treatment: OsmPolygonTreatment;
+    park_treatment: OsmPolygonTreatment;
+    landuse_treatment: OsmPolygonTreatment;
+    boundary_treatment: "solid" | "dashed" | "dotted" | "dash-dot";
     polygon_hatch_spacing_mm: number;
     polygon_hatch_angle_degrees: number;
+    dash_length_mm: number;
+    dash_gap_mm: number;
+    dot_length_mm: number;
+    dot_gap_mm: number;
+    bridge_tick_spacing_mm: number;
+    bridge_tick_width_mm: number;
+    building_shadow_enabled: boolean;
+    building_shadow_offset_mm: number;
+    building_shadow_angle_degrees: number;
+    water_ripple_spacing_mm: number;
+    water_ripple_angle_degrees: number;
     simplification_tolerance_mm: number;
     minimum_feature_mm: number;
   };
+  poi: {
+    symbol_size_mm: number;
+  };
+  detail: {
+    minimum_line_length_mm: number;
+    minimum_polygon_area_mm2: number;
+    minimum_poi_spacing_mm: number;
+    vertex_simplification_tolerance_mm: number;
+    minimum_gap_mm: number;
+  };
+  terrain: {
+    enabled: boolean;
+    provider: "aws-terrarium";
+    contour_interval_m: number;
+    index_contour_every: number;
+    sample_resolution: number;
+    contour_simplification_mm: number;
+    minimum_contour_length_mm: number;
+    elevation_min_m: number | null;
+    elevation_max_m: number | null;
+  };
+  preset_id:
+    | "street"
+    | "figure-ground"
+    | "hydrology"
+    | "topographic"
+    | "rail"
+    | "landscape"
+    | "urban-detail"
+    | null;
   snapshot: OsmSnapshotMetadata | null;
 }
 
@@ -450,6 +551,7 @@ export interface MachineProfile {
   };
   park: { enabled: boolean; x_mm: number; y_mm: number };
   macros: { header: string[]; pause: string; footer: string[] };
+  skew_calibration?: SkewCalibration;
   allowed_commands: string[];
 }
 
@@ -585,12 +687,23 @@ export interface FluidNCSettings {
   schema_version: 1;
   host: string;
   port: number;
+  http_port: number;
   tls: boolean;
   command_timeout_seconds: number;
   safe_z_min_mm: number;
   safe_z_max_mm: number;
   pen_up_z_mm: number;
   pen_down_z_mm: number;
+  skew_calibration: SkewCalibration;
+}
+
+export interface SkewCalibration {
+  enabled: boolean;
+  square_width_mm: number;
+  square_height_mm: number;
+  rising_diagonal_mm: number;
+  falling_diagonal_mm: number;
+  axis_angle_degrees: number;
 }
 
 export type FluidNCAction =
@@ -667,6 +780,27 @@ export interface FluidNCProgramResult {
   accepted_command_count: number;
   response_lines: string[];
   controller_state: string | null;
+}
+
+export interface FluidNCStoredPass {
+  pass_id: string;
+  name: string;
+  priority: number;
+  filename: string;
+  sd_path: string;
+  sha256: string;
+  byte_count: number;
+}
+
+export interface FluidNCProjectRunResult {
+  schema_version: 1;
+  project_id: string;
+  sd_folder: string;
+  passes: FluidNCStoredPass[];
+  run_path: string;
+  success: boolean;
+  response_lines: string[];
+  controller_state?: string | null;
 }
 
 export interface AxisCalibrationResult {

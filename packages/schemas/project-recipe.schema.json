@@ -212,12 +212,109 @@
       "title": "OsmBounds",
       "type": "object"
     },
+    "OsmDetailFiltering": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum_gap_mm": {
+          "default": 0.0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Minimum Gap Mm",
+          "type": "number"
+        },
+        "minimum_line_length_mm": {
+          "default": 0.3,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Minimum Line Length Mm",
+          "type": "number"
+        },
+        "minimum_poi_spacing_mm": {
+          "default": 2.0,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Minimum Poi Spacing Mm",
+          "type": "number"
+        },
+        "minimum_polygon_area_mm2": {
+          "default": 0.5,
+          "maximum": 5000,
+          "minimum": 0,
+          "title": "Minimum Polygon Area Mm2",
+          "type": "number"
+        },
+        "vertex_simplification_tolerance_mm": {
+          "default": 0.08,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Vertex Simplification Tolerance Mm",
+          "type": "number"
+        }
+      },
+      "title": "OsmDetailFiltering",
+      "type": "object"
+    },
     "OsmFeatureToggles": {
       "additionalProperties": false,
       "properties": {
+        "aeroway": {
+          "default": false,
+          "title": "Aeroway",
+          "type": "boolean"
+        },
+        "boundaries": {
+          "default": false,
+          "title": "Boundaries",
+          "type": "boolean"
+        },
         "buildings": {
           "default": true,
           "title": "Buildings",
+          "type": "boolean"
+        },
+        "cemetery": {
+          "default": false,
+          "title": "Cemetery",
+          "type": "boolean"
+        },
+        "coastline": {
+          "default": false,
+          "title": "Coastline",
+          "type": "boolean"
+        },
+        "cycleways": {
+          "default": true,
+          "title": "Cycleways",
+          "type": "boolean"
+        },
+        "farmland": {
+          "default": false,
+          "title": "Farmland",
+          "type": "boolean"
+        },
+        "footpaths": {
+          "default": true,
+          "title": "Footpaths",
+          "type": "boolean"
+        },
+        "industrial_landuse": {
+          "default": false,
+          "title": "Industrial Landuse",
+          "type": "boolean"
+        },
+        "maritime": {
+          "default": false,
+          "title": "Maritime",
+          "type": "boolean"
+        },
+        "meadow": {
+          "default": false,
+          "title": "Meadow",
+          "type": "boolean"
+        },
+        "parking": {
+          "default": false,
+          "title": "Parking",
           "type": "boolean"
         },
         "parks": {
@@ -225,9 +322,114 @@
           "title": "Parks",
           "type": "boolean"
         },
+        "pedestrian_paths": {
+          "default": true,
+          "title": "Pedestrian Paths",
+          "type": "boolean"
+        },
+        "poi_castles": {
+          "default": false,
+          "title": "Poi Castles",
+          "type": "boolean"
+        },
+        "poi_historic": {
+          "default": false,
+          "title": "Poi Historic",
+          "type": "boolean"
+        },
+        "poi_hospitals": {
+          "default": false,
+          "title": "Poi Hospitals",
+          "type": "boolean"
+        },
+        "poi_lighthouses": {
+          "default": false,
+          "title": "Poi Lighthouses",
+          "type": "boolean"
+        },
+        "poi_monuments": {
+          "default": false,
+          "title": "Poi Monuments",
+          "type": "boolean"
+        },
+        "poi_peaks": {
+          "default": false,
+          "title": "Poi Peaks",
+          "type": "boolean"
+        },
+        "poi_schools": {
+          "default": false,
+          "title": "Poi Schools",
+          "type": "boolean"
+        },
+        "poi_stations": {
+          "default": false,
+          "title": "Poi Stations",
+          "type": "boolean"
+        },
+        "poi_trees": {
+          "default": false,
+          "title": "Poi Trees",
+          "type": "boolean"
+        },
+        "poi_wind_turbines": {
+          "default": false,
+          "title": "Poi Wind Turbines",
+          "type": "boolean"
+        },
+        "poi_worship": {
+          "default": false,
+          "title": "Poi Worship",
+          "type": "boolean"
+        },
+        "points_of_interest": {
+          "default": false,
+          "title": "Points Of Interest",
+          "type": "boolean"
+        },
+        "power_lines": {
+          "default": false,
+          "title": "Power Lines",
+          "type": "boolean"
+        },
+        "power_nodes": {
+          "default": false,
+          "title": "Power Nodes",
+          "type": "boolean"
+        },
         "rail": {
           "default": true,
           "title": "Rail",
+          "type": "boolean"
+        },
+        "residential_landuse": {
+          "default": false,
+          "title": "Residential Landuse",
+          "type": "boolean"
+        },
+        "road_motorways": {
+          "default": true,
+          "title": "Road Motorways",
+          "type": "boolean"
+        },
+        "road_primary": {
+          "default": true,
+          "title": "Road Primary",
+          "type": "boolean"
+        },
+        "road_residential": {
+          "default": true,
+          "title": "Road Residential",
+          "type": "boolean"
+        },
+        "road_secondary": {
+          "default": true,
+          "title": "Road Secondary",
+          "type": "boolean"
+        },
+        "road_service": {
+          "default": true,
+          "title": "Road Service",
           "type": "boolean"
         },
         "roads": {
@@ -235,25 +437,153 @@
           "title": "Roads",
           "type": "boolean"
         },
+        "tracks": {
+          "default": true,
+          "title": "Tracks",
+          "type": "boolean"
+        },
         "water": {
           "default": true,
           "title": "Water",
+          "type": "boolean"
+        },
+        "water_areas": {
+          "default": true,
+          "title": "Water Areas",
+          "type": "boolean"
+        },
+        "waterways": {
+          "default": true,
+          "title": "Waterways",
+          "type": "boolean"
+        },
+        "wetlands": {
+          "default": false,
+          "title": "Wetlands",
+          "type": "boolean"
+        },
+        "woodland": {
+          "default": false,
+          "title": "Woodland",
           "type": "boolean"
         }
       },
       "title": "OsmFeatureToggles",
       "type": "object"
     },
+    "OsmPoiSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "symbol_size_mm": {
+          "default": 2.0,
+          "maximum": 10,
+          "minimum": 0.5,
+          "title": "Symbol Size Mm",
+          "type": "number"
+        }
+      },
+      "title": "OsmPoiSettings",
+      "type": "object"
+    },
     "OsmRenderRules": {
       "additionalProperties": false,
       "properties": {
+        "boundary_treatment": {
+          "default": "dashed",
+          "enum": [
+            "solid",
+            "dashed",
+            "dotted",
+            "dash-dot"
+          ],
+          "title": "Boundary Treatment",
+          "type": "string"
+        },
+        "bridge_tick_spacing_mm": {
+          "default": 3.0,
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "title": "Bridge Tick Spacing Mm",
+          "type": "number"
+        },
+        "bridge_tick_width_mm": {
+          "default": 1.2,
+          "exclusiveMinimum": 0,
+          "maximum": 10,
+          "title": "Bridge Tick Width Mm",
+          "type": "number"
+        },
+        "building_shadow_angle_degrees": {
+          "default": 45,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Building Shadow Angle Degrees",
+          "type": "number"
+        },
+        "building_shadow_enabled": {
+          "default": false,
+          "title": "Building Shadow Enabled",
+          "type": "boolean"
+        },
+        "building_shadow_offset_mm": {
+          "default": 1.0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Building Shadow Offset Mm",
+          "type": "number"
+        },
         "building_treatment": {
           "default": "outline",
           "enum": [
             "outline",
-            "hatch"
+            "hatch",
+            "outline-hatch",
+            "crosshatch",
+            "stipple",
+            "ripple"
           ],
           "title": "Building Treatment",
+          "type": "string"
+        },
+        "dash_gap_mm": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "title": "Dash Gap Mm",
+          "type": "number"
+        },
+        "dash_length_mm": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "title": "Dash Length Mm",
+          "type": "number"
+        },
+        "dot_gap_mm": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "title": "Dot Gap Mm",
+          "type": "number"
+        },
+        "dot_length_mm": {
+          "default": 0.2,
+          "exclusiveMinimum": 0,
+          "maximum": 5,
+          "title": "Dot Length Mm",
+          "type": "number"
+        },
+        "landuse_treatment": {
+          "default": "outline",
+          "enum": [
+            "outline",
+            "hatch",
+            "outline-hatch",
+            "crosshatch",
+            "stipple",
+            "ripple"
+          ],
+          "title": "Landuse Treatment",
           "type": "string"
         },
         "minimum_feature_mm": {
@@ -267,7 +597,11 @@
           "default": "outline",
           "enum": [
             "outline",
-            "hatch"
+            "hatch",
+            "outline-hatch",
+            "crosshatch",
+            "stipple",
+            "ripple"
           ],
           "title": "Park Treatment",
           "type": "string"
@@ -286,12 +620,40 @@
           "title": "Polygon Hatch Spacing Mm",
           "type": "number"
         },
+        "rail_sleeper_spacing_mm": {
+          "default": 2.5,
+          "exclusiveMinimum": 0,
+          "maximum": 20,
+          "title": "Rail Sleeper Spacing Mm",
+          "type": "number"
+        },
+        "rail_treatment": {
+          "default": "single",
+          "enum": [
+            "single",
+            "double",
+            "sleepers",
+            "classified"
+          ],
+          "title": "Rail Treatment",
+          "type": "string"
+        },
+        "rail_width_mm": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 10,
+          "title": "Rail Width Mm",
+          "type": "number"
+        },
         "road_line_treatment": {
           "default": "centerline",
           "enum": [
             "centerline",
             "casing",
-            "parallel"
+            "parallel",
+            "classified",
+            "dashed",
+            "dotted"
           ],
           "title": "Road Line Treatment",
           "type": "string"
@@ -310,11 +672,29 @@
           "title": "Simplification Tolerance Mm",
           "type": "number"
         },
+        "water_ripple_angle_degrees": {
+          "default": 0,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Water Ripple Angle Degrees",
+          "type": "number"
+        },
+        "water_ripple_spacing_mm": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "title": "Water Ripple Spacing Mm",
+          "type": "number"
+        },
         "water_treatment": {
           "default": "hatch",
           "enum": [
             "outline",
-            "hatch"
+            "hatch",
+            "outline-hatch",
+            "crosshatch",
+            "stipple",
+            "ripple"
           ],
           "title": "Water Treatment",
           "type": "string"
@@ -352,8 +732,35 @@
     "OsmSettings": {
       "additionalProperties": false,
       "properties": {
+        "detail": {
+          "$ref": "#/$defs/OsmDetailFiltering"
+        },
         "features": {
           "$ref": "#/$defs/OsmFeatureToggles"
+        },
+        "poi": {
+          "$ref": "#/$defs/OsmPoiSettings"
+        },
+        "preset_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "street",
+                "figure-ground",
+                "hydrology",
+                "topographic",
+                "rail",
+                "landscape",
+                "urban-detail"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preset Id"
         },
         "render": {
           "$ref": "#/$defs/OsmRenderRules"
@@ -371,6 +778,9 @@
             }
           ],
           "default": null
+        },
+        "terrain": {
+          "$ref": "#/$defs/OsmTerrainSettings"
         }
       },
       "title": "OsmSettings",
@@ -436,6 +846,83 @@
         "bounds"
       ],
       "title": "OsmSnapshotMetadata",
+      "type": "object"
+    },
+    "OsmTerrainSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "contour_interval_m": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "maximum": 500,
+          "title": "Contour Interval M",
+          "type": "number"
+        },
+        "contour_simplification_mm": {
+          "default": 0.15,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Contour Simplification Mm",
+          "type": "number"
+        },
+        "elevation_max_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Elevation Max M"
+        },
+        "elevation_min_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Elevation Min M"
+        },
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "index_contour_every": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Index Contour Every",
+          "type": "integer"
+        },
+        "minimum_contour_length_mm": {
+          "default": 2.0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Minimum Contour Length Mm",
+          "type": "number"
+        },
+        "provider": {
+          "const": "aws-terrarium",
+          "default": "aws-terrarium",
+          "title": "Provider",
+          "type": "string"
+        },
+        "sample_resolution": {
+          "default": 128,
+          "maximum": 512,
+          "minimum": 16,
+          "title": "Sample Resolution",
+          "type": "integer"
+        }
+      },
+      "title": "OsmTerrainSettings",
       "type": "object"
     },
     "PageSettings": {
@@ -891,6 +1378,7 @@
             "centerline",
             "hatch",
             "crosshatch",
+            "adaptive-crosshatch",
             "squiggle",
             "circular-scribble",
             "spiral-wave",
@@ -1366,19 +1854,37 @@
       "title": "SourceAsset",
       "type": "object"
     },
+    "SvgFillMode": {
+      "enum": [
+        "ignore",
+        "outline",
+        "hatch",
+        "crosshatch",
+        "dots",
+        "stipple"
+      ],
+      "type": "string"
+    },
     "SvgImportSettings": {
       "additionalProperties": false,
       "properties": {
+        "dot_diameter_mm": {
+          "default": 0.5,
+          "maximum": 10,
+          "minimum": 0.05,
+          "title": "Dot Diameter Mm",
+          "type": "number"
+        },
+        "dot_spacing_mm": {
+          "default": 2.0,
+          "maximum": 100,
+          "minimum": 0.1,
+          "title": "Dot Spacing Mm",
+          "type": "number"
+        },
         "fill_mode": {
-          "default": "outline",
-          "enum": [
-            "ignore",
-            "outline",
-            "hatch",
-            "crosshatch"
-          ],
-          "title": "Fill Mode",
-          "type": "string"
+          "$ref": "#/$defs/SvgFillMode",
+          "default": "outline"
         },
         "fit_to_page": {
           "default": true,
@@ -1396,6 +1902,20 @@
           "title": "Hatch Spacing Mm",
           "type": "number"
         },
+        "part_effects": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SvgPartEffectSettings"
+          },
+          "title": "Part Effects",
+          "type": "object"
+        },
+        "part_order": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Part Order",
+          "type": "array"
+        },
         "stroke_mode": {
           "default": "centerline",
           "enum": [
@@ -1408,6 +1928,94 @@
         }
       },
       "title": "SvgImportSettings",
+      "type": "object"
+    },
+    "SvgPartEffectSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "dot_diameter_mm": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0.05,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dot Diameter Mm"
+        },
+        "dot_spacing_mm": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0.1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dot Spacing Mm"
+        },
+        "fill_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SvgFillMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "hatch_angle_degrees": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hatch Angle Degrees"
+        },
+        "hatch_spacing_mm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hatch Spacing Mm"
+        },
+        "stroke_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "centerline",
+                "outline",
+                "parallel"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stroke Mode"
+        }
+      },
+      "title": "SvgPartEffectSettings",
       "type": "object"
     }
   },

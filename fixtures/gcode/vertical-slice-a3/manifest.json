@@ -2,42 +2,42 @@
   "design_sha256": "dbf0c393ef0db1c96327f75acd80f5681d4f3719c35d209620866f65c4674a40",
   "entries": [
     {
-      "byte_count": 5631,
+      "byte_count": 5496,
       "filename": "01-black.nc",
       "kind": "pass",
       "pass_id": "pass-black",
-      "sha256": "8c2def310997cfa321667edd7a7a267d57d5b0130358796fdbf72aadfd2a7fd4"
+      "sha256": "db4a55b511fecf2d425dd28aac0b08e7caaebb42dacc3b18050edc641dae07ea"
     },
     {
-      "byte_count": 15184,
+      "byte_count": 15112,
       "filename": "02-cyan.nc",
       "kind": "pass",
       "pass_id": "pass-cyan",
-      "sha256": "57ca2bb8dae56fd25196e0391688f85989a1ad4a0e06e4a6df37012223685ee0"
+      "sha256": "786600f52c9d9cc3ac0fec8ac921a312dcf94ba39fad27779e6ed9c41164b680"
     },
     {
-      "byte_count": 20726,
+      "byte_count": 20569,
       "filename": "combined.nc",
       "kind": "combined",
       "pass_id": null,
-      "sha256": "57e9da88f92557c6d863393ae5dcf0432041e2ebf8944f5882cfe7dcdd7d02de"
+      "sha256": "41ae653d9a6e394dded3ccf90aa568281fa2726024007ea60fd2a2f56262dd9d"
     },
     {
-      "byte_count": 19037,
+      "byte_count": 18978,
       "filename": "dry-run.nc",
       "kind": "dry-run",
       "pass_id": null,
-      "sha256": "4ef9f3bc889b3bcb233f329975826d82f26f5b292d6fb8d89c23632a3b6fc7d7"
+      "sha256": "ae7456aa2941b0c00c014e0a74a33cbfb45f3eabd5cbac762df9ef0526a486bc"
     },
     {
-      "byte_count": 346,
+      "byte_count": 281,
       "filename": "page-boundary.nc",
       "kind": "page-boundary",
       "pass_id": null,
-      "sha256": "72fe7d9abcb5efe78e650f7892d0ccecef417ea4e968060cff7b768952ff8538"
+      "sha256": "374c84f717c93a335fcaac5ff8edce14c62239337171de3ce311bd3fe37f1218"
     }
   ],
-  "manifest_sha256": "eb7bc53d4dd172384c16d150906d5863df6f4e0b71e6137b48b73d4e56bc5364",
+  "manifest_sha256": "9f9b1b663413688da19db89a82bded8e02c374d86977a6f81662fb2c2fc5c234",
   "plot_plan_sha256": "1a7d53cbc0a634a202095a02026a623cabb2b8756b53eabb40590105d72e63cc",
   "profile_id": "fluidnc-z-axis-a3",
   "project_id": "vertical-slice-a3",

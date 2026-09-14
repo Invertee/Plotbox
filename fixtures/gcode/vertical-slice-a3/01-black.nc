@@ -1,5 +1,5 @@
-; Plotbox export - files only; no machine connection
-; Project: A3 vertical slice acceptance
+; Plotbox export - f
+; Project: A3 vertic
 ; Pass: Black
 G21
 G90
@@ -10,7 +10,7 @@ G94
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-00
+; path structure-fra
 G0 X14.000 Y10.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -53,7 +53,7 @@ G1 X14.000 Y10.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-01
+; path structure-fra
 G0 X23.000 Y18.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -96,7 +96,7 @@ G1 X23.000 Y18.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-02
+; path structure-fra
 G0 X32.000 Y26.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -139,7 +139,7 @@ G1 X32.000 Y26.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-03
+; path structure-fra
 G0 X41.000 Y34.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -182,7 +182,7 @@ G1 X41.000 Y34.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-00
+; path structure-cor
 G0 X51.977 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -191,7 +191,7 @@ G1 X75.977 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-01
+; path structure-cor
 G0 X124.028 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -200,7 +200,7 @@ G1 X100.028 Y63.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-02
+; path structure-cor
 G0 X141.033 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -209,7 +209,7 @@ G1 X165.033 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-03
+; path structure-cor
 G0 X210.847 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -218,7 +218,7 @@ G1 X186.847 Y63.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-04
+; path structure-cor
 G0 X232.055 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -227,7 +227,7 @@ G1 X256.055 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-05
+; path structure-cor
 G0 X300.437 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -236,7 +236,7 @@ G1 X276.437 Y63.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-06
+; path structure-cor
 G0 X323.831 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -245,7 +245,7 @@ G1 X347.831 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-07
+; path structure-cor
 G0 X387.590 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120

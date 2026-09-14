@@ -42,6 +42,10 @@ const project: ProjectRecipe = {
     stroke_mode: "centerline",
     hatch_spacing_mm: 2,
     hatch_angle_degrees: 45,
+    dot_spacing_mm: 2,
+    dot_diameter_mm: 0.5,
+    part_effects: {},
+    part_order: [],
     fit_to_page: true,
   },
   raster_preprocess: {
@@ -142,18 +146,97 @@ const project: ProjectRecipe = {
       rotation_degrees: 0,
       lock_mode: "extent",
     },
-    features: { roads: true, buildings: true, water: true, rail: true, parks: true },
+    features: {
+      roads: true,
+      buildings: true,
+      water: true,
+      rail: true,
+      parks: true,
+      road_motorways: true,
+      road_primary: true,
+      road_secondary: true,
+      road_residential: true,
+      road_service: true,
+      footpaths: true,
+      pedestrian_paths: true,
+      cycleways: true,
+      tracks: true,
+      water_areas: true,
+      waterways: true,
+      coastline: false,
+      woodland: false,
+      farmland: false,
+      meadow: false,
+      residential_landuse: false,
+      industrial_landuse: false,
+      cemetery: false,
+      parking: false,
+      wetlands: false,
+      boundaries: false,
+      power_lines: false,
+      power_nodes: false,
+      aeroway: false,
+      maritime: false,
+      points_of_interest: false,
+      poi_worship: false,
+      poi_stations: false,
+      poi_peaks: false,
+      poi_historic: false,
+      poi_castles: false,
+      poi_lighthouses: false,
+      poi_wind_turbines: false,
+      poi_schools: false,
+      poi_hospitals: false,
+      poi_trees: false,
+      poi_monuments: false,
+    },
     render: {
       road_line_treatment: "centerline",
       road_width_mm: 0.8,
+      rail_treatment: "single",
+      rail_width_mm: 1,
+      rail_sleeper_spacing_mm: 2.5,
       building_treatment: "outline",
       water_treatment: "hatch",
       park_treatment: "outline",
+      landuse_treatment: "outline",
+      boundary_treatment: "dashed",
       polygon_hatch_spacing_mm: 2,
       polygon_hatch_angle_degrees: 45,
+      dash_length_mm: 2,
+      dash_gap_mm: 1,
+      dot_length_mm: 0.2,
+      dot_gap_mm: 1,
+      bridge_tick_spacing_mm: 3,
+      bridge_tick_width_mm: 1.2,
+      building_shadow_enabled: false,
+      building_shadow_offset_mm: 1,
+      building_shadow_angle_degrees: 45,
+      water_ripple_spacing_mm: 2,
+      water_ripple_angle_degrees: 0,
       simplification_tolerance_mm: 0.08,
       minimum_feature_mm: 0.3,
     },
+    poi: { symbol_size_mm: 2 },
+    detail: {
+      minimum_line_length_mm: 0.3,
+      minimum_polygon_area_mm2: 0.5,
+      minimum_poi_spacing_mm: 2,
+      vertex_simplification_tolerance_mm: 0.08,
+      minimum_gap_mm: 0,
+    },
+    terrain: {
+      enabled: false,
+      provider: "aws-terrarium",
+      contour_interval_m: 10,
+      index_contour_every: 5,
+      sample_resolution: 128,
+      contour_simplification_mm: 0.15,
+      minimum_contour_length_mm: 2,
+      elevation_min_m: null,
+      elevation_max_m: null,
+    },
+    preset_id: null,
     snapshot: null,
   },
   pen_palette: [
@@ -322,6 +405,9 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("accent pen name")).toHaveValue("Cyan");
     expect(screen.getByLabelText("structure physical pen")).toHaveValue("black-05");
     expect(screen.getByLabelText("Show pen-up travel")).toBeChecked();
+    await user.selectOptions(screen.getByLabelText("Page preset"), "A4");
+    expect(screen.getByLabelText("Page width")).toHaveValue(297);
+    expect(screen.getByLabelText("Page height")).toHaveValue(210);
   });
 
   it("accepts a PNG source and exposes physical raster preprocessing controls", async () => {
@@ -442,6 +528,15 @@ describe("workspace shell", () => {
     expect(screen.getByLabelText("Stipple colour passes")).toHaveValue("2");
     await user.selectOptions(
       screen.getByLabelText("Raster vectorization algorithm"),
+      "adaptive-crosshatch",
+    );
+    expect(screen.getByLabelText("Adaptive crosshatch spacing")).toHaveValue("1.2");
+    expect(screen.getByLabelText("Adaptive crosshatch base angle")).toHaveValue("45");
+    expect(screen.getByLabelText("Adaptive crosshatch angle step")).toHaveValue("45");
+    expect(screen.getByLabelText("Adaptive crosshatch layer 1 threshold")).toHaveValue("210");
+    expect(screen.getByLabelText("Adaptive crosshatch layer 4 threshold")).toHaveValue("60");
+    await user.selectOptions(
+      screen.getByLabelText("Raster vectorization algorithm"),
       "adaptive-stipple",
     );
     expect(screen.getByLabelText("Adaptive stipple colour mode")).toHaveValue("single");
@@ -486,6 +581,72 @@ describe("workspace shell", () => {
     await waitFor(() => expect(startPreview).toHaveBeenCalledTimes(4));
     await waitFor(() => expect(api.getRasterPreview).toHaveBeenCalledTimes(3));
     expect(screen.getByRole("slider", { name: "Raster contrast" })).toHaveValue("4");
+  }, 10_000);
+
+  it("edits SVG part details and persists their drawing order", async () => {
+    const sourceAsset = {
+      asset_id: "asset-svg",
+      original_filename: "landscape.svg",
+      media_type: "image/svg+xml" as const,
+      sha256: "c".repeat(64),
+      byte_count: 128,
+    };
+    const svgProject: ProjectRecipe = {
+      ...project,
+      revision: 2,
+      mode: { ...project.mode, mode_id: "import.svg" },
+      assets: [sourceAsset],
+      source_asset_id: sourceAsset.asset_id,
+      svg_import: {
+        ...project.svg_import,
+        part_effects: { background: {}, sun: {}, mountains: {} },
+      },
+    };
+    const patchProject = vi
+      .spyOn(api, "patchProject")
+      .mockImplementation((_projectId, changes) =>
+        Promise.resolve({ ...svgProject, ...changes, revision: 3 } as ProjectRecipe),
+      );
+    const fetchMock = vi.fn((input: RequestInfo | URL): Promise<Response> => {
+      const path =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (path === "/api/health") {
+        return Promise.resolve(response({ status: "ok", service: "plotterapp-api" }));
+      }
+      if (path === "/api/export-profiles") return Promise.resolve(response([profile]));
+      if (path === "/api/modes") return Promise.resolve(response([testMode]));
+      if (path === "/api/projects") return Promise.resolve(response([svgProject]));
+      if (path === "/api/projects/ui-project") return Promise.resolve(response(svgProject));
+      if (path.endsWith("/design") || path.endsWith("/plot-plan")) {
+        return Promise.resolve(response({ detail: "not generated" }, 404));
+      }
+      return Promise.reject(new Error(`unexpected request: ${path}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Open project" }));
+    expect(await screen.findByLabelText("Effect for mountains")).toHaveValue("");
+    await user.selectOptions(screen.getByLabelText("Effect for mountains"), "crosshatch");
+    await user.selectOptions(screen.getByLabelText("Stroke treatment for mountains"), "parallel");
+    await user.clear(screen.getByLabelText("Hatch spacing for mountains"));
+    await user.type(screen.getByLabelText("Hatch spacing for mountains"), "1.2");
+    await user.click(screen.getByRole("button", { name: "Move mountains earlier" }));
+    await user.click(screen.getByRole("button", { name: "Save project" }));
+
+    expect(patchProject.mock.lastCall?.[1]).toMatchObject({
+      svg_import: {
+        part_order: ["background", "mountains", "sun"],
+        part_effects: {
+          mountains: {
+            fill_mode: "crosshatch",
+            stroke_mode: "parallel",
+            hatch_spacing_mm: 1.2,
+          },
+        },
+      },
+    });
   });
 
   it("switches to focused mapping tools and freezes an explicit OSM snapshot", async () => {
@@ -618,7 +779,8 @@ describe("workspace shell", () => {
     await user.click(screen.getByRole("button", { name: "Mapping" }));
 
     expect(screen.getByRole("group", { name: "Map extent" })).toBeVisible();
-    expect(screen.getByLabelText("Include roads")).toBeChecked();
+    expect(screen.getByLabelText("Enable roads and paths")).toBeChecked();
+    expect(screen.getByLabelText("Motorways / trunk")).toBeChecked();
     expect(
       screen.queryByRole("group", { name: "Procedural mode gallery" }),
     ).not.toBeInTheDocument();
@@ -702,6 +864,18 @@ describe("workspace shell", () => {
       port: 81,
       tls: false,
       command_timeout_seconds: 15,
+      safe_z_min_mm: -10,
+      safe_z_max_mm: 0,
+      pen_up_z_mm: 0,
+      pen_down_z_mm: -5,
+      skew_calibration: {
+        enabled: false,
+        square_width_mm: 100,
+        square_height_mm: 100,
+        rising_diagonal_mm: Math.sqrt(20_000),
+        falling_diagonal_mm: Math.sqrt(20_000),
+        axis_angle_degrees: 90,
+      },
     };
     const actionRequests: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {

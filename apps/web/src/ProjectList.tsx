@@ -7,7 +7,7 @@ interface ProjectListProps {
   activeProjectId: string | null;
   connected: boolean;
   busy: boolean;
-  onCreate: (name: string) => void;
+  onCreate: (name: string, pagePreset: "A3" | "A4", orientation: "landscape" | "portrait") => void;
   onOpen: (projectId: string) => void;
   onRename: (projectId: string, name: string) => void;
   onDelete: (projectId: string) => void;
@@ -24,6 +24,8 @@ export function ProjectList({
   onDelete,
 }: ProjectListProps) {
   const [newName, setNewName] = useState("A3 two-pass test");
+  const [pagePreset, setPagePreset] = useState<"A3" | "A4">("A3");
+  const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function ProjectList({
           onSubmit={(event) => {
             event.preventDefault();
             const name = newName.trim();
-            if (name) onCreate(name);
+            if (name) onCreate(name, pagePreset, orientation);
           }}
         >
           <label>
@@ -53,8 +55,30 @@ export function ProjectList({
               onChange={(event) => setNewName(event.target.value)}
             />
           </label>
+          <label>
+            Page size
+            <select
+              aria-label="New project page size"
+              value={pagePreset}
+              onChange={(event) => setPagePreset(event.target.value as "A3" | "A4")}
+            >
+              <option value="A3">A3</option>
+              <option value="A4">A4</option>
+            </select>
+          </label>
+          <label>
+            Orientation
+            <select
+              aria-label="New project orientation"
+              value={orientation}
+              onChange={(event) => setOrientation(event.target.value as "landscape" | "portrait")}
+            >
+              <option value="landscape">Landscape</option>
+              <option value="portrait">Portrait</option>
+            </select>
+          </label>
           <button className="primary-button" type="submit" disabled={!connected || busy}>
-            Create A3 project
+            Create {pagePreset} project
           </button>
         </form>
       </div>

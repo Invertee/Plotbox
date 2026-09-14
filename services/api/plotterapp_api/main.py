@@ -33,6 +33,7 @@ from plotter_core.models import (
     JobState,
     JobWarning,
     MachineProfile,
+    PageSettings,
     PlotPlan,
     ProjectRecipe,
     RasterPreview,
@@ -55,9 +56,12 @@ from plotterapp_api.fluidnc import (
     FluidNCGateway,
     FluidNCGatewayProtocol,
     FluidNCProgramResult,
+    FluidNCProjectRunResult,
     FluidNCSettings,
+    SkewCalibrationRequest,
     build_action_frames,
     calculate_axis_calibration,
+    calculate_skew_calibration,
 )
 from plotterapp_api.jobs import (
     CancellationToken,
@@ -78,6 +82,7 @@ from plotterapp_api.schemas import (
     OsmSnapshotResponse,
     ProjectPatchRequest,
     SendGcodeRequest,
+    SendProjectToSdRequest,
 )
 
 TERMINAL_JOB_STATES = {"succeeded", "cancelled", "failed", "stale"}
@@ -103,11 +108,16 @@ def _job_work(recipe: ProjectRecipe) -> tuple[str, str, DesignOperation]:
         def run_map(
             current: ProjectRecipe,
             checkpoint: ProgressCallback | None = None,
-            _: CancellationToken | None = None,
+            token: CancellationToken | None = None,
         ) -> DesignDocument:
-            return generate_osm_design(snapshot, current, progress=checkpoint)
+            return generate_osm_design(
+                snapshot,
+                current,
+                progress=checkpoint,
+                cancel=token.checkpoint if token is not None else None,
+            )
 
-        return "map.openstreetmap", "1.0.0", run_map
+        return "map.openstreetmap", "2.0.0", run_map
     if recipe.mode.mode_id == "builtin.map-glyphscape":
         snapshot = store.read_osm_snapshot(recipe)
 
@@ -158,7 +168,7 @@ def _job_work(recipe: ProjectRecipe) -> tuple[str, str, DesignOperation]:
                 checkpoint=checkpoint,
             )
 
-        return "import.svg", "1.0.0", run_import
+        return "import.svg", "1.1.0", run_import
     if recipe.mode.mode_id == "import.raster":
         if recipe.source_asset_id is None:
             raise ValueError("the project has no selected raster source asset")
@@ -183,7 +193,9 @@ def _job_work(recipe: ProjectRecipe) -> tuple[str, str, DesignOperation]:
 
         return (
             "import.raster",
-            "1.5.0"
+            "1.6.0"
+            if recipe.raster_vectorize.algorithm == "adaptive-crosshatch"
+            else "1.5.0"
             if recipe.raster_vectorize.algorithm in {"arc-scribble", "travelling-salesman"}
             else "1.4.0"
             if recipe.raster_vectorize.algorithm == "spiral-wave"
@@ -354,7 +366,7 @@ def create_app(
 
     application = FastAPI(
         title="Plotbox API",
-        version="0.3.0",
+        version="0.4.1",
         lifespan=lifespan,
     )
     allowed_clients = [
@@ -393,7 +405,7 @@ def create_app(
             ModeManifest(
                 kind="importer",
                 id="import.svg",
-                version="1.0.0",
+                version="1.1.0",
                 name="SVG import",
                 category="convert",
                 quality_levels=quality_levels,
@@ -410,6 +422,7 @@ def create_app(
                     "centerline",
                     "hatch",
                     "crosshatch",
+                    "adaptive-crosshatch",
                     "squiggle",
                     "circular-scribble",
                     "spiral-wave",
@@ -427,9 +440,9 @@ def create_app(
             ModeManifest(
                 kind="importer",
                 id="map.openstreetmap",
-                version="1.0.0",
+                version="2.0.0",
                 name="OpenStreetMap",
-                description="Semantic vector map artwork from a frozen OSM snapshot.",
+                description="Semantic vector map artwork with plot treatments, POIs, and contours.",
                 category="map",
                 quality_levels=quality_levels,
                 semantic_roles=[
@@ -439,8 +452,37 @@ def create_app(
                     "road-path",
                     "buildings",
                     "water",
+                    "waterway",
+                    "coastline",
                     "rail",
                     "parks",
+                    "forest",
+                    "farmland",
+                    "meadow",
+                    "landuse-residential",
+                    "landuse-industrial",
+                    "cemetery",
+                    "parking",
+                    "wetland",
+                    "boundary",
+                    "power-line",
+                    "power-node",
+                    "aeroway-runway",
+                    "aeroway-taxiway",
+                    "maritime",
+                    "poi-worship",
+                    "poi-station",
+                    "poi-peak",
+                    "poi-historic",
+                    "poi-castle",
+                    "poi-lighthouse",
+                    "poi-wind-turbine",
+                    "poi-school",
+                    "poi-hospital",
+                    "poi-tree",
+                    "poi-monument",
+                    "terrain-contour",
+                    "terrain-index-contour",
                 ],
             ),
         ]
@@ -457,7 +499,8 @@ def create_app(
                             "up_mm": settings.pen_up_z_mm,
                             "down_mm": settings.pen_down_z_mm,
                         }
-                    )
+                    ),
+                    "skew_calibration": settings.skew_calibration,
                 }
             )
         ]
@@ -504,13 +547,46 @@ def create_app(
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
+    @application.post(
+        "/api/fluidnc/calibration/skew",
+        response_model=FluidNCSettings,
+    )
+    def save_fluidnc_skew_calibration(
+        request: SkewCalibrationRequest,
+    ) -> FluidNCSettings:
+        try:
+            calibration = calculate_skew_calibration(request)
+            settings = controller.settings().model_copy(
+                update={"skew_calibration": calibration}
+            )
+            return controller.save_settings(settings)
+        except OSError as error:
+            raise HTTPException(
+                status_code=500,
+                detail=f"could not save skew calibration: {error}",
+            ) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
     @application.get("/api/projects", response_model=list[ProjectRecipe])
     def list_projects() -> list[ProjectRecipe]:
         return _store().list_projects()
 
     @application.post("/api/projects", response_model=ProjectRecipe, status_code=201)
     def create_project(request: CreateProjectRequest) -> ProjectRecipe:
-        return _store().create(request.name)
+        long_edge, short_edge = (420.0, 297.0) if request.page_preset == "A3" else (297.0, 210.0)
+        width_mm, height_mm = (
+            (long_edge, short_edge)
+            if request.orientation == "landscape"
+            else (short_edge, long_edge)
+        )
+        page = PageSettings(
+            preset=request.page_preset,
+            orientation=request.orientation,
+            width_mm=width_mm,
+            height_mm=height_mm,
+        )
+        return _store().create(request.name, page=page)
 
     @application.get("/api/projects/{project_id}", response_model=ProjectRecipe)
     def read_project(project_id: str) -> ProjectRecipe:
@@ -924,10 +1000,13 @@ def create_app(
                             "up_mm": settings.pen_up_z_mm,
                             "down_mm": settings.pen_down_z_mm,
                         }
-                    )
+                    ),
+                    "skew_calibration": settings.skew_calibration,
                 }
             )
-            profile = request.profile or default_profile
+            profile = (request.profile or default_profile).model_copy(
+                update={"skew_calibration": settings.skew_calibration}
+            )
             bundle = export_gcode_bundle(recipe, plot_plan, profile)
             store.write_export_bundle(recipe, bundle)
             return bundle
@@ -961,10 +1040,13 @@ def create_app(
                             "up_mm": settings.pen_up_z_mm,
                             "down_mm": settings.pen_down_z_mm,
                         }
-                    )
+                    ),
+                    "skew_calibration": settings.skew_calibration,
                 }
             )
-            profile = request.profile or default_profile
+            profile = (request.profile or default_profile).model_copy(
+                update={"skew_calibration": settings.skew_calibration}
+            )
             actuator = profile.pen_actuator
             if not (
                 settings.safe_z_min_mm
@@ -983,8 +1065,101 @@ def create_app(
             )
             if program is None:
                 raise ValueError("selected G-code file is not available in this validated export")
+            line_count = len(program.text.splitlines())
+            if request.start_line > line_count:
+                raise ValueError(
+                    f"start line must be between 1 and {line_count} for {program.filename}"
+                )
             store.write_export_bundle(recipe, bundle)
-            return await controller.stream_program(program)
+            return await controller.stream_program(
+                program,
+                profile=profile,
+                start_line=request.start_line,
+            )
+        except FileNotFoundError as error:
+            raise _not_found(error) from error
+        except ConnectionError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+    @application.post(
+        "/api/projects/{project_id}/send/fluidnc-sd",
+        response_model=FluidNCProjectRunResult,
+    )
+    async def send_project_to_fluidnc_sd(
+        project_id: str, request: SendProjectToSdRequest
+    ) -> FluidNCProjectRunResult:
+        """Upload every validated pass to a project SD folder and start them in pass order."""
+        try:
+            store = _store()
+            recipe = store.read(project_id)
+            design = store.read_design(recipe)
+            plot_plan = store.read_plan(recipe, design)
+            settings = controller.settings()
+            default = MachineProfile()
+            default_profile = default.model_copy(
+                update={
+                    "pen_actuator": default.pen_actuator.model_copy(
+                        update={
+                            "up_mm": settings.pen_up_z_mm,
+                            "down_mm": settings.pen_down_z_mm,
+                        }
+                    ),
+                    "skew_calibration": settings.skew_calibration,
+                }
+            )
+            profile = (request.profile or default_profile).model_copy(
+                update={"skew_calibration": settings.skew_calibration}
+            )
+            actuator = profile.pen_actuator
+            if not (
+                settings.safe_z_min_mm
+                <= actuator.down_mm
+                < actuator.up_mm
+                <= settings.safe_z_max_mm
+            ):
+                raise ValueError(
+                    "export profile pen Z values fall outside the configured "
+                    "controller-safe Z range"
+                )
+
+            # This workflow always needs individual pass files plus the combined file whose
+            # M0 pen-change pauses preserve the configured pass ordering on the controller.
+            sd_recipe = recipe.model_copy(
+                update={
+                    "export": recipe.export.model_copy(
+                        update={
+                            "separate_pass_files": True,
+                            "combined_file": True,
+                            "dry_run": False,
+                            "page_boundary": False,
+                        }
+                    )
+                }
+            )
+            bundle = export_gcode_bundle(sd_recipe, plot_plan, profile)
+            by_filename = {program.filename: program for program in bundle.programs}
+            pass_entries = [entry for entry in bundle.manifest.entries if entry.kind == "pass"]
+            pass_names = {plot_pass.pass_id: plot_pass.name for plot_pass in plot_plan.passes}
+            pass_programs = [
+                (
+                    entry.pass_id or "",
+                    pass_names.get(entry.pass_id or "", entry.pass_id or entry.filename),
+                    by_filename[entry.filename],
+                )
+                for entry in pass_entries
+            ]
+            combined_entry = next(
+                entry for entry in bundle.manifest.entries if entry.kind == "combined"
+            )
+            store.write_export_bundle(recipe, bundle)
+            return await controller.store_and_run_project(
+                recipe.project_id,
+                recipe.name,
+                pass_programs,
+                by_filename[combined_entry.filename],
+            )
         except FileNotFoundError as error:
             raise _not_found(error) from error
         except ConnectionError as error:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from itertools import zip_longest
 
+from plotter_core.gcode.writer import export_point
 from plotter_core.models import (
     GcodeInstruction,
     GcodeValidationReport,
@@ -16,10 +17,38 @@ from plotter_core.planning import distance
 
 
 def _export_point(point: Point, profile: MachineProfile) -> Point:
+    return export_point(point, profile)
+
+
+def _serialized_point(point: Point, precision: int) -> Point:
+    """Return the coordinate the G-code parser sees after writer rounding."""
     return Point(
-        x=profile.work_width_mm - point.x if profile.invert_x else point.x,
-        y=profile.work_height_mm - point.y if profile.invert_y else point.y,
+        x=float(f"{point.x:.{precision}f}"),
+        y=float(f"{point.y:.{precision}f}"),
     )
+
+
+def _expected_stroke_points(path: PlannedPath, profile: MachineProfile) -> list[Point]:
+    """Mirror reconstruction's removal of adjacent zero-length draw moves.
+
+    The writer rounds every coordinate to the configured precision. Distinct
+    PlotPlan vertices can therefore serialize to the same machine coordinate,
+    and the reconstructor deliberately collapses those repeated vertices.
+    Keep the original exported point for error measurement, but use its
+    serialized value to decide whether it survives reconstruction.
+    """
+    exported = [_export_point(point, profile) for point in path.points]
+    if not exported:
+        return []
+
+    normalized = [exported[0]]
+    previous = _serialized_point(exported[0], profile.precision_decimals)
+    for point in exported[1:]:
+        serialized = _serialized_point(point, profile.precision_decimals)
+        if serialized != previous:
+            normalized.append(point)
+        previous = serialized
+    return normalized
 
 
 def validate_profile_for_page(
@@ -65,7 +94,7 @@ def _compare_paths(
         if expected_item is None or actual is None:
             continue
         path_index, expected = expected_item
-        expected_points = [_export_point(point, profile) for point in expected.points]
+        expected_points = _expected_stroke_points(expected, profile)
         if len(expected_points) != len(actual):
             issues.append(
                 ValidationIssue(

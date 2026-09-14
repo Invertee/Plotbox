@@ -58,6 +58,75 @@ def test_svg_text_uses_bundled_deterministic_fixture_font() -> None:
     assert design.metadata.diagnostics == []
 
 
+def test_svg_top_level_parts_can_use_independent_fill_effects() -> None:
+    recipe = ProjectRecipe(project_id="svg-effects", name="SVG effects")
+    recipe.svg_import.fit_to_page = False
+    recipe.svg_import.dot_spacing_mm = 2
+    recipe.svg_import.dot_diameter_mm = 0.6
+    recipe.svg_import.part_effects = {
+        "hatched-panel": {"fill_mode": "crosshatch"},
+        "dotted-panel": {"fill_mode": "dots"},
+        "organic-panel": {"fill_mode": "stipple"},
+    }
+    design = import_svg(
+        b'<svg xmlns="http://www.w3.org/2000/svg" width="36mm" height="10mm" '
+        b'viewBox="0 0 36 10"><rect id="hatched-panel" width="10" height="10"/>'
+        b'<rect id="dotted-panel" x="13" width="10" height="10"/>'
+        b'<rect id="organic-panel" x="26" width="10" height="10"/></svg>',
+        recipe,
+    )
+
+    assert [layer.semantic_role for layer in design.layers] == [
+        "hatched-panel",
+        "dotted-panel",
+        "organic-panel",
+    ]
+    hatched, dotted, organic = design.layers
+    assert {path.metadata.get("mark_kind") for path in dotted.paths} == {"pen-dot"}
+    assert {path.metadata.get("mark_kind") for path in organic.paths} == {"pen-dot"}
+    assert all("crosshatch" in path.path_id or "hatch" in path.path_id for path in hatched.paths)
+    assert [path.commands[0].point for path in dotted.paths] != [
+        path.commands[0].point for path in organic.paths
+    ]
+    assert dotted.metadata["fill_effect"] == "dots"
+    assert organic.metadata["fill_effect"] == "stipple"
+
+
+def test_svg_parts_can_override_effect_details_and_drawing_order() -> None:
+    recipe = ProjectRecipe(project_id="svg-part-details", name="SVG part details")
+    recipe.svg_import.fit_to_page = False
+    recipe.svg_import.fill_mode = "dots"
+    recipe.svg_import.dot_spacing_mm = 4
+    recipe.svg_import.dot_diameter_mm = 0.4
+    recipe.svg_import.part_effects = {
+        "dense": {
+            "dot_spacing_mm": 1,
+            "dot_diameter_mm": 0.9,
+        },
+        "lines": {
+            "fill_mode": "crosshatch",
+            "hatch_spacing_mm": 1.5,
+            "hatch_angle_degrees": 20,
+        },
+    }
+    recipe.svg_import.part_order = ["lines", "dense", "default"]
+
+    design = import_svg(
+        b'<svg xmlns="http://www.w3.org/2000/svg" width="30mm" height="10mm" '
+        b'viewBox="0 0 30 10"><rect id="default" width="8" height="8"/>'
+        b'<rect id="dense" x="10" width="8" height="8"/>'
+        b'<rect id="lines" x="20" width="8" height="8"/></svg>',
+        recipe,
+    )
+
+    assert [layer.semantic_role for layer in design.layers] == ["lines", "dense", "default"]
+    lines, dense, default = design.layers
+    assert lines.metadata["fill_effect"] == "crosshatch"
+    assert len(dense.paths) > len(default.paths)
+    assert {path.metadata.get("dot_diameter_mm") for path in dense.paths} == {0.9}
+    assert {path.metadata.get("dot_diameter_mm") for path in default.paths} == {0.4}
+
+
 def test_svg_layers_map_to_passes_without_changing_design_geometry() -> None:
     recipe = ProjectRecipe(project_id="svg-passes", name="SVG passes")
     design = import_svg(_fixture(), recipe)

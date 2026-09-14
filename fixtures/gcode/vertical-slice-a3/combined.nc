@@ -1,5 +1,5 @@
-; Plotbox export - files only; no machine connection
-; Project: A3 vertical slice acceptance
+; Plotbox export - f
+; Project: A3 vertic
 ; Combined passes
 G21
 G90
@@ -10,9 +10,9 @@ G94
 G1 Z5.000 F900
 G4 P0.080
 
-; begin pass 1: Black
+; begin pass 1: Blac
 
-; path structure-frame-00
+; path structure-fra
 G0 X14.000 Y10.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -55,7 +55,7 @@ G1 X14.000 Y10.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-01
+; path structure-fra
 G0 X23.000 Y18.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -98,7 +98,7 @@ G1 X23.000 Y18.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-02
+; path structure-fra
 G0 X32.000 Y26.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -141,7 +141,7 @@ G1 X32.000 Y26.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-frame-03
+; path structure-fra
 G0 X41.000 Y34.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -184,7 +184,7 @@ G1 X41.000 Y34.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-00
+; path structure-cor
 G0 X51.977 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -193,7 +193,7 @@ G1 X75.977 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-01
+; path structure-cor
 G0 X124.028 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -202,7 +202,7 @@ G1 X100.028 Y63.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-02
+; path structure-cor
 G0 X141.033 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -211,7 +211,7 @@ G1 X165.033 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-03
+; path structure-cor
 G0 X210.847 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -220,7 +220,7 @@ G1 X186.847 Y63.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-04
+; path structure-cor
 G0 X232.055 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -229,7 +229,7 @@ G1 X256.055 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-05
+; path structure-cor
 G0 X300.437 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -238,7 +238,7 @@ G1 X276.437 Y63.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-06
+; path structure-cor
 G0 X323.831 Y45.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -247,7 +247,7 @@ G1 X347.831 Y242.000 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path structure-corridor-07
+; path structure-cor
 G0 X387.590 Y244.000 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -263,7 +263,7 @@ M0 (CHANGE PEN TO CYAN)
 
 ; begin pass 2: Cyan
 
-; path accent-signal-00
+; path accent-signal
 G0 X30.000 Y79.250 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -366,7 +366,7 @@ G1 X390.000 Y79.250 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-signal-01
+; path accent-signal
 G0 X390.000 Y148.500 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -469,7 +469,7 @@ G1 X30.000 Y148.500 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-signal-02
+; path accent-signal
 G0 X30.000 Y217.750 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -572,7 +572,7 @@ G1 X390.000 Y217.750 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-05
+; path accent-orbit-
 G0 X338.928 Y133.704 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -643,7 +643,7 @@ G1 X338.928 Y133.704 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-04
+; path accent-orbit-
 G0 X290.424 Y181.201 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -682,7 +682,7 @@ G1 X290.424 Y181.201 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-03
+; path accent-orbit-
 G0 X242.063 Y164.057 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -721,7 +721,7 @@ G1 X242.063 Y164.057 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-02
+; path accent-orbit-
 G0 X196.309 Y171.956 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -768,7 +768,7 @@ G1 X196.309 Y171.956 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-01
+; path accent-orbit-
 G0 X145.726 Y160.901 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -807,7 +807,7 @@ G1 X145.726 Y160.901 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-00
+; path accent-orbit-
 G0 X101.933 Y126.702 F6000
 G1 Z0.000 F400
 G4 P0.120

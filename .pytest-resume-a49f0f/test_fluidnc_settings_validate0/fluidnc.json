@@ -1,0 +1,19 @@
+{
+  "command_timeout_seconds": 20.0,
+  "host": "192.168.1.44",
+  "pen_down_z_mm": -5.0,
+  "pen_up_z_mm": 0.0,
+  "port": 82,
+  "safe_z_max_mm": 0.0,
+  "safe_z_min_mm": -10.0,
+  "schema_version": 1,
+  "skew_calibration": {
+    "axis_angle_degrees": 90.0,
+    "enabled": false,
+    "falling_diagonal_mm": 141.4213562373095,
+    "rising_diagonal_mm": 141.4213562373095,
+    "square_height_mm": 100.0,
+    "square_width_mm": 100.0
+  },
+  "tls": true
+}

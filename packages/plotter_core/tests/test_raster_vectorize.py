@@ -172,6 +172,42 @@ def test_crosshatch_activates_additional_angles_for_darker_tones() -> None:
     assert len(crosshatch.layers[0].paths) > len(hatch.layers[0].paths)
 
 
+def test_adaptive_crosshatch_emits_ordered_cumulative_tone_layers() -> None:
+    recipe = _recipe("adaptive-crosshatch")
+    document = vectorize_raster(
+        _gradient_fixture(),
+        "image/png",
+        recipe,
+        source_sha256="e" * 64,
+    )
+
+    assert len(document.layers) == 4
+    assert [layer.semantic_role for layer in document.layers] == [
+        "crosshatch-tone-1",
+        "crosshatch-tone-2",
+        "crosshatch-tone-3",
+        "crosshatch-tone-4",
+    ]
+    assert [layer.metadata["luminance_threshold"] for layer in document.layers] == [
+        210,
+        160,
+        110,
+        60,
+    ]
+    assert [layer.metadata["angle_degrees"] for layer in document.layers] == [
+        45.0,
+        90.0,
+        135.0,
+        180.0,
+    ]
+    assert all(layer.paths for layer in document.layers)
+    assert all(
+        path.metadata["algorithm"] == f"adaptive-crosshatch-{index + 1:02d}"
+        for index, layer in enumerate(document.layers)
+        for path in layer.paths
+    )
+
+
 def test_dither_dots_are_ordered_closed_marks_and_settings_change_geometry() -> None:
     recipe = _recipe("dither")
     recipe.raster_vectorize.dither_spacing_mm = 3

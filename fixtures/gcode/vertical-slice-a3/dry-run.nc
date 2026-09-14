@@ -1,6 +1,6 @@
-; Plotbox export - files only; no machine connection
-; Project: A3 vertical slice acceptance
-; Dry run — pen remains up
+; Plotbox export - f
+; Project: A3 vertic
+; Dry run — pen re
 G21
 G90
 G17

@@ -1,0 +1,112 @@
+{
+  "$defs": {
+    "FluidNCStoredPass": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_count": {
+          "minimum": 1,
+          "title": "Byte Count",
+          "type": "integer"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "pass_id": {
+          "title": "Pass Id",
+          "type": "string"
+        },
+        "priority": {
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "sd_path": {
+          "title": "Sd Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pass_id",
+        "name",
+        "priority",
+        "filename",
+        "sd_path",
+        "sha256",
+        "byte_count"
+      ],
+      "title": "FluidNCStoredPass",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Validated pass files stored on SD and the ordered combined job that was started.",
+  "properties": {
+    "controller_state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Controller State"
+    },
+    "passes": {
+      "items": {
+        "$ref": "#/$defs/FluidNCStoredPass"
+      },
+      "title": "Passes",
+      "type": "array"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "response_lines": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Response Lines",
+      "type": "array"
+    },
+    "run_path": {
+      "title": "Run Path",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sd_folder": {
+      "title": "Sd Folder",
+      "type": "string"
+    },
+    "success": {
+      "title": "Success",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "project_id",
+    "sd_folder",
+    "passes",
+    "run_path",
+    "success",
+    "response_lines"
+  ],
+  "title": "FluidNCProjectRunResult",
+  "type": "object"
+}

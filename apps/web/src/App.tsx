@@ -13,6 +13,7 @@ import { ProjectList } from "./ProjectList";
 import type {
   DesignDocument,
   ExportBundle,
+  FluidNCProjectRunResult,
   FluidNCProgramResult,
   GcodeProgram,
   JobState,
@@ -37,6 +38,7 @@ type Operation =
   | "planning"
   | "exporting"
   | "sending"
+  | "uploading-sd"
   | "reopening"
   | "deleting";
 type ToolWorkspace = "artwork" | "image" | "map";
@@ -454,6 +456,7 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
           <option value="centerline">Centerline skeleton</option>
           <option value="hatch">Hatch</option>
           <option value="crosshatch">Crosshatch</option>
+          <option value="adaptive-crosshatch">Adaptive crosshatch</option>
           <option value="squiggle">Squiggle scanlines</option>
           <option value="circular-scribble">Circular scribble scanlines</option>
           <option value="spiral-wave">Single-line spiral waves</option>
@@ -614,6 +617,76 @@ function RasterVectorControls({ project, onChange }: RasterControlsProps) {
               }
             />
           </label>
+        </>
+      )}
+      {settings.algorithm === "adaptive-crosshatch" && (
+        <>
+          <div className="field-row">
+            <label>
+              Hatch spacing mm
+              <NumericInput
+                aria-label="Adaptive crosshatch spacing"
+                type="number"
+                min="0.1"
+                max="50"
+                step="0.1"
+                value={settings.hatch_spacing_mm}
+                onChange={(event) => update({ hatch_spacing_mm: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Base angle
+              <NumericInput
+                aria-label="Adaptive crosshatch base angle"
+                type="number"
+                min="-360"
+                max="360"
+                value={settings.hatch_angle_degrees}
+                onChange={(event) => update({ hatch_angle_degrees: Number(event.target.value) })}
+              />
+            </label>
+          </div>
+          <label>
+            Angle between layers
+            <NumericInput
+              aria-label="Adaptive crosshatch angle step"
+              type="number"
+              min="1"
+              max="180"
+              value={settings.crosshatch_angle_step_degrees}
+              onChange={(event) =>
+                update({ crosshatch_angle_step_degrees: Number(event.target.value) })
+              }
+            />
+          </label>
+          <div className="field-row">
+            {settings.crosshatch_thresholds.map((threshold, index) => (
+              <label key={index}>
+                Layer {index + 1} threshold
+                <NumericInput
+                  aria-label={`Adaptive crosshatch layer ${index + 1} threshold`}
+                  type="number"
+                  min="0"
+                  max="255"
+                  value={threshold}
+                  onChange={(event) => {
+                    const thresholds = [...settings.crosshatch_thresholds] as [
+                      number,
+                      number,
+                      number,
+                      number,
+                    ];
+                    thresholds[index] = Number(event.target.value);
+                    update({ crosshatch_thresholds: thresholds });
+                  }}
+                />
+              </label>
+            ))}
+          </div>
+          <p className="field-help">
+            Layer 1 draws broadly in shaded areas. Each later angle is restricted to a darker
+            threshold, building denser crosshatching in the shadows. Thresholds must descend.
+          </p>
         </>
       )}
       {settings.algorithm === "squiggle" && (
@@ -1445,7 +1518,9 @@ export function App() {
   const [profile, setProfile] = useState<MachineProfile | null>(null);
   const [bundle, setBundle] = useState<ExportBundle | null>(null);
   const [sendResult, setSendResult] = useState<FluidNCProgramResult | null>(null);
+  const [sdRunResult, setSdRunResult] = useState<FluidNCProjectRunResult | null>(null);
   const [selectedProgramFilename, setSelectedProgramFilename] = useState("combined.nc");
+  const [gcodeStartLine, setGcodeStartLine] = useState(1);
   const [svgBundle, setSvgBundle] = useState<SvgExportBundle | null>(null);
   const [rasterPreview, setRasterPreview] = useState<RasterPreview | null>(null);
   const rasterPreviewRef = useRef(rasterPreview);
@@ -1466,7 +1541,6 @@ export function App() {
   const [lastPlaceSearchUsedCache, setLastPlaceSearchUsedCache] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const previewQueue = useRef<Promise<void>>(Promise.resolve());
   const completedPreviewKey = useRef<string | null>(null);
   const [previewUpdating, setPreviewUpdating] = useState(false);
   const previewKey =
@@ -1502,7 +1576,9 @@ export function App() {
     let jobId: string | undefined;
     setPreviewUpdating(true);
     const timer = window.setTimeout(() => {
-      previewQueue.current = previewQueue.current.then(async () => {
+      // Run previews independently. A cancelled or stalled preview must not block source
+      // selection, conversion, or a later preview request.
+      void (async () => {
         if (obsolete) return;
         try {
           await api.patchProject(input.projectId, {
@@ -1531,7 +1607,7 @@ export function App() {
         } finally {
           if (!obsolete) setPreviewUpdating(false);
         }
-      });
+      })();
     }, 150);
     return () => {
       obsolete = true;
@@ -1558,12 +1634,76 @@ export function App() {
   const activeMode = project
     ? modes.find((mode) => mode.id === project.mode.mode_id && mode.kind === "generator")
     : undefined;
+  const svgParts = useMemo(() => {
+    if (!project || project.mode.mode_id !== "import.svg") return [];
+    const parts = new Map<string, string>();
+    if (design?.metadata.generator_id === "import.svg") {
+      for (const layer of design.layers) parts.set(layer.semantic_role, layer.name);
+    }
+    for (const role of Object.keys(project.svg_import.part_effects)) {
+      if (!parts.has(role)) parts.set(role, role);
+    }
+    const sourceOrder = Array.from(parts, ([role, name]) => ({ role, name }));
+    const requestedPositions = new Map(
+      (project.svg_import.part_order ?? []).map((role, index) => [role, index]),
+    );
+    return sourceOrder
+      .map((part, index) => ({ ...part, sourceIndex: index }))
+      .sort((left, right) => {
+        const leftPosition = requestedPositions.get(left.role);
+        const rightPosition = requestedPositions.get(right.role);
+        if (leftPosition === undefined && rightPosition === undefined) {
+          return left.sourceIndex - right.sourceIndex;
+        }
+        if (leftPosition === undefined) return 1;
+        if (rightPosition === undefined) return -1;
+        return leftPosition - rightPosition;
+      });
+  }, [design, project]);
+
+  const updateSvgPartEffect = (
+    role: string,
+    changes: Partial<ProjectRecipe["svg_import"]["part_effects"][string]>,
+  ) => {
+    setProject((current) => {
+      if (!current) return current;
+      const partEffects = { ...current.svg_import.part_effects };
+      const nextEffect = { ...(partEffects[role] ?? {}), ...changes };
+      for (const key of Object.keys(nextEffect) as Array<keyof typeof nextEffect>) {
+        if (nextEffect[key] === undefined) delete nextEffect[key];
+      }
+      if (Object.keys(nextEffect).length === 0) delete partEffects[role];
+      else partEffects[role] = nextEffect;
+      return {
+        ...current,
+        svg_import: { ...current.svg_import, part_effects: partEffects },
+      };
+    });
+  };
+
+  const moveSvgPart = (index: number, direction: -1 | 1) => {
+    const destination = index + direction;
+    if (destination < 0 || destination >= svgParts.length) return;
+    const partOrder = svgParts.map((part) => part.role);
+    const selected = partOrder[index];
+    const displaced = partOrder[destination];
+    if (!selected || !displaced) return;
+    partOrder[index] = displaced;
+    partOrder[destination] = selected;
+    setProject((current) =>
+      current
+        ? {
+            ...current,
+            svg_import: { ...current.svg_import, part_order: partOrder },
+          }
+        : current,
+    );
+  };
 
   const run = async (nextOperation: Operation, action: () => Promise<void>) => {
     setOperation(nextOperation);
     setError(null);
     try {
-      await previewQueue.current;
       await action();
     } catch (reason) {
       setError(errorMessage(reason));
@@ -1598,9 +1738,13 @@ export function App() {
     });
   };
 
-  const createProject = (name = "A3 two-pass test") =>
+  const createProject = (
+    name = "A3 two-pass test",
+    pagePreset: "A3" | "A4" = "A3",
+    orientation: "landscape" | "portrait" = "landscape",
+  ) =>
     run("creating", async () => {
-      const created = await api.createProject(name);
+      const created = await api.createProject(name, pagePreset, orientation);
       setProject(created);
       setDesign(null);
       setPlan(null);
@@ -1817,6 +1961,7 @@ export function App() {
       setPlan(planned);
       setBundle(exported);
       setSendResult(null);
+      setGcodeStartLine(1);
       setSelectedProgramFilename(
         exported.programs.some((program) => program.filename === "combined.nc")
           ? "combined.nc"
@@ -1835,8 +1980,11 @@ export function App() {
     );
     if (!selectedProgram) return Promise.resolve();
     const confirmed = window.confirm(
-      `Send ${selectedProgram.filename} to the configured FluidNC machine?\n\n` +
-        "The controller must be Idle. This queues real motion and cannot start from the current pen position yet.",
+      `Send ${selectedProgram.filename} from G-code line ${gcodeStartLine} to the configured FluidNC machine?\n\n` +
+        (gcodeStartLine > 1
+          ? "The pen will lift, move to the saved position at that line, restore the drawing state, and continue. "
+          : "The complete program will be sent. ") +
+        "The controller must be Idle and the original work origin must be unchanged.",
     );
     if (!confirmed) return Promise.resolve();
     return run("sending", async () => {
@@ -1844,10 +1992,37 @@ export function App() {
       if (validationError) throw new Error(validationError);
       const saved = await api.patchProject(project.project_id, persistedChanges(project));
       const planned = await api.plan(saved.project_id);
-      const result = await api.sendGcode(saved.project_id, profile, selectedProgramFilename);
+      const result = await api.sendGcode(
+        saved.project_id,
+        profile,
+        selectedProgramFilename,
+        gcodeStartLine,
+      );
       setProject(saved);
       setPlan(planned);
       setSendResult(result);
+    });
+  };
+
+  const sendProjectToFluidNCSd = () => {
+    if (!project || !plan || !profile) return Promise.resolve();
+    const enabledPasses = project.passes.filter((plotPass) => plotPass.enabled);
+    const confirmed = window.confirm(
+      `Store ${enabledPasses.length} validated pen pass${enabledPasses.length === 1 ? "" : "es"} ` +
+        "in a project folder on the FluidNC SD card and start them in the displayed priority order?\n\n" +
+        "The combined SD job pauses for each pen change. The controller must be Idle.",
+    );
+    if (!confirmed) return Promise.resolve();
+    return run("uploading-sd", async () => {
+      const validationError = validateProfile(profile, project.page);
+      if (validationError) throw new Error(validationError);
+      const saved = await api.patchProject(project.project_id, persistedChanges(project));
+      const planned = await api.plan(saved.project_id);
+      const result = await api.sendProjectToFluidNCSd(saved.project_id, profile);
+      setProject(saved);
+      setPlan(planned);
+      setSdRunResult(result);
+      setSendResult(null);
     });
   };
 
@@ -2083,7 +2258,9 @@ export function App() {
           activeProjectId={project?.project_id ?? null}
           connected={connected}
           busy={busy}
-          onCreate={(name) => void createProject(name)}
+          onCreate={(name, pagePreset, orientation) =>
+            void createProject(name, pagePreset, orientation)
+          }
           onOpen={(projectId) => void reopenProject(projectId)}
           onRename={(projectId, name) => void renameProject(projectId, name)}
           onDelete={(projectId) => void deleteProject(projectId)}
@@ -2147,8 +2324,54 @@ export function App() {
                 <legend>Page</legend>
                 <label>
                   Preset
-                  <select value={project.page.preset} disabled>
-                    <option>A3</option>
+                  <select
+                    aria-label="Page preset"
+                    value={project.page.preset}
+                    onChange={(event) => {
+                      const preset = event.target.value as ProjectRecipe["page"]["preset"];
+                      setRasterPreview(null);
+                      if (preset === "custom") {
+                        setProject({ ...project, page: { ...project.page, preset } });
+                        return;
+                      }
+                      const [longEdge, shortEdge] = preset === "A3" ? [420, 297] : [297, 210];
+                      const [width_mm, height_mm] =
+                        project.page.orientation === "landscape"
+                          ? [longEdge, shortEdge]
+                          : [shortEdge, longEdge];
+                      setProject({
+                        ...project,
+                        page: { ...project.page, preset, width_mm, height_mm },
+                      });
+                    }}
+                  >
+                    <option value="A3">A3</option>
+                    <option value="A4">A4</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                <label>
+                  Orientation
+                  <select
+                    aria-label="Page orientation"
+                    value={project.page.orientation}
+                    onChange={(event) => {
+                      const orientation = event.target
+                        .value as ProjectRecipe["page"]["orientation"];
+                      setRasterPreview(null);
+                      setProject({
+                        ...project,
+                        page: {
+                          ...project.page,
+                          orientation,
+                          width_mm: project.page.height_mm,
+                          height_mm: project.page.width_mm,
+                        },
+                      });
+                    }}
+                  >
+                    <option value="landscape">Landscape</option>
+                    <option value="portrait">Portrait</option>
                   </select>
                 </label>
                 <div className="field-row">
@@ -2163,7 +2386,11 @@ export function App() {
                           setRasterPreview(null);
                           setProject({
                             ...project,
-                            page: { ...project.page, width_mm: Number(event.target.value) },
+                            page: {
+                              ...project.page,
+                              preset: "custom",
+                              width_mm: Number(event.target.value),
+                            },
                           });
                         })()
                       }
@@ -2180,7 +2407,11 @@ export function App() {
                           setRasterPreview(null);
                           setProject({
                             ...project,
-                            page: { ...project.page, height_mm: Number(event.target.value) },
+                            page: {
+                              ...project.page,
+                              preset: "custom",
+                              height_mm: Number(event.target.value),
+                            },
                           });
                         })()
                       }
@@ -2260,6 +2491,8 @@ export function App() {
                         <option value="outline">Outline</option>
                         <option value="hatch">Hatch</option>
                         <option value="crosshatch">Crosshatch</option>
+                        <option value="dots">Regular dots</option>
+                        <option value="stipple">Organic stipple</option>
                       </select>
                     </label>
                     <label>
@@ -2321,6 +2554,234 @@ export function App() {
                         />
                       </label>
                     </div>
+                    <div className="field-row">
+                      <label>
+                        Dot spacing
+                        <NumericInput
+                          aria-label="SVG dot spacing"
+                          type="number"
+                          min="0.2"
+                          step="0.1"
+                          value={project.svg_import.dot_spacing_mm}
+                          onChange={(event) =>
+                            setProject({
+                              ...project,
+                              svg_import: {
+                                ...project.svg_import,
+                                dot_spacing_mm: Number(event.target.value),
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Pen dot diameter
+                        <NumericInput
+                          aria-label="SVG dot diameter"
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          value={project.svg_import.dot_diameter_mm}
+                          onChange={(event) =>
+                            setProject({
+                              ...project,
+                              svg_import: {
+                                ...project.svg_import,
+                                dot_diameter_mm: Number(event.target.value),
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                    {svgParts.length > 0 && (
+                      <div className="svg-part-effects" aria-label="SVG part effects">
+                        <strong>Part effects</strong>
+                        <p className="field-help">
+                          Override each SVG group or top-level object and set the order in which it
+                          is drawn, then convert again.
+                        </p>
+                        <div className="svg-part-list">
+                          {svgParts.map((part, index) => {
+                            const effect = project.svg_import.part_effects[part.role] ?? {};
+                            const resolvedFillMode =
+                              effect.fill_mode ?? project.svg_import.fill_mode;
+                            return (
+                              <article className="svg-part-card" key={part.role}>
+                                <div className="svg-part-title">
+                                  <span className="svg-part-position">{index + 1}</span>
+                                  <strong>{part.name}</strong>
+                                  <div className="svg-part-order-buttons">
+                                    <button
+                                      type="button"
+                                      aria-label={`Move ${part.name} earlier`}
+                                      title="Draw earlier"
+                                      disabled={index === 0}
+                                      onClick={() => moveSvgPart(index, -1)}
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      aria-label={`Move ${part.name} later`}
+                                      title="Draw later"
+                                      disabled={index === svgParts.length - 1}
+                                      onClick={() => moveSvgPart(index, 1)}
+                                    >
+                                      ↓
+                                    </button>
+                                  </div>
+                                </div>
+                                <label>
+                                  Fill treatment
+                                  <select
+                                    aria-label={`Effect for ${part.name}`}
+                                    value={effect.fill_mode ?? ""}
+                                    onChange={(event) =>
+                                      updateSvgPartEffect(part.role, {
+                                        fill_mode: event.target.value
+                                          ? (event.target
+                                              .value as ProjectRecipe["svg_import"]["fill_mode"])
+                                          : undefined,
+                                      })
+                                    }
+                                  >
+                                    <option value="">
+                                      Use default ({project.svg_import.fill_mode})
+                                    </option>
+                                    <option value="ignore">Ignore</option>
+                                    <option value="outline">Outline</option>
+                                    <option value="hatch">Hatch</option>
+                                    <option value="crosshatch">Crosshatch</option>
+                                    <option value="dots">Regular dots</option>
+                                    <option value="stipple">Organic stipple</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Stroke treatment
+                                  <select
+                                    aria-label={`Stroke treatment for ${part.name}`}
+                                    value={effect.stroke_mode ?? ""}
+                                    onChange={(event) =>
+                                      updateSvgPartEffect(part.role, {
+                                        stroke_mode: event.target.value
+                                          ? (event.target
+                                              .value as ProjectRecipe["svg_import"]["stroke_mode"])
+                                          : undefined,
+                                      })
+                                    }
+                                  >
+                                    <option value="">
+                                      Use default ({project.svg_import.stroke_mode})
+                                    </option>
+                                    <option value="centerline">Centerline</option>
+                                    <option value="outline">Outline</option>
+                                    <option value="parallel">Parallel approximation</option>
+                                  </select>
+                                </label>
+                                {resolvedFillMode === "hatch" ||
+                                resolvedFillMode === "crosshatch" ? (
+                                  <div className="field-row">
+                                    <label>
+                                      Hatch spacing
+                                      <NumericInput
+                                        aria-label={`Hatch spacing for ${part.name}`}
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={
+                                          effect.hatch_spacing_mm ??
+                                          project.svg_import.hatch_spacing_mm
+                                        }
+                                        onChange={(event) =>
+                                          updateSvgPartEffect(part.role, {
+                                            hatch_spacing_mm: Number(event.target.value),
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                    <label>
+                                      Hatch angle
+                                      <NumericInput
+                                        aria-label={`Hatch angle for ${part.name}`}
+                                        type="number"
+                                        value={
+                                          effect.hatch_angle_degrees ??
+                                          project.svg_import.hatch_angle_degrees
+                                        }
+                                        onChange={(event) =>
+                                          updateSvgPartEffect(part.role, {
+                                            hatch_angle_degrees: Number(event.target.value),
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                  </div>
+                                ) : null}
+                                {resolvedFillMode === "dots" || resolvedFillMode === "stipple" ? (
+                                  <div className="field-row">
+                                    <label>
+                                      Dot spacing
+                                      <NumericInput
+                                        aria-label={`Dot spacing for ${part.name}`}
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={
+                                          effect.dot_spacing_mm ?? project.svg_import.dot_spacing_mm
+                                        }
+                                        onChange={(event) =>
+                                          updateSvgPartEffect(part.role, {
+                                            dot_spacing_mm: Number(event.target.value),
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                    <label>
+                                      Pen dot diameter
+                                      <NumericInput
+                                        aria-label={`Dot diameter for ${part.name}`}
+                                        type="number"
+                                        min="0.05"
+                                        step="0.05"
+                                        value={
+                                          effect.dot_diameter_mm ??
+                                          project.svg_import.dot_diameter_mm
+                                        }
+                                        onChange={(event) =>
+                                          updateSvgPartEffect(part.role, {
+                                            dot_diameter_mm: Number(event.target.value),
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                  </div>
+                                ) : null}
+                                {Object.keys(effect).length > 0 && (
+                                  <button
+                                    className="svg-part-reset"
+                                    type="button"
+                                    onClick={() => {
+                                      const partEffects = { ...project.svg_import.part_effects };
+                                      delete partEffects[part.role];
+                                      setProject({
+                                        ...project,
+                                        svg_import: {
+                                          ...project.svg_import,
+                                          part_effects: partEffects,
+                                        },
+                                      });
+                                    }}
+                                  >
+                                    Reset part settings
+                                  </button>
+                                )}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </fieldset>
                 ) : project.mode.mode_id === "import.raster" ? (
                   <>
@@ -2389,7 +2850,11 @@ export function App() {
                         disabled={busy}
                         onChange={(event) => {
                           const file = event.target.files?.[0];
-                          if (file) void uploadSource(file);
+                          if (file) {
+                            void uploadSource(file);
+                            // Allow selecting the same file again after an upload or error.
+                            event.currentTarget.value = "";
+                          }
                         }}
                       />
                     </label>
@@ -2888,6 +3353,44 @@ export function App() {
                   </div>
                   <div className="field-row">
                     <label>
+                      Z lift speed (mm/min)
+                      <NumericInput
+                        aria-label="Z lift speed"
+                        type="number"
+                        min="1"
+                        value={profile.pen_actuator.lift_feed_mm_min}
+                        onChange={(event) =>
+                          setProfile({
+                            ...profile,
+                            pen_actuator: {
+                              ...profile.pen_actuator,
+                              lift_feed_mm_min: Number(event.target.value),
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Z lower speed (mm/min)
+                      <NumericInput
+                        aria-label="Z lower speed"
+                        type="number"
+                        min="1"
+                        value={profile.pen_actuator.lower_feed_mm_min}
+                        onChange={(event) =>
+                          setProfile({
+                            ...profile,
+                            pen_actuator: {
+                              ...profile.pen_actuator,
+                              lower_feed_mm_min: Number(event.target.value),
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="field-row">
+                    <label>
                       Z up
                       <NumericInput
                         aria-label="Z up"
@@ -3014,7 +3517,12 @@ export function App() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => downloadArchive(bundle.archive_base64, "plotbox-a3-gcode.zip")}
+                    onClick={() =>
+                      downloadArchive(
+                        bundle.archive_base64,
+                        `plotbox-${project.page.preset.toLowerCase()}-gcode.zip`,
+                      )
+                    }
                   >
                     Download .zip
                   </button>
@@ -3024,7 +3532,11 @@ export function App() {
                       aria-label="Validated file to send"
                       value={selectedProgramFilename}
                       disabled={busy}
-                      onChange={(event) => setSelectedProgramFilename(event.target.value)}
+                      onChange={(event) => {
+                        setSelectedProgramFilename(event.target.value);
+                        setGcodeStartLine(1);
+                        setSendResult(null);
+                      }}
                     >
                       {bundle.programs.map((program) => (
                         <option key={program.filename} value={program.filename}>
@@ -3033,13 +3545,51 @@ export function App() {
                       ))}
                     </select>
                   </label>
+                  {(() => {
+                    const selectedProgram = bundle.programs.find(
+                      (program) => program.filename === selectedProgramFilename,
+                    );
+                    const sourceLines = selectedProgram
+                      ? selectedProgram.text.replace(/\r?\n$/, "").split(/\r?\n/)
+                      : [];
+                    const lineCount = Math.max(1, sourceLines.length);
+                    const selectedLine = sourceLines[gcodeStartLine - 1] ?? "";
+                    return (
+                      <>
+                        <label>
+                          Start at G-code line
+                          <NumericInput
+                            aria-label="Start at G-code line"
+                            type="number"
+                            min="1"
+                            max={lineCount}
+                            value={gcodeStartLine}
+                            disabled={busy}
+                            onChange={(event) => {
+                              const next = Number(event.target.value);
+                              setGcodeStartLine(
+                                Number.isFinite(next)
+                                  ? Math.min(lineCount, Math.max(1, Math.trunc(next)))
+                                  : 1,
+                              );
+                              setSendResult(null);
+                            }}
+                          />
+                        </label>
+                        <p className="field-help" aria-live="polite">
+                          Line {gcodeStartLine} of {lineCount}:{" "}
+                          <code>{selectedLine || "(blank)"}</code>
+                        </p>
+                      </>
+                    );
+                  })()}
                   <p className="field-help">
                     Sent files are regenerated and round-trip validated again. The configured
                     controller must report Idle; acceptance means queued, not physically complete.
                   </p>
                   <p className="field-help">
-                    Placement currently uses the machine work origin. Starting from the current pen
-                    position and calibrated work-origin selection are the next safety controls.
+                    A resumed send starts pen-up, returns to the saved position before the selected
+                    line, then restores the expected pen state. Keep the same work origin and pen.
                   </p>
                   <button
                     className="send-button"
@@ -3049,6 +3599,20 @@ export function App() {
                   >
                     {operation === "sending" ? "Sending to FluidNC…" : "Send to configured FluidNC"}
                   </button>
+                  <button
+                    className="send-button"
+                    type="button"
+                    disabled={busy || project.passes.every((plotPass) => !plotPass.enabled)}
+                    onClick={() => void sendProjectToFluidNCSd()}
+                  >
+                    {operation === "uploading-sd"
+                      ? "Uploading passes to FluidNC…"
+                      : "Store all passes on SD & start"}
+                  </button>
+                  <p className="field-help">
+                    Uses the pass-card order as priority. Every enabled pass is stored separately;
+                    the ordered SD job pauses for physical pen changes.
+                  </p>
                   {sendResult && (
                     <div
                       className={sendResult.success ? "send-result" : "send-result failed"}
@@ -3062,6 +3626,26 @@ export function App() {
                         accepted
                       </span>
                       <code>{shortHash(sendResult.sha256)}</code>
+                    </div>
+                  )}
+                  {sdRunResult && (
+                    <div
+                      className={sdRunResult.success ? "send-result" : "send-result failed"}
+                      role="status"
+                    >
+                      <strong>
+                        {sdRunResult.success ? "SD project started" : "SD project was rejected"}
+                      </strong>
+                      <span>
+                        {sdRunResult.passes.length} passes stored in {sdRunResult.sd_folder}
+                      </span>
+                      <ol>
+                        {sdRunResult.passes.map((storedPass) => (
+                          <li key={storedPass.pass_id}>
+                            {storedPass.priority}. {storedPass.name} — {storedPass.filename}
+                          </li>
+                        ))}
+                      </ol>
                     </div>
                   )}
                   <ul>

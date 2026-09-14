@@ -188,11 +188,27 @@ class SourceAsset(StrictModel):
     byte_count: int = Field(ge=1)
 
 
+type SvgFillMode = Literal["ignore", "outline", "hatch", "crosshatch", "dots", "stipple"]
+
+
+class SvgPartEffectSettings(StrictModel):
+    fill_mode: SvgFillMode | None = None
+    stroke_mode: Literal["centerline", "outline", "parallel"] | None = None
+    hatch_spacing_mm: float | None = Field(default=None, gt=0)
+    hatch_angle_degrees: float | None = None
+    dot_spacing_mm: float | None = Field(default=None, ge=0.1, le=100)
+    dot_diameter_mm: float | None = Field(default=None, ge=0.05, le=10)
+
+
 class SvgImportSettings(StrictModel):
-    fill_mode: Literal["ignore", "outline", "hatch", "crosshatch"] = "outline"
+    fill_mode: SvgFillMode = "outline"
     stroke_mode: Literal["centerline", "outline", "parallel"] = "centerline"
     hatch_spacing_mm: float = Field(default=2.0, gt=0)
     hatch_angle_degrees: float = 45.0
+    dot_spacing_mm: float = Field(default=2.0, ge=0.1, le=100)
+    dot_diameter_mm: float = Field(default=0.5, ge=0.05, le=10)
+    part_effects: dict[str, SvgPartEffectSettings] = Field(default_factory=dict)
+    part_order: list[str] = Field(default_factory=list)
     fit_to_page: bool = True
 
 
@@ -246,6 +262,7 @@ class RasterVectorizeSettings(StrictModel):
         "centerline",
         "hatch",
         "crosshatch",
+        "adaptive-crosshatch",
         "squiggle",
         "circular-scribble",
         "spiral-wave",
@@ -418,23 +435,124 @@ class OsmSelection(StrictModel):
 
 
 class OsmFeatureToggles(StrictModel):
+    # Legacy group switches remain for compatibility with existing saved projects.
     roads: bool = True
     buildings: bool = True
     water: bool = True
     rail: bool = True
     parks: bool = True
 
+    road_motorways: bool = True
+    road_primary: bool = True
+    road_secondary: bool = True
+    road_residential: bool = True
+    road_service: bool = True
+    footpaths: bool = True
+    pedestrian_paths: bool = True
+    cycleways: bool = True
+    tracks: bool = True
+
+    water_areas: bool = True
+    waterways: bool = True
+    coastline: bool = False
+
+    woodland: bool = False
+    farmland: bool = False
+    meadow: bool = False
+    residential_landuse: bool = False
+    industrial_landuse: bool = False
+    cemetery: bool = False
+    parking: bool = False
+    wetlands: bool = False
+
+    boundaries: bool = False
+    power_lines: bool = False
+    power_nodes: bool = False
+    aeroway: bool = False
+    maritime: bool = False
+
+    points_of_interest: bool = False
+    poi_worship: bool = False
+    poi_stations: bool = False
+    poi_peaks: bool = False
+    poi_historic: bool = False
+    poi_castles: bool = False
+    poi_lighthouses: bool = False
+    poi_wind_turbines: bool = False
+    poi_schools: bool = False
+    poi_hospitals: bool = False
+    poi_trees: bool = False
+    poi_monuments: bool = False
+
+
+PolygonTreatment = Literal[
+    "outline", "hatch", "outline-hatch", "crosshatch", "stipple", "ripple"
+]
+
 
 class OsmRenderRules(StrictModel):
-    road_line_treatment: Literal["centerline", "casing", "parallel"] = "centerline"
+    road_line_treatment: Literal[
+        "centerline", "casing", "parallel", "classified", "dashed", "dotted"
+    ] = "centerline"
     road_width_mm: float = Field(default=0.8, gt=0, le=10)
-    building_treatment: Literal["outline", "hatch"] = "outline"
-    water_treatment: Literal["outline", "hatch"] = "hatch"
-    park_treatment: Literal["outline", "hatch"] = "outline"
+    rail_treatment: Literal["single", "double", "sleepers", "classified"] = "single"
+    rail_width_mm: float = Field(default=1.0, gt=0, le=10)
+    rail_sleeper_spacing_mm: float = Field(default=2.5, gt=0, le=20)
+    building_treatment: PolygonTreatment = "outline"
+    water_treatment: PolygonTreatment = "hatch"
+    park_treatment: PolygonTreatment = "outline"
+    landuse_treatment: PolygonTreatment = "outline"
+    boundary_treatment: Literal["solid", "dashed", "dotted", "dash-dot"] = "dashed"
     polygon_hatch_spacing_mm: float = Field(default=2.0, gt=0, le=30)
     polygon_hatch_angle_degrees: float = Field(default=45, ge=-360, le=360)
+    dash_length_mm: float = Field(default=2.0, gt=0, le=30)
+    dash_gap_mm: float = Field(default=1.0, gt=0, le=30)
+    dot_length_mm: float = Field(default=0.2, gt=0, le=5)
+    dot_gap_mm: float = Field(default=1.0, gt=0, le=30)
+    bridge_tick_spacing_mm: float = Field(default=3.0, gt=0, le=30)
+    bridge_tick_width_mm: float = Field(default=1.2, gt=0, le=10)
+    building_shadow_enabled: bool = False
+    building_shadow_offset_mm: float = Field(default=1.0, ge=0, le=20)
+    building_shadow_angle_degrees: float = Field(default=45, ge=-360, le=360)
+    water_ripple_spacing_mm: float = Field(default=2.0, gt=0, le=30)
+    water_ripple_angle_degrees: float = Field(default=0, ge=-360, le=360)
+    # Kept as aliases for older project files/UI code. New generation uses OsmDetailFiltering.
     simplification_tolerance_mm: float = Field(default=0.08, ge=0, le=10)
     minimum_feature_mm: float = Field(default=0.3, ge=0, le=20)
+
+
+class OsmPoiSettings(StrictModel):
+    symbol_size_mm: float = Field(default=2.0, ge=0.5, le=10)
+
+
+class OsmDetailFiltering(StrictModel):
+    minimum_line_length_mm: float = Field(default=0.3, ge=0, le=50)
+    minimum_polygon_area_mm2: float = Field(default=0.5, ge=0, le=5000)
+    minimum_poi_spacing_mm: float = Field(default=2.0, ge=0, le=50)
+    vertex_simplification_tolerance_mm: float = Field(default=0.08, ge=0, le=10)
+    minimum_gap_mm: float = Field(default=0.0, ge=0, le=20)
+
+
+class OsmTerrainSettings(StrictModel):
+    enabled: bool = False
+    provider: Literal["aws-terrarium"] = "aws-terrarium"
+    contour_interval_m: float = Field(default=10.0, gt=0, le=500)
+    index_contour_every: int = Field(default=5, ge=1, le=20)
+    sample_resolution: int = Field(default=128, ge=16, le=512)
+    contour_simplification_mm: float = Field(default=0.15, ge=0, le=10)
+    minimum_contour_length_mm: float = Field(default=2.0, ge=0, le=100)
+    elevation_min_m: float | None = None
+    elevation_max_m: float | None = None
+
+    @model_validator(mode="after")
+    def elevation_range_is_valid(self) -> OsmTerrainSettings:
+        if (
+            self.elevation_min_m is not None
+            and self.elevation_max_m is not None
+            and self.elevation_min_m > self.elevation_max_m
+        ):
+            raise ValueError("minimum terrain elevation must not exceed maximum elevation")
+        return self
 
 
 class OsmSnapshotMetadata(StrictModel):
@@ -454,6 +572,18 @@ class OsmSettings(StrictModel):
     selection: OsmSelection = Field(default_factory=OsmSelection)
     features: OsmFeatureToggles = Field(default_factory=OsmFeatureToggles)
     render: OsmRenderRules = Field(default_factory=OsmRenderRules)
+    poi: OsmPoiSettings = Field(default_factory=OsmPoiSettings)
+    detail: OsmDetailFiltering = Field(default_factory=OsmDetailFiltering)
+    terrain: OsmTerrainSettings = Field(default_factory=OsmTerrainSettings)
+    preset_id: Literal[
+        "street",
+        "figure-ground",
+        "hydrology",
+        "topographic",
+        "rail",
+        "landscape",
+        "urban-detail",
+    ] | None = None
     snapshot: OsmSnapshotMetadata | None = None
 
 
@@ -578,6 +708,17 @@ class MacroSettings(StrictModel):
     footer: list[str] = Field(default_factory=lambda: ["M2"])
 
 
+class SkewCalibration(StrictModel):
+    """Measured non-square XY axes and the correction derived from them."""
+
+    enabled: bool = False
+    square_width_mm: float = Field(default=100.0, gt=0, le=1_000)
+    square_height_mm: float = Field(default=100.0, gt=0, le=1_000)
+    rising_diagonal_mm: float = Field(default=math.sqrt(20_000), gt=0, le=2_000)
+    falling_diagonal_mm: float = Field(default=math.sqrt(20_000), gt=0, le=2_000)
+    axis_angle_degrees: float = Field(default=90.0, ge=80.0, le=100.0)
+
+
 class MachineProfile(StrictModel):
     schema_version: Literal[1] = SCHEMA_VERSION
     profile_id: str = "fluidnc-z-axis-a3"
@@ -593,6 +734,7 @@ class MachineProfile(StrictModel):
     pen_actuator: ZAxisActuator = Field(default_factory=ZAxisActuator)
     park: ParkSettings = Field(default_factory=ParkSettings)
     macros: MacroSettings = Field(default_factory=MacroSettings)
+    skew_calibration: SkewCalibration = Field(default_factory=SkewCalibration)
     allowed_commands: list[str] = Field(
         default_factory=lambda: ["G0", "G1", "G4", "G17", "G21", "G90", "G94", "M0", "M2"]
     )

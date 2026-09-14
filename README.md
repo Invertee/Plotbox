@@ -96,7 +96,10 @@ The current importer supports physical root units/viewBox, paths, lines, polylin
 rectangles (including rounded corners), circles, ellipses, relative/absolute path commands, arcs,
 nested transforms, inherited presentation styles, local `<use>` references, dashed strokes,
 deterministic text outlines through the bundled Plotter 5x7 fixture font, and stable top-level group
-names.
+names. Top-level groups and ungrouped objects are emitted as separate parts. After the first
+conversion, the SVG conversion panel can override each part independently with ignore, outline,
+hatch, crosshatch, regular pen dots, or deterministic organic stipple, then reconvert and plan the
+result as normal. Hatch angle/spacing and dot spacing/diameter are shared physical controls.
 
 Filters, masks, `foreignObject`, CSS, active content, external resources, and clip-path
 approximations are reported as structured warnings rather than silently discarded. The fixture font
@@ -244,6 +247,12 @@ Plotbox never writes FluidNC firmware settings. Calibration patterns also finish
 cannot change work zero. Clear the machine, verify limit inputs and homing direction, and keep a
 physical emergency stop available before any motion test.
 
+The skew calibration tool draws an uncorrected rectangle with two full diagonals. After X/Y distance
+has been calibrated, enter the rising (bottom-left to top-right) and falling diagonal measurements.
+Plotbox derives and saves the physical angle between the axes in `fluidnc.json`; enabled skew
+compensation is then applied automatically to every validated G-code export and direct send. The
+calibration can be disabled from Plotter setup without discarding its measurements.
+
 ## Development commands
 
 ```bash
@@ -278,6 +287,12 @@ configured FluidNC machine. Plotbox regenerates and independently round-trip val
 file immediately before streaming it. It never accepts raw G-code from the browser and will only begin
 when FluidNC reports `Idle`; a successful response means all lines were accepted, not that physical
 motion has finished.
+
+The editor can also store every enabled pen pass on the controller SD card with **Store all passes
+on SD & start**. Plotbox creates `/plotbox/<project>/`, uploads one independently validated `.nc`
+file per pass in the pass-card priority order, uploads an ordered `run-all.nc`, and starts that job
+with FluidNC's `$SD/Run` command. The combined job retains `M0` pauses between passes so the operator
+can change pens. FluidNC's HTTP port (normally 80) is configured separately from its WebSocket port.
 
 It still has no serial/Telnet transport, arbitrary command console, work-zero editor, start-from-current
 pen-position mode, firmware configuration writer, unattended plotting, or hardware job recovery.
@@ -334,3 +349,20 @@ Spiral generation is unchanged and still reports an error for excessive wave det
 progress and cancellation remain available. Minimum-segment filtering is disabled to preserve
 continuity; empty sources produce no route. Older projects load the new controls with defaults;
 legacy point-count and loop-spacing fields remain readable but no longer govern these two modes.
+
+## Extended pen-plot map layers (0.4.1)
+
+The OpenStreetMap workspace now exposes grouped transport, water, landuse, boundary,
+infrastructure and POI controls rather than treating the source as a conventional raster map.
+Roads can use centerline, casing, classified, dashed or dotted treatments; rail can use single,
+double or sleeper geometry. Polygon sources support outline, hatch, outline+hatch, crosshatch and
+plotter-safe stipple treatments, with a parallel ripple option for water.
+
+Physical detail filtering is applied after geographic coordinates are transformed to page
+millimetres. Minimum line length, polygon area, POI spacing and vertex simplification therefore
+track the actual plotted size rather than source-map units.
+
+Optional terrain contours use the public AWS Open Data Terrain Tiles Terrarium PNG source. Terrain
+pixels are decoded to elevation, contoured with marching squares and converted to normal Plotbox
+vector paths; terrain imagery is never added to the plot. Standard and index contours are emitted
+as separate semantic roles. Network access is required only while terrain contours are generated.

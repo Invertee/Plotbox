@@ -162,12 +162,10 @@ def _build_circle_arc(request: FluidNCCommissioningTestRequest) -> list[str]:
 
 def _build_diagonal_skew(request: FluidNCCommissioningTestRequest) -> list[str]:
     x0, y0, x1, y1 = _area(request)
-    inset = min(request.width_mm, request.height_mm) * 0.08
     return [
-        *_stroke(request, [(x0 + inset, y0 + inset), (x1 - inset, y1 - inset)]),
-        *_stroke(request, [(x0 + inset, y1 - inset), (x1 - inset, y0 + inset)]),
-        *_stroke(request, [(x0, y0), (x1, y0)]),
-        *_stroke(request, [(x0, y0), (x0, y1)]),
+        *_stroke(request, [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+        *_stroke(request, [(x0, y0), (x1, y1)]),
+        *_stroke(request, [(x0, y1), (x1, y0)]),
     ]
 
 

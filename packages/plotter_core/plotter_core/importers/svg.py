@@ -27,7 +27,7 @@ from plotter_core.models import (
 from plotter_core.planning import flatten_design_path
 
 SVG_IMPORTER_ID = "import.svg"
-SVG_IMPORTER_VERSION = "1.0.0"
+SVG_IMPORTER_VERSION = "1.2.0"
 MAX_SVG_BYTES = 25 * 1024 * 1024
 MAX_SVG_NODES = 50_000
 MAX_PATH_NUMBERS = 1_000_000
@@ -688,6 +688,74 @@ def _hatch_paths(
     return result
 
 
+def _point_in_polygon(point: Point, polygon: list[Point]) -> bool:
+    inside = False
+    previous = polygon[-1]
+    for current in polygon:
+        if (current.y > point.y) != (previous.y > point.y):
+            crossing_x = (previous.x - current.x) * (point.y - current.y) / (
+                previous.y - current.y
+            ) + current.x
+            if point.x < crossing_x:
+                inside = not inside
+        previous = current
+    return inside
+
+
+def _dot_paths(
+    path: DesignPath,
+    *,
+    spacing: float,
+    diameter: float,
+    jittered: bool,
+    prefix: str,
+) -> list[DesignPath]:
+    polygon = flatten_design_path(path, min(0.08, spacing / 5))
+    if len(polygon) < 3:
+        return []
+    if polygon[0] == polygon[-1]:
+        polygon = polygon[:-1]
+    minimum_x = min(point.x for point in polygon)
+    maximum_x = max(point.x for point in polygon)
+    minimum_y = min(point.y for point in polygon)
+    maximum_y = max(point.y for point in polygon)
+    start_x = math.floor(minimum_x / spacing) * spacing + spacing / 2
+    start_y = math.floor(minimum_y / spacing) * spacing + spacing / 2
+    result: list[DesignPath] = []
+    row = 0
+    y = start_y
+    while y <= maximum_y:
+        column = 0
+        x = start_x
+        while x <= maximum_x:
+            center = Point(x=x, y=y)
+            if jittered:
+                digest = hashlib.sha256(f"{path.path_id}:{row}:{column}".encode()).digest()
+                jitter = spacing * 0.32
+                center = Point(
+                    x=x + (digest[0] / 255 - 0.5) * 2 * jitter,
+                    y=y + (digest[1] / 255 - 0.5) * 2 * jitter,
+                )
+            if _point_in_polygon(center, polygon):
+                result.append(
+                    DesignPath(
+                        path_id=f"{path.path_id}-{prefix}-{len(result) + 1}",
+                        commands=[MoveCommand(point=center), LineCommand(point=center)],
+                        metadata={
+                            "source": "svg",
+                            "effect": prefix,
+                            "mark_kind": "pen-dot",
+                            "dot_diameter_mm": diameter,
+                        },
+                    )
+                )
+            column += 1
+            x += spacing
+        row += 1
+        y += spacing
+    return result
+
+
 def _color(value: str | None) -> str:
     if not value or value in {"none", "currentColor"}:
         return "#171717"
@@ -819,6 +887,12 @@ def import_svg(
         current_layer = layer
         if tag == "g" and depth == 1:
             current_layer = builder(_layer_name(element))
+        elif tag in DRAWABLE_TAGS and depth == 1:
+            current_layer = builder(
+                _layer_name(element)
+                if element.attrib.get("id") or any(key.endswith("}label") for key in element.attrib)
+                else f"{tag}-{element_counter}"
+            )
         if tag == "use":
             href = element.get("href") or element.get("{http://www.w3.org/1999/xlink}href")
             if not href or not href.startswith("#"):
@@ -855,54 +929,92 @@ def import_svg(
             raw_paths = _shape_paths(element, _slug(element_id), style)
             fill = style.get("fill", "black")
             stroke = style.get("stroke", "none")
+            part_effect = recipe.svg_import.part_effects.get(current_layer.role)
+            fill_mode = (
+                part_effect.fill_mode
+                if part_effect is not None and part_effect.fill_mode is not None
+                else recipe.svg_import.fill_mode
+            )
+            stroke_mode = (
+                part_effect.stroke_mode
+                if part_effect is not None and part_effect.stroke_mode is not None
+                else recipe.svg_import.stroke_mode
+            )
+            hatch_spacing_mm = (
+                part_effect.hatch_spacing_mm
+                if part_effect is not None and part_effect.hatch_spacing_mm is not None
+                else recipe.svg_import.hatch_spacing_mm
+            )
+            hatch_angle_degrees = (
+                part_effect.hatch_angle_degrees
+                if part_effect is not None and part_effect.hatch_angle_degrees is not None
+                else recipe.svg_import.hatch_angle_degrees
+            )
+            dot_spacing_mm = (
+                part_effect.dot_spacing_mm
+                if part_effect is not None and part_effect.dot_spacing_mm is not None
+                else recipe.svg_import.dot_spacing_mm
+            )
+            dot_diameter_mm = (
+                part_effect.dot_diameter_mm
+                if part_effect is not None and part_effect.dot_diameter_mm is not None
+                else recipe.svg_import.dot_diameter_mm
+            )
             for raw_path in raw_paths:
                 transformed = _transform_path(raw_path, _multiply(root_matrix, combined))
                 candidates: list[DesignPath] = []
                 if stroke != "none":
-                    if recipe.svg_import.stroke_mode == "centerline":
+                    if stroke_mode == "centerline":
                         candidates.append(transformed)
                     else:
                         width = max(0.1, _number(style.get("stroke-width"), 1.0) * (sx + sy) / 2)
                         offsets = (
                             (-width / 2, width / 2)
-                            if recipe.svg_import.stroke_mode == "outline"
+                            if stroke_mode == "outline"
                             else (-width, 0.0, width)
                         )
                         candidates.extend(
                             _offset_paths(
                                 transformed,
                                 offsets,
-                                recipe.svg_import.stroke_mode,
+                                stroke_mode,
                             )
                         )
                 if fill != "none":
-                    if recipe.svg_import.fill_mode == "outline":
+                    if fill_mode == "outline":
                         candidates.append(transformed)
-                    elif (
-                        recipe.svg_import.fill_mode in {"hatch", "crosshatch"}
-                        and transformed.closed
-                    ):
+                    elif fill_mode in {"hatch", "crosshatch"} and transformed.closed:
                         candidates.extend(
                             _hatch_paths(
                                 transformed,
-                                spacing=recipe.svg_import.hatch_spacing_mm,
-                                angle_degrees=recipe.svg_import.hatch_angle_degrees,
+                                spacing=hatch_spacing_mm,
+                                angle_degrees=hatch_angle_degrees,
                                 prefix="hatch",
                             )
                         )
-                        if recipe.svg_import.fill_mode == "crosshatch":
+                        if fill_mode == "crosshatch":
                             candidates.extend(
                                 _hatch_paths(
                                     transformed,
-                                    spacing=recipe.svg_import.hatch_spacing_mm,
-                                    angle_degrees=recipe.svg_import.hatch_angle_degrees + 90,
+                                    spacing=hatch_spacing_mm,
+                                    angle_degrees=hatch_angle_degrees + 90,
                                     prefix="crosshatch",
                                 )
                             )
-                    elif recipe.svg_import.fill_mode in {"hatch", "crosshatch"}:
+                    elif fill_mode in {"dots", "stipple"} and transformed.closed:
+                        candidates.extend(
+                            _dot_paths(
+                                transformed,
+                                spacing=dot_spacing_mm,
+                                diameter=dot_diameter_mm,
+                                jittered=fill_mode == "stipple",
+                                prefix=fill_mode,
+                            )
+                        )
+                    elif fill_mode in {"hatch", "crosshatch", "dots", "stipple"}:
                         warn(
                             "open-fill-ignored",
-                            "A fill on an open path could not be hatched.",
+                            f"A fill on an open path could not use the {fill_mode} effect.",
                             element,
                         )
                 dash_value = style.get("stroke-dasharray")
@@ -935,6 +1047,10 @@ def import_svg(
         {"fill": "black", "stroke": "none", "visibility": "visible"},
         default_layer,
     )
+    requested_order = [key for key in recipe.svg_import.part_order if key in layers]
+    ordered_layer_keys = requested_order + [
+        key for key in layer_order if key not in requested_order
+    ]
     design_layers = [
         DesignLayer(
             layer_id=f"layer-{key}",
@@ -942,9 +1058,17 @@ def import_svg(
             semantic_role=layers[key].role,
             preview_color=layers[key].preview_color,
             paths=layers[key].paths or [],
-            metadata={"source": "svg"},
+            metadata={
+                "source": "svg",
+                "fill_effect": (
+                    recipe.svg_import.part_effects[key].fill_mode
+                    if key in recipe.svg_import.part_effects
+                    and recipe.svg_import.part_effects[key].fill_mode is not None
+                    else recipe.svg_import.fill_mode
+                ),
+            },
         )
-        for key in layer_order
+        for key in ordered_layer_keys
         if layers[key].paths
     ]
     if not design_layers:

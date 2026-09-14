@@ -1,0 +1,33 @@
+{
+  "design_sha256": "26d31e1f512fbdd88672d404192769b46e16d4fdbc1406afb47953e9d4306bbf",
+  "entries": [
+    {
+      "byte_count": 2864,
+      "filename": "01-black.nc",
+      "kind": "pass",
+      "pass_id": "pass-black",
+      "sha256": "0eec3263088303f2e14d9ae4529fde2183a5a51628e926618966dad5d918933d"
+    },
+    {
+      "byte_count": 8817,
+      "filename": "02-cyan.nc",
+      "kind": "pass",
+      "pass_id": "pass-cyan",
+      "sha256": "4ba34ad063b145f27dfc2760f5b6fcae00b2359d20ef48676d384623758c2b61"
+    },
+    {
+      "byte_count": 11606,
+      "filename": "combined.nc",
+      "kind": "combined",
+      "pass_id": null,
+      "sha256": "333c1275bac1ac6f5cd7c8e6762c873d64afe70cea2ea2eee616a36270847124"
+    }
+  ],
+  "manifest_sha256": "0e5468b6427961c592c8663cb37af18ae64748bff6532d971285af51188ef2ea",
+  "plot_plan_sha256": "db5f91b5d1617d3c7a677d9789540895ad3d1790221731d9eae70bf5b637b1f6",
+  "profile_id": "fluidnc-z-axis-a3",
+  "project_id": "sd-queue-7fbe0e10",
+  "round_trip_tolerance_mm": 0.001,
+  "schema_version": 1,
+  "valid": true
+}

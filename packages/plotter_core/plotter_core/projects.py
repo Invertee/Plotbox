@@ -20,6 +20,7 @@ from plotter_core.models import (
     ExportBundle,
     OsmBounds,
     OsmSnapshotMetadata,
+    PageSettings,
     PassSettings,
     PlotPlan,
     ProjectRecipe,
@@ -120,11 +121,21 @@ class ProjectStore:
             raise ValueError("project path escapes configured root")
         return directory
 
-    def create(self, name: str, recipe: ProjectRecipe | None = None) -> ProjectRecipe:
+    def create(
+        self,
+        name: str,
+        recipe: ProjectRecipe | None = None,
+        *,
+        page: PageSettings | None = None,
+    ) -> ProjectRecipe:
         if recipe is None:
             name = _project_name(name)
             project_id = f"{_slug(name)}-{uuid.uuid4().hex[:8]}"
-            recipe = ProjectRecipe(project_id=project_id, name=name)
+            recipe = ProjectRecipe(
+                project_id=project_id,
+                name=name,
+                page=page or PageSettings(),
+            )
         recipe = _prepare_procedural_mode(recipe)
         directory = self.project_directory(recipe.project_id)
         if directory.exists():
@@ -398,22 +409,41 @@ class ProjectStore:
         }
         role_to_pass = {plot_pass.semantic_role: plot_pass for plot_pass in recipe.passes}
         passes: list[PassSettings] = []
+        pass_indexes: dict[str, int] = {}
+        used_pass_ids = {plot_pass.pass_id for plot_pass in recipe.passes}
         for index, layer in enumerate(design.layers):
             existing = layer_to_pass.get(layer.layer_id) or role_to_pass.get(layer.semantic_role)
             if existing is not None:
-                passes.append(
-                    existing.model_copy(
+                existing_index = pass_indexes.get(existing.pass_id)
+                if existing_index is not None:
+                    reconciled = passes[existing_index]
+                    passes[existing_index] = reconciled.model_copy(
                         update={
-                            "source_layer_ids": [layer.layer_id],
-                            "semantic_role": layer.semantic_role,
+                            "source_layer_ids": [*reconciled.source_layer_ids, layer.layer_id]
                         }
                     )
-                )
+                else:
+                    pass_indexes[existing.pass_id] = len(passes)
+                    passes.append(
+                        existing.model_copy(
+                            update={
+                                "source_layer_ids": [layer.layer_id],
+                                "semantic_role": layer.semantic_role,
+                            }
+                        )
+                    )
                 continue
             slug = _slug(layer.name)
+            base_pass_id = f"pass-{slug}-{index + 1}"
+            pass_id = base_pass_id
+            suffix = 2
+            while pass_id in used_pass_ids:
+                pass_id = f"{base_pass_id}-{suffix}"
+                suffix += 1
+            used_pass_ids.add(pass_id)
             passes.append(
                 PassSettings(
-                    pass_id=f"pass-{slug}-{index + 1}",
+                    pass_id=pass_id,
                     name=layer.name,
                     semantic_role=layer.semantic_role,
                     preview_color=layer.preview_color,

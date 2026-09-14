@@ -98,6 +98,25 @@ def test_project_list_rename_and_delete_contract(tmp_path: Path, monkeypatch) ->
     assert [item["project_id"] for item in projects] == [second["project_id"]]
 
 
+def test_create_a4_portrait_project(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("PLOTTERAPP_PROJECTS_ROOT", str(tmp_path))
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/api/projects",
+            json={"name": "A4 portrait", "page_preset": "A4", "orientation": "portrait"},
+        )
+
+    assert response.status_code == 201
+    assert response.json()["page"] == {
+        "schema_version": 1,
+        "preset": "A4",
+        "orientation": "portrait",
+        "width_mm": 210.0,
+        "height_mm": 297.0,
+        "margin_mm": 10.0,
+    }
+
+
 def test_modes_expose_versioned_generator_controls_presets_and_raster_schema() -> None:
     with TestClient(create_app()) as client:
         modes = client.get("/api/modes").json()
@@ -124,6 +143,7 @@ def test_modes_expose_versioned_generator_controls_presets_and_raster_schema() -
         "centerline",
         "hatch",
         "crosshatch",
+        "adaptive-crosshatch",
         "squiggle",
         "circular-scribble",
         "spiral-wave",

@@ -27,3 +27,18 @@ __all__ = [
     "selection_area_km2",
     "simplify_osm_points",
 ]
+
+# terrain exports v0.4.1
+from plotter_core.maps.terrain import (
+    AwsTerrariumTerrainProvider,
+    ElevationGrid,
+    TerrainProvider,
+    generate_contours,
+)
+
+__all__ += [
+    "AwsTerrariumTerrainProvider",
+    "ElevationGrid",
+    "TerrainProvider",
+    "generate_contours",
+]

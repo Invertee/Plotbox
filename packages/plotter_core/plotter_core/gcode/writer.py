@@ -1,8 +1,43 @@
 from __future__ import annotations
 
+import math
 import re
 
 from plotter_core.models import MachineProfile, PlannedPath, PlotPass, PlotPlan, Point
+
+
+def export_point(point: Point, profile: MachineProfile) -> Point:
+    """Map an ideal drawing point to machine coordinates, including XY skew correction."""
+
+    x = profile.work_width_mm - point.x if profile.invert_x else point.x
+    y = profile.work_height_mm - point.y if profile.invert_y else point.y
+    calibration = profile.skew_calibration
+    if not calibration.enabled:
+        return Point(x=x, y=y)
+
+    angle = math.radians(calibration.axis_angle_degrees)
+    sine = math.sin(angle)
+    cotangent = math.cos(angle) / sine
+    # A positive cotangent would otherwise require negative X near the top-left.
+    # Translating the whole drawing preserves its shape while keeping the work origin positive.
+    x_offset = max(0.0, profile.work_height_mm * cotangent)
+    return Point(x=x - y * cotangent + x_offset, y=y / sine)
+
+MAX_COMMENT_LINE_LENGTH = 20
+
+
+def _shorten_comment(line: str) -> str:
+    comment = line.lstrip()
+    return comment.encode("utf-8")[:MAX_COMMENT_LINE_LENGTH].decode("utf-8", errors="ignore")
+
+
+def _render_program(lines: list[str]) -> str:
+    """Render a program with short comments for FluidNC's input buffer."""
+    rendered = [
+        _shorten_comment(line) if line.lstrip().startswith(";") else line
+        for line in lines
+    ]
+    return "\n".join(rendered) + "\n"
 
 
 def _format_number(value: float, precision: int) -> str:
@@ -30,9 +65,8 @@ class FluidncZWriter:
         self.project_name = project_name
 
     def _xy(self, point: Point) -> tuple[float, float]:
-        x = self.profile.work_width_mm - point.x if self.profile.invert_x else point.x
-        y = self.profile.work_height_mm - point.y if self.profile.invert_y else point.y
-        return x, y
+        exported = export_point(point, self.profile)
+        return exported.x, exported.y
 
     def _pen_up(self) -> list[str]:
         actuator = self.profile.pen_actuator
@@ -88,7 +122,19 @@ class FluidncZWriter:
         ]
 
     def _footer(self) -> list[str]:
-        return ["", "; final pen up", *self._pen_up(), *self.profile.macros.footer]
+        precision = self.profile.precision_decimals
+        return [
+            "",
+            "; final pen up",
+            *self._pen_up(),
+            "; return home",
+            (
+                f"G0 X{_format_number(0.0, precision)} "
+                f"Y{_format_number(0.0, precision)} "
+                f"F{_format_number(self.profile.motion.travel_feed_mm_min, 0)}"
+            ),
+            *self.profile.macros.footer,
+        ]
 
     def _draw_paths(
         self,
@@ -121,7 +167,7 @@ class FluidncZWriter:
             )
         )
         lines.extend(self._footer())
-        return "\n".join(lines) + "\n"
+        return _render_program(lines)
 
     def combined_program(self, passes: list[PlotPass]) -> str:
         lines = self._header("Combined passes")
@@ -143,7 +189,7 @@ class FluidncZWriter:
                 message = f"CHANGE PEN TO {passes[index + 1].name.upper()}"
                 lines.append(self.profile.macros.pause.format(message=message))
         lines.extend(self._footer())
-        return "\n".join(lines) + "\n"
+        return _render_program(lines)
 
     def dry_run_program(self, plan: PlotPlan) -> str:
         lines = self._header("Dry run — pen remains up")
@@ -153,7 +199,7 @@ class FluidncZWriter:
                 lines.append(self._travel(path.points[0]))
                 lines.extend(self._travel(point) for point in path.points[1:])
         lines.extend(self._footer())
-        return "\n".join(lines) + "\n"
+        return _render_program(lines)
 
     def boundary_program(self, plan: PlotPlan) -> str:
         page = plan.page
@@ -167,7 +213,7 @@ class FluidncZWriter:
         lines = self._header("Page boundary — pen remains up")
         lines.extend(self._travel(point) for point in corners)
         lines.extend(self._footer())
-        return "\n".join(lines) + "\n"
+        return _render_program(lines)
 
 
 def pass_filename(index: int, plot_pass: PlotPass) -> str:

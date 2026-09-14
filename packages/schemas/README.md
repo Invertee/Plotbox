@@ -17,9 +17,10 @@ compilation guard both sides of the contract. A later milestone may replace this
 with generated TypeScript.
 
 `fluidnc-settings.schema.json` is the durable controller endpoint contract. The FluidNC action,
-commissioning-test, and axis-calibration request/result schemas document the bounded commissioning
-API; they are deliberately separate from `project-recipe.schema.json` and the canonical artwork
-pipeline.
+commissioning-test, axis-calibration request/result, and skew-calibration request schemas document
+the bounded commissioning API; they are deliberately separate from `project-recipe.schema.json`
+and the canonical artwork pipeline. `send-project-to-sd-request.schema.json` and
+`fluidnc-project-run-result.schema.json` describe the confirmed, validated multi-pass SD workflow.
 
 The project schema remains version 1 for this slice because the changes are additive and all new
 fields have validated defaults. Existing version-1 project files therefore load without migration;

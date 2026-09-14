@@ -528,11 +528,14 @@ def _hatch_paths(
     crosshatch: bool,
 ) -> VectorizationResult:
     settings = recipe.raster_vectorize
-    angle_thresholds = (
-        list(enumerate(settings.crosshatch_thresholds))
-        if crosshatch
-        else [(0, settings.hatch_tone_threshold)]
-    )
+    if crosshatch:
+        layers = _adaptive_crosshatch_paths(image, recipe, preview, checkpoint)
+        return VectorizationResult(
+            paths=[path for layer in layers for path in layer.paths],
+            removed_segments=sum(layer.removed_segments for layer in layers),
+        )
+
+    angle_thresholds = [(0, settings.hatch_tone_threshold)]
     paths: list[list[FloatPoint]] = []
     removed = 0
     for index, threshold in angle_thresholds:
@@ -550,6 +553,33 @@ def _hatch_paths(
         paths.extend(angle_paths)
         removed += angle_removed
     return VectorizationResult(paths=paths, removed_segments=removed)
+
+
+def _adaptive_crosshatch_paths(
+    image: Image.Image,
+    recipe: ProjectRecipe,
+    preview: RasterPreview,
+    checkpoint: ProgressCallback | None,
+) -> list[VectorizationResult]:
+    """Build cumulative hatch layers, adding an angle only in progressively darker tones."""
+
+    settings = recipe.raster_vectorize
+    layers: list[VectorizationResult] = []
+    for index, threshold in enumerate(settings.crosshatch_thresholds):
+        paths, removed = _hatch_angle(
+            image,
+            preview.placement,
+            angle_degrees=(
+                settings.hatch_angle_degrees + index * settings.crosshatch_angle_step_degrees
+            ),
+            spacing_mm=settings.hatch_spacing_mm,
+            threshold=threshold,
+            minimum_segment_mm=settings.minimum_segment_length_mm,
+            checkpoint=checkpoint,
+            stage=f"adaptive-crosshatch-layer-{index + 1}",
+        )
+        layers.append(VectorizationResult(paths=paths, removed_segments=removed))
+    return layers
 
 
 def _squiggle_paths(
@@ -1594,6 +1624,7 @@ def vectorize_raster(
     _checkpoint(checkpoint, f"vectorize-{algorithm}", 0, 1)
     color_results: list[ColorVectorizationResult] | None = None
     dither_results: list[VectorizationResult] | None = None
+    adaptive_crosshatch_results: list[VectorizationResult] | None = None
     color_warnings: list[RasterPreviewWarning] = []
     single_line_warnings: list[str] = []
     color_stipple = (
@@ -1632,6 +1663,16 @@ def vectorize_raster(
             result = _hatch_paths(image, recipe, preview, checkpoint, crosshatch=False)
         elif algorithm == "crosshatch":
             result = _hatch_paths(image, recipe, preview, checkpoint, crosshatch=True)
+        elif algorithm == "adaptive-crosshatch":
+            adaptive_crosshatch_results = _adaptive_crosshatch_paths(
+                image, recipe, preview, checkpoint
+            )
+            result = VectorizationResult(
+                paths=[path for layer in adaptive_crosshatch_results for path in layer.paths],
+                removed_segments=sum(
+                    layer.removed_segments for layer in adaptive_crosshatch_results
+                ),
+            )
         elif algorithm == "squiggle":
             result = _squiggle_paths(image, recipe, preview, checkpoint)
         elif algorithm == "circular-scribble":
@@ -1723,7 +1764,41 @@ def vectorize_raster(
             for diagnostic in diagnostics
         }.values()
     )
-    if dither_results is not None and recipe.raster_vectorize.dither_pass_mode == "contrast-bands":
+    if adaptive_crosshatch_results is not None:
+        layers = []
+        layer_count = len(adaptive_crosshatch_results)
+        for index, layer_result in enumerate(adaptive_crosshatch_results):
+            threshold = recipe.raster_vectorize.crosshatch_thresholds[index]
+            angle = (
+                recipe.raster_vectorize.hatch_angle_degrees
+                + index * recipe.raster_vectorize.crosshatch_angle_step_degrees
+            )
+            layer_algorithm = f"adaptive-crosshatch-{index + 1:02d}"
+            layers.append(
+                DesignLayer(
+                    layer_id=f"layer-raster-{layer_algorithm}",
+                    name=f"Crosshatch tone {index + 1}/{layer_count}",
+                    semantic_role=f"crosshatch-tone-{index + 1}",
+                    preview_color="#171717",
+                    paths=_design_paths(layer_algorithm, layer_result.paths),
+                    metadata={
+                        "source": "raster",
+                        "algorithm": algorithm,
+                        "tone_layer": index + 1,
+                        "tone_layer_count": layer_count,
+                        "luminance_threshold": threshold,
+                        "angle_degrees": angle,
+                        "path_count": len(layer_result.paths),
+                        "removed_segments": layer_result.removed_segments,
+                        "working_width_px": image.width,
+                        "working_height_px": image.height,
+                    },
+                )
+            )
+    elif (
+        dither_results is not None
+        and recipe.raster_vectorize.dither_pass_mode == "contrast-bands"
+    ):
         layers = []
         band_count = len(dither_results)
         for index, band_result in enumerate(dither_results):

@@ -1,6 +1,6 @@
-; Plotbox export - files only; no machine connection
-; Project: A3 vertical slice acceptance
-; Page boundary — pen remains up
+; Plotbox export - f
+; Project: A3 vertic
+; Page boundary — 
 G21
 G90
 G17

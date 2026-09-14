@@ -1,0 +1,3072 @@
+{
+  "actions": [
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 123.79118207307955,
+        "y": 86.17499999996696
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 166.89559103653977,
+        "y": 86.17499999996696
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": {
+        "x": 123.79118207307955,
+        "y": 86.17499999996696
+      }
+    },
+    {
+      "end": {
+        "x": 166.89559103653977,
+        "y": 134.65000000050657
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": {
+        "x": 166.89559103653977,
+        "y": 86.17499999996696
+      }
+    },
+    {
+      "end": {
+        "x": 123.79118207307955,
+        "y": 134.65000000050657
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": {
+        "x": 166.89559103653977,
+        "y": 134.65000000050657
+      }
+    },
+    {
+      "end": {
+        "x": 123.79118207307955,
+        "y": 86.17499999996696
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": {
+        "x": 123.79118207307955,
+        "y": 134.65000000050657
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-buildings-1",
+      "path_id": "osm-103-0",
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pause_for_pen",
+      "message": "Change pen to Parks",
+      "pass_id": "pass-buildings-1",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": {
+        "x": 123.79118207307955,
+        "y": 86.17499999996696
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 347.9341086830732,
+        "y": 51.55000000002203
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      }
+    },
+    {
+      "end": {
+        "x": 347.9341086830732,
+        "y": 106.94999999975774
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": {
+        "x": 347.9341086830732,
+        "y": 51.55000000002203
+      }
+    },
+    {
+      "end": {
+        "x": 300.5192588232661,
+        "y": 106.94999999975774
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": {
+        "x": 347.9341086830732,
+        "y": 106.94999999975774
+      }
+    },
+    {
+      "end": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": {
+        "x": 300.5192588232661,
+        "y": 106.94999999975774
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-parks-2",
+      "path_id": "osm-106-0",
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pause_for_pen",
+      "message": "Change pen to Rail",
+      "pass_id": "pass-parks-2",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-rail-3",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 89.30765490231181,
+        "y": 37.699999999867856
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-rail-3",
+      "path_id": "osm-105-0",
+      "start": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-rail-3",
+      "path_id": "osm-105-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 231.55220448173066,
+        "y": 58.475000000099115
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-rail-3",
+      "path_id": "osm-105-0",
+      "start": {
+        "x": 89.30765490231181,
+        "y": 37.699999999867856
+      }
+    },
+    {
+      "end": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-rail-3",
+      "path_id": "osm-105-0",
+      "start": {
+        "x": 231.55220448173066,
+        "y": 58.475000000099115
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-rail-3",
+      "path_id": "osm-105-0",
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pause_for_pen",
+      "message": "Change pen to Residential roads",
+      "pass_id": "pass-rail-3",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-residential-roads-4",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 231.55220448173066,
+        "y": 58.475000000099115
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-residential-roads-4",
+      "path_id": "osm-102-0",
+      "start": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-residential-roads-4",
+      "path_id": "osm-102-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 287.587936134228,
+        "y": 113.87500000027532
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-residential-roads-4",
+      "path_id": "osm-102-0",
+      "start": {
+        "x": 231.55220448173066,
+        "y": 58.475000000099115
+      }
+    },
+    {
+      "end": {
+        "x": 343.6236677867264,
+        "y": 176.2000000000881
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-residential-roads-4",
+      "path_id": "osm-102-0",
+      "start": {
+        "x": 287.587936134228,
+        "y": 113.87500000027532
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-residential-roads-4",
+      "path_id": "osm-102-0",
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pause_for_pen",
+      "message": "Change pen to Major roads",
+      "pass_id": "pass-residential-roads-4",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-major-roads-5",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 89.30765490231181,
+        "y": 37.699999999867856
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-major-roads-5",
+      "path_id": "osm-101-0",
+      "start": {
+        "x": 343.6236677867264,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-major-roads-5",
+      "path_id": "osm-101-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 210.0,
+        "y": 148.50000000022027
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-major-roads-5",
+      "path_id": "osm-101-0",
+      "start": {
+        "x": 89.30765490231181,
+        "y": 37.699999999867856
+      }
+    },
+    {
+      "end": {
+        "x": 330.6923450976882,
+        "y": 252.37500000049553
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-major-roads-5",
+      "path_id": "osm-101-0",
+      "start": {
+        "x": 210.0,
+        "y": 148.50000000022027
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-major-roads-5",
+      "path_id": "osm-101-0",
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pause_for_pen",
+      "message": "Change pen to Water areas",
+      "pass_id": "pass-major-roads-5",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 176.46567575840533
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-15",
+      "start": {
+        "x": 330.6923450976882,
+        "y": 252.37500000049553
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-15",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 219.57008472186556
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-15",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 176.46567575840533
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-15",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 216.74165759711937
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-14",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 219.57008472186556
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-14",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 238.42539674450433,
+        "y": 176.20000000008815
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-14",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 216.74165759711937
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-14",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 241.2538238692505,
+        "y": 176.20000000008812
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-13",
+      "start": {
+        "x": 238.42539674450433,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-13",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415355,
+        "y": 213.91323047237316
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-13",
+      "start": {
+        "x": 241.2538238692505,
+        "y": 176.20000000008812
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-13",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 211.08480334762697
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-12",
+      "start": {
+        "x": 278.9670543415355,
+        "y": 213.91323047237316
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-12",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 244.0822509939967,
+        "y": 176.20000000008815
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-12",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 211.08480334762697
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-12",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 246.9106781187429,
+        "y": 176.20000000008815
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-11",
+      "start": {
+        "x": 244.0822509939967,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-11",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 208.2563762228808
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-11",
+      "start": {
+        "x": 246.9106781187429,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-11",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 205.4279490981346
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-10",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 208.2563762228808
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-10",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 249.7391052434891,
+        "y": 176.20000000008812
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-10",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 205.4279490981346
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-10",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 252.56753236823528,
+        "y": 176.20000000008815
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-9",
+      "start": {
+        "x": 249.7391052434891,
+        "y": 176.20000000008812
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-9",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 202.59952197338842
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-9",
+      "start": {
+        "x": 252.56753236823528,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-9",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415355,
+        "y": 199.7710948486422
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-8",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 202.59952197338842
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-8",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 255.39595949298146,
+        "y": 176.20000000008812
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-8",
+      "start": {
+        "x": 278.9670543415355,
+        "y": 199.7710948486422
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-8",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 258.22438661772765,
+        "y": 176.20000000008815
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-7",
+      "start": {
+        "x": 255.39595949298146,
+        "y": 176.20000000008812
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-7",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 196.94266772389602
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-7",
+      "start": {
+        "x": 258.22438661772765,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-7",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 194.11424059914984
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 196.94266772389602
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-6",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 261.05281374247386,
+        "y": 176.20000000008815
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 194.11424059914984
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-6",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 263.88124086722,
+        "y": 176.2000000000881
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-5",
+      "start": {
+        "x": 261.05281374247386,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-5",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 191.28581347440365
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-5",
+      "start": {
+        "x": 263.88124086722,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-5",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 188.45738634965747
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-4",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 191.28581347440365
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-4",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 266.70966799196617,
+        "y": 176.2000000000881
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-4",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 188.45738634965747
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-4",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 269.5380951167124,
+        "y": 176.2000000000881
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-3",
+      "start": {
+        "x": 266.70966799196617,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-3",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415355,
+        "y": 185.62895922491126
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-3",
+      "start": {
+        "x": 269.5380951167124,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-3",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 182.80053210016507
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-2",
+      "start": {
+        "x": 278.9670543415355,
+        "y": 185.62895922491126
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-2",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 272.3665222414586,
+        "y": 176.2000000000881
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-2",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 182.80053210016507
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-2",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 275.19494936620475,
+        "y": 176.2000000000881
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-1",
+      "start": {
+        "x": 272.3665222414586,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-1",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 179.9721049754189
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-1",
+      "start": {
+        "x": 275.19494936620475,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-1",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 177.1436778506727
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-0",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 179.9721049754189
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.02337649095097,
+        "y": 176.2000000000881
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-0",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 177.1436778506727
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-0",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 179.2941028831515
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-16",
+      "start": {
+        "x": 278.02337649095097,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-16",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 222.3985118466118
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-16",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 179.2941028831515
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-16",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 278.4151153708054,
+        "y": 224.67500000062776
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-17",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 222.3985118466118
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-17",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 182.12253000789772
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-17",
+      "start": {
+        "x": 278.4151153708054,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-17",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 184.9509571326439
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-18",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 182.12253000789772
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-18",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 275.58668824605917,
+        "y": 224.67500000062773
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-18",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 184.9509571326439
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-18",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 272.758261121313,
+        "y": 224.67500000062776
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-19",
+      "start": {
+        "x": 275.58668824605917,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-19",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 187.7793842573901
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-19",
+      "start": {
+        "x": 272.758261121313,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-19",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 190.60781138213628
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-20",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 187.7793842573901
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-20",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 269.9298339965668,
+        "y": 224.67500000062773
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-20",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 190.60781138213628
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-20",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 267.1014068718206,
+        "y": 224.67500000062776
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-21",
+      "start": {
+        "x": 269.9298339965668,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-21",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 193.43623850688246
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-21",
+      "start": {
+        "x": 267.1014068718206,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-21",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 196.26466563162867
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-22",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 193.43623850688246
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-22",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 264.27297974707443,
+        "y": 224.67500000062776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-22",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 196.26466563162867
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-22",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 261.4445526223282,
+        "y": 224.67500000062773
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-23",
+      "start": {
+        "x": 264.27297974707443,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-23",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 199.09309275637486
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-23",
+      "start": {
+        "x": 261.4445526223282,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-23",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 201.92151988112104
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-24",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 199.09309275637486
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-24",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 258.61612549758206,
+        "y": 224.67500000062776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-24",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 201.92151988112104
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-24",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 255.78769837283585,
+        "y": 224.67500000062773
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-25",
+      "start": {
+        "x": 258.61612549758206,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-25",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 204.74994700586723
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-25",
+      "start": {
+        "x": 255.78769837283585,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-25",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 207.5783741306134
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-26",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 204.74994700586723
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-26",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 252.95927124808966,
+        "y": 224.67500000062776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-26",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 207.5783741306134
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-26",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 250.13084412334345,
+        "y": 224.67500000062776
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-27",
+      "start": {
+        "x": 252.95927124808966,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-27",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 210.40680125535962
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-27",
+      "start": {
+        "x": 250.13084412334345,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-27",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 213.2352283801058
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-28",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 210.40680125535962
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-28",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 247.30241699859727,
+        "y": 224.67500000062773
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-28",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 213.2352283801058
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-28",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 244.47398987385108,
+        "y": 224.67500000062776
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-29",
+      "start": {
+        "x": 247.30241699859727,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-29",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 216.063655504852
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-29",
+      "start": {
+        "x": 244.47398987385108,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-29",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 218.89208262959818
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-30",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 216.063655504852
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-30",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 241.6455627491049,
+        "y": 224.67500000062773
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-30",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 218.89208262959818
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-30",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 238.8171356243587,
+        "y": 224.67500000062776
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-31",
+      "start": {
+        "x": 241.6455627491049,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-31",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 221.72050975434436
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-31",
+      "start": {
+        "x": 238.8171356243587,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-water-areas-6",
+      "path_id": "osm-104-0-hatch-31",
+      "start": null
+    }
+  ],
+  "normalized_sha256": "2928483578d673cd7afc98b19da7c18a34ae048acb3766be780d83b397d73ffa",
+  "page": {
+    "height_mm": 297.0,
+    "margin_mm": 10.0,
+    "orientation": "landscape",
+    "preset": "A3",
+    "schema_version": 1,
+    "width_mm": 420.0
+  },
+  "passes": [
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Buildings",
+      "ordered_paths": [
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-103-0",
+          "points": [
+            {
+              "x": 123.79118207307955,
+              "y": 86.17499999996696
+            },
+            {
+              "x": 166.89559103653977,
+              "y": 86.17499999996696
+            },
+            {
+              "x": 166.89559103653977,
+              "y": 134.65000000050657
+            },
+            {
+              "x": 123.79118207307955,
+              "y": 134.65000000050657
+            },
+            {
+              "x": 123.79118207307955,
+              "y": 86.17499999996696
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-buildings"
+        }
+      ],
+      "pass_id": "pass-buildings-1",
+      "pen_profile_id": null,
+      "preview_color": "#6c5546",
+      "semantic_role": "buildings",
+      "source_layer_ids": [
+        "layer-buildings"
+      ]
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Parks",
+      "ordered_paths": [
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-106-0",
+          "points": [
+            {
+              "x": 300.5192588232661,
+              "y": 51.55000000002203
+            },
+            {
+              "x": 347.9341086830732,
+              "y": 51.55000000002203
+            },
+            {
+              "x": 347.9341086830732,
+              "y": 106.94999999975774
+            },
+            {
+              "x": 300.5192588232661,
+              "y": 106.94999999975774
+            },
+            {
+              "x": 300.5192588232661,
+              "y": 51.55000000002203
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-parks"
+        }
+      ],
+      "pass_id": "pass-parks-2",
+      "pen_profile_id": null,
+      "preview_color": "#58723e",
+      "semantic_role": "parks",
+      "source_layer_ids": [
+        "layer-parks"
+      ]
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Rail",
+      "ordered_paths": [
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-105-0",
+          "points": [
+            {
+              "x": 89.30765490231181,
+              "y": 37.699999999867856
+            },
+            {
+              "x": 231.55220448173066,
+              "y": 58.475000000099115
+            },
+            {
+              "x": 300.5192588232661,
+              "y": 51.55000000002203
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-rail"
+        }
+      ],
+      "pass_id": "pass-rail-3",
+      "pen_profile_id": null,
+      "preview_color": "#9c3f2c",
+      "semantic_role": "rail",
+      "source_layer_ids": [
+        "layer-rail"
+      ]
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Residential roads",
+      "ordered_paths": [
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-102-0",
+          "points": [
+            {
+              "x": 231.55220448173066,
+              "y": 58.475000000099115
+            },
+            {
+              "x": 287.587936134228,
+              "y": 113.87500000027532
+            },
+            {
+              "x": 343.6236677867264,
+              "y": 176.2000000000881
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-road-local"
+        }
+      ],
+      "pass_id": "pass-residential-roads-4",
+      "pen_profile_id": null,
+      "preview_color": "#777b70",
+      "semantic_role": "road-local",
+      "source_layer_ids": [
+        "layer-road-local"
+      ]
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Major roads",
+      "ordered_paths": [
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-101-0",
+          "points": [
+            {
+              "x": 89.30765490231181,
+              "y": 37.699999999867856
+            },
+            {
+              "x": 210.0,
+              "y": 148.50000000022027
+            },
+            {
+              "x": 330.6923450976882,
+              "y": 252.37500000049553
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-road-major"
+        }
+      ],
+      "pass_id": "pass-major-roads-5",
+      "pen_profile_id": null,
+      "preview_color": "#20241f",
+      "semantic_role": "road-major",
+      "source_layer_ids": [
+        "layer-road-major"
+      ]
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Water areas",
+      "ordered_paths": [
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-15",
+          "points": [
+            {
+              "x": 235.86264537807534,
+              "y": 176.46567575840533
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 219.57008472186556
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-14",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 216.74165759711937
+            },
+            {
+              "x": 238.42539674450433,
+              "y": 176.20000000008815
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-13",
+          "points": [
+            {
+              "x": 241.2538238692505,
+              "y": 176.20000000008812
+            },
+            {
+              "x": 278.9670543415355,
+              "y": 213.91323047237316
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-12",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 211.08480334762697
+            },
+            {
+              "x": 244.0822509939967,
+              "y": 176.20000000008815
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-11",
+          "points": [
+            {
+              "x": 246.9106781187429,
+              "y": 176.20000000008815
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 208.2563762228808
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-10",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 205.4279490981346
+            },
+            {
+              "x": 249.7391052434891,
+              "y": 176.20000000008812
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-9",
+          "points": [
+            {
+              "x": 252.56753236823528,
+              "y": 176.20000000008815
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 202.59952197338842
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-8",
+          "points": [
+            {
+              "x": 278.9670543415355,
+              "y": 199.7710948486422
+            },
+            {
+              "x": 255.39595949298146,
+              "y": 176.20000000008812
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-7",
+          "points": [
+            {
+              "x": 258.22438661772765,
+              "y": 176.20000000008815
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 196.94266772389602
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-6",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 194.11424059914984
+            },
+            {
+              "x": 261.05281374247386,
+              "y": 176.20000000008815
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-5",
+          "points": [
+            {
+              "x": 263.88124086722,
+              "y": 176.2000000000881
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 191.28581347440365
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-4",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 188.45738634965747
+            },
+            {
+              "x": 266.70966799196617,
+              "y": 176.2000000000881
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-3",
+          "points": [
+            {
+              "x": 269.5380951167124,
+              "y": 176.2000000000881
+            },
+            {
+              "x": 278.9670543415355,
+              "y": 185.62895922491126
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-2",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 182.80053210016507
+            },
+            {
+              "x": 272.3665222414586,
+              "y": 176.2000000000881
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-1",
+          "points": [
+            {
+              "x": 275.19494936620475,
+              "y": 176.2000000000881
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 179.9721049754189
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-0",
+          "points": [
+            {
+              "x": 278.9670543415356,
+              "y": 177.1436778506727
+            },
+            {
+              "x": 278.02337649095097,
+              "y": 176.2000000000881
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-16",
+          "points": [
+            {
+              "x": 235.8626453780753,
+              "y": 179.2941028831515
+            },
+            {
+              "x": 278.9670543415356,
+              "y": 222.3985118466118
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-17",
+          "points": [
+            {
+              "x": 278.4151153708054,
+              "y": 224.67500000062776
+            },
+            {
+              "x": 235.8626453780753,
+              "y": 182.12253000789772
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-18",
+          "points": [
+            {
+              "x": 235.86264537807534,
+              "y": 184.9509571326439
+            },
+            {
+              "x": 275.58668824605917,
+              "y": 224.67500000062773
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-19",
+          "points": [
+            {
+              "x": 272.758261121313,
+              "y": 224.67500000062776
+            },
+            {
+              "x": 235.8626453780753,
+              "y": 187.7793842573901
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-20",
+          "points": [
+            {
+              "x": 235.86264537807534,
+              "y": 190.60781138213628
+            },
+            {
+              "x": 269.9298339965668,
+              "y": 224.67500000062773
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-21",
+          "points": [
+            {
+              "x": 267.1014068718206,
+              "y": 224.67500000062776
+            },
+            {
+              "x": 235.8626453780753,
+              "y": 193.43623850688246
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-22",
+          "points": [
+            {
+              "x": 235.8626453780753,
+              "y": 196.26466563162867
+            },
+            {
+              "x": 264.27297974707443,
+              "y": 224.67500000062776
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-23",
+          "points": [
+            {
+              "x": 261.4445526223282,
+              "y": 224.67500000062773
+            },
+            {
+              "x": 235.86264537807534,
+              "y": 199.09309275637486
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-24",
+          "points": [
+            {
+              "x": 235.8626453780753,
+              "y": 201.92151988112104
+            },
+            {
+              "x": 258.61612549758206,
+              "y": 224.67500000062776
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-25",
+          "points": [
+            {
+              "x": 255.78769837283585,
+              "y": 224.67500000062773
+            },
+            {
+              "x": 235.86264537807534,
+              "y": 204.74994700586723
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-26",
+          "points": [
+            {
+              "x": 235.8626453780753,
+              "y": 207.5783741306134
+            },
+            {
+              "x": 252.95927124808966,
+              "y": 224.67500000062776
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-27",
+          "points": [
+            {
+              "x": 250.13084412334345,
+              "y": 224.67500000062776
+            },
+            {
+              "x": 235.8626453780753,
+              "y": 210.40680125535962
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-28",
+          "points": [
+            {
+              "x": 235.86264537807534,
+              "y": 213.2352283801058
+            },
+            {
+              "x": 247.30241699859727,
+              "y": 224.67500000062773
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-29",
+          "points": [
+            {
+              "x": 244.47398987385108,
+              "y": 224.67500000062776
+            },
+            {
+              "x": 235.8626453780753,
+              "y": 216.063655504852
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-30",
+          "points": [
+            {
+              "x": 235.86264537807534,
+              "y": 218.89208262959818
+            },
+            {
+              "x": 241.6455627491049,
+              "y": 224.67500000062773
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "osm-104-0-hatch-31",
+          "points": [
+            {
+              "x": 238.8171356243587,
+              "y": 224.67500000062776
+            },
+            {
+              "x": 235.8626453780753,
+              "y": 221.72050975434436
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-water"
+        }
+      ],
+      "pass_id": "pass-water-areas-6",
+      "pen_profile_id": null,
+      "preview_color": "#187a91",
+      "semantic_role": "water",
+      "source_layer_ids": [
+        "layer-water"
+      ]
+    }
+  ],
+  "project_id": "osm-api-ace7d5a7",
+  "removed_geometry": {
+    "clipped_paths": 0,
+    "degenerate_paths": 0,
+    "non_finite_paths": 0,
+    "short_paths": 1
+  },
+  "schema_version": 1,
+  "source_design_sha256": "e43598724ae4793ec62fe8863bd0afded25ad83c4127bcc86b461ba2ce8f2b06",
+  "statistics": {
+    "draw_length_mm": 2132.1532612725687,
+    "estimated_seconds": 82.56771634169934,
+    "layer_count": 6,
+    "lift_count": 37,
+    "pass_count": 6,
+    "path_count": 37,
+    "travel_length_mm": 1149.5940965947043,
+    "vertex_count": 83
+  },
+  "travel_segments": [
+    {
+      "end": {
+        "x": 123.79118207307955,
+        "y": 86.17499999996696
+      },
+      "pass_id": "pass-buildings-1",
+      "start": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "end": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      },
+      "pass_id": "pass-parks-2",
+      "start": {
+        "x": 123.79118207307955,
+        "y": 86.17499999996696
+      }
+    },
+    {
+      "end": {
+        "x": 89.30765490231181,
+        "y": 37.699999999867856
+      },
+      "pass_id": "pass-rail-3",
+      "start": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      }
+    },
+    {
+      "end": {
+        "x": 231.55220448173066,
+        "y": 58.475000000099115
+      },
+      "pass_id": "pass-residential-roads-4",
+      "start": {
+        "x": 300.5192588232661,
+        "y": 51.55000000002203
+      }
+    },
+    {
+      "end": {
+        "x": 89.30765490231181,
+        "y": 37.699999999867856
+      },
+      "pass_id": "pass-major-roads-5",
+      "start": {
+        "x": 343.6236677867264,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 176.46567575840533
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 330.6923450976882,
+        "y": 252.37500000049553
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 216.74165759711937
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 219.57008472186556
+      }
+    },
+    {
+      "end": {
+        "x": 241.2538238692505,
+        "y": 176.20000000008812
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 238.42539674450433,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 211.08480334762697
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415355,
+        "y": 213.91323047237316
+      }
+    },
+    {
+      "end": {
+        "x": 246.9106781187429,
+        "y": 176.20000000008815
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 244.0822509939967,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 205.4279490981346
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 208.2563762228808
+      }
+    },
+    {
+      "end": {
+        "x": 252.56753236823528,
+        "y": 176.20000000008815
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 249.7391052434891,
+        "y": 176.20000000008812
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415355,
+        "y": 199.7710948486422
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 202.59952197338842
+      }
+    },
+    {
+      "end": {
+        "x": 258.22438661772765,
+        "y": 176.20000000008815
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 255.39595949298146,
+        "y": 176.20000000008812
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 194.11424059914984
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 196.94266772389602
+      }
+    },
+    {
+      "end": {
+        "x": 263.88124086722,
+        "y": 176.2000000000881
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 261.05281374247386,
+        "y": 176.20000000008815
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 188.45738634965747
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 191.28581347440365
+      }
+    },
+    {
+      "end": {
+        "x": 269.5380951167124,
+        "y": 176.2000000000881
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 266.70966799196617,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 182.80053210016507
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415355,
+        "y": 185.62895922491126
+      }
+    },
+    {
+      "end": {
+        "x": 275.19494936620475,
+        "y": 176.2000000000881
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 272.3665222414586,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": {
+        "x": 278.9670543415356,
+        "y": 177.1436778506727
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 179.9721049754189
+      }
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 179.2941028831515
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.02337649095097,
+        "y": 176.2000000000881
+      }
+    },
+    {
+      "end": {
+        "x": 278.4151153708054,
+        "y": 224.67500000062776
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 278.9670543415356,
+        "y": 222.3985118466118
+      }
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 184.9509571326439
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 182.12253000789772
+      }
+    },
+    {
+      "end": {
+        "x": 272.758261121313,
+        "y": 224.67500000062776
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 275.58668824605917,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 190.60781138213628
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 187.7793842573901
+      }
+    },
+    {
+      "end": {
+        "x": 267.1014068718206,
+        "y": 224.67500000062776
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 269.9298339965668,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 196.26466563162867
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 193.43623850688246
+      }
+    },
+    {
+      "end": {
+        "x": 261.4445526223282,
+        "y": 224.67500000062773
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 264.27297974707443,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 201.92151988112104
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 199.09309275637486
+      }
+    },
+    {
+      "end": {
+        "x": 255.78769837283585,
+        "y": 224.67500000062773
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 258.61612549758206,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": {
+        "x": 235.8626453780753,
+        "y": 207.5783741306134
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.86264537807534,
+        "y": 204.74994700586723
+      }
+    },
+    {
+      "end": {
+        "x": 250.13084412334345,
+        "y": 224.67500000062776
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 252.95927124808966,
+        "y": 224.67500000062776
+      }
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 213.2352283801058
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 210.40680125535962
+      }
+    },
+    {
+      "end": {
+        "x": 244.47398987385108,
+        "y": 224.67500000062776
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 247.30241699859727,
+        "y": 224.67500000062773
+      }
+    },
+    {
+      "end": {
+        "x": 235.86264537807534,
+        "y": 218.89208262959818
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 235.8626453780753,
+        "y": 216.063655504852
+      }
+    },
+    {
+      "end": {
+        "x": 238.8171356243587,
+        "y": 224.67500000062776
+      },
+      "pass_id": "pass-water-areas-6",
+      "start": {
+        "x": 241.6455627491049,
+        "y": 224.67500000062773
+      }
+    }
+  ],
+  "warnings": []
+}

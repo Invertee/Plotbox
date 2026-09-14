@@ -25,8 +25,7 @@ interface CanvasViewerProps {
   onRendered: (token: number) => void;
 }
 
-const WIDTH = 900;
-const HEIGHT = 610;
+const DEFAULT_VIEWPORT = { width: 900, height: 610 };
 
 function tracePoints(
   context: CanvasRenderingContext2D,
@@ -58,18 +57,49 @@ export function CanvasViewer({
   renderToken,
   onRendered,
 }: CanvasViewerProps) {
+  const shellRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [transform, setTransform] = useState(() => fitTransform(page, WIDTH, HEIGHT));
+  const [viewport, setViewport] = useState(DEFAULT_VIEWPORT);
+  const [transform, setTransform] = useState(() =>
+    fitTransform(page, DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height),
+  );
   const [rasterImage, setRasterImage] = useState<HTMLImageElement | null>(null);
   const dragOrigin = useRef<Point | null>(null);
 
-  const fit = () => setTransform(fitTransform(page, WIDTH, HEIGHT));
+  const fit = () => setTransform(fitTransform(page, viewport.width, viewport.height));
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const updateViewport = (width: number, height: number) => {
+      const next = {
+        width: Math.max(1, Math.round(width)),
+        height: Math.max(1, Math.round(height)),
+      };
+      setViewport((current) =>
+        current.width === next.width && current.height === next.height ? current : next,
+      );
+    };
+
+    const bounds = shell.getBoundingClientRect();
+    if (bounds.width > 0 && bounds.height > 0) {
+      updateViewport(bounds.width, bounds.height);
+    }
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) updateViewport(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     fit();
-    // Page changes intentionally reset the physical viewport.
+    // Page and available-space changes intentionally refit the physical viewport.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page.width_mm, page.height_mm]);
+  }, [page.width_mm, page.height_mm, viewport.width, viewport.height]);
 
   useEffect(() => {
     if (!rasterPreview) {
@@ -85,9 +115,9 @@ export function CanvasViewer({
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
-    context.clearRect(0, 0, WIDTH, HEIGHT);
+    context.clearRect(0, 0, viewport.width, viewport.height);
     context.fillStyle = "#e8e3d7";
-    context.fillRect(0, 0, WIDTH, HEIGHT);
+    context.fillRect(0, 0, viewport.width, viewport.height);
 
     const pageOrigin = pageToCanvas({ x: 0, y: page.height_mm }, page, transform);
     context.fillStyle = "#fffdf7";
@@ -269,6 +299,8 @@ export function CanvasViewer({
     reconstructed,
     showTravel,
     transform,
+    viewport.height,
+    viewport.width,
   ]);
 
   useEffect(() => {
@@ -278,7 +310,7 @@ export function CanvasViewer({
   }, [onRendered, renderToken]);
 
   return (
-    <div className="viewer-shell">
+    <div className="viewer-shell" ref={shellRef}>
       <div className="viewer-toolbar">
         <span>
           {mode === "design"
@@ -292,14 +324,14 @@ export function CanvasViewer({
         <button type="button" onClick={fit}>
           Fit page
         </button>
-        <button type="button" onClick={() => setTransform(fitTransform(page, WIDTH, HEIGHT))}>
+        <button type="button" onClick={fit}>
           Reset view
         </button>
       </div>
       <canvas
         ref={canvasRef}
-        width={WIDTH}
-        height={HEIGHT}
+        width={viewport.width}
+        height={viewport.height}
         aria-label={`${mode} canvas preview`}
         onWheel={(event) => {
           event.preventDefault();

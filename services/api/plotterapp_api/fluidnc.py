@@ -6,11 +6,15 @@ import math
 import os
 import re
 import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, Protocol
 
-from plotter_core.models import GcodeProgram, StrictModel
+from plotter_core.gcode.parser import reconstruct_toolpath
+from plotter_core.models import GcodeProgram, MachineProfile, SkewCalibration, StrictModel
 from pydantic import Field, field_validator, model_validator
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import WebSocketException
@@ -46,12 +50,14 @@ class FluidNCSettings(StrictModel):
     schema_version: Literal[1] = 1
     host: str = Field(default="fluidnc.local", min_length=1, max_length=253)
     port: int = Field(default=81, ge=1, le=65535)
+    http_port: int = Field(default=80, ge=1, le=65535)
     tls: bool = False
     command_timeout_seconds: float = Field(default=15.0, ge=1.0, le=120.0)
     safe_z_min_mm: float = Field(default=-10.0, ge=-100.0, le=100.0)
     safe_z_max_mm: float = Field(default=0.0, ge=-100.0, le=100.0)
     pen_up_z_mm: float = Field(default=0.0, ge=-100.0, le=100.0)
     pen_down_z_mm: float = Field(default=-5.0, ge=-100.0, le=100.0)
+    skew_calibration: SkewCalibration = Field(default_factory=SkewCalibration)
 
     @field_validator("host")
     @classmethod
@@ -78,6 +84,12 @@ class FluidNCSettings(StrictModel):
         scheme = "wss" if self.tls else "ws"
         host = f"[{self.host}]" if ":" in self.host else self.host
         return f"{scheme}://{host}:{self.port}/"
+
+    @property
+    def http_url(self) -> str:
+        scheme = "https" if self.tls else "http"
+        host = f"[{self.host}]" if ":" in self.host else self.host
+        return f"{scheme}://{host}:{self.http_port}"
 
 
 class FluidNCActionRequest(StrictModel):
@@ -118,6 +130,29 @@ class FluidNCProgramResult(StrictModel):
     controller_state: str | None = None
 
 
+class FluidNCStoredPass(StrictModel):
+    pass_id: str
+    name: str
+    priority: int = Field(ge=1)
+    filename: str
+    sd_path: str
+    sha256: str
+    byte_count: int = Field(ge=1)
+
+
+class FluidNCProjectRunResult(StrictModel):
+    """Validated pass files stored on SD and the ordered combined job that was started."""
+
+    schema_version: Literal[1] = 1
+    project_id: str
+    sd_folder: str
+    passes: list[FluidNCStoredPass]
+    run_path: str
+    success: bool
+    response_lines: list[str]
+    controller_state: str | None = None
+
+
 class AxisCalibrationRequest(StrictModel):
     current_steps_per_mm: float = Field(gt=0, le=100_000)
     commanded_distance_mm: float = Field(gt=0, le=1_000)
@@ -130,6 +165,13 @@ class AxisCalibrationResult(StrictModel):
     distance_error_percent: float
 
 
+class SkewCalibrationRequest(StrictModel):
+    square_width_mm: float = Field(gt=0, le=1_000)
+    square_height_mm: float = Field(gt=0, le=1_000)
+    rising_diagonal_mm: float = Field(gt=0, le=2_000)
+    falling_diagonal_mm: float = Field(gt=0, le=2_000)
+
+
 class FluidNCGatewayProtocol(Protocol):
     def settings(self) -> FluidNCSettings: ...
 
@@ -137,7 +179,21 @@ class FluidNCGatewayProtocol(Protocol):
 
     async def execute(self, request: FluidNCActionRequest) -> FluidNCActionResult: ...
 
-    async def stream_program(self, program: GcodeProgram) -> FluidNCProgramResult: ...
+    async def stream_program(
+        self,
+        program: GcodeProgram,
+        *,
+        profile: MachineProfile | None = None,
+        start_line: int = 1,
+    ) -> FluidNCProgramResult: ...
+
+    async def store_and_run_project(
+        self,
+        project_id: str,
+        project_name: str,
+        pass_programs: Sequence[tuple[str, str, GcodeProgram]],
+        combined_program: GcodeProgram,
+    ) -> FluidNCProjectRunResult: ...
 
 
 def default_fluidnc_config_path() -> Path:
@@ -164,6 +220,27 @@ def calculate_axis_calibration(request: AxisCalibrationRequest) -> AxisCalibrati
     return AxisCalibrationResult(
         corrected_steps_per_mm=round(corrected, 6),
         distance_error_percent=round(error_percent, 4),
+    )
+
+
+def calculate_skew_calibration(request: SkewCalibrationRequest) -> SkewCalibration:
+    """Calculate the angle between the physical X/Y axes from both rectangle diagonals."""
+
+    cosine = (
+        request.rising_diagonal_mm**2 - request.falling_diagonal_mm**2
+    ) / (4 * request.square_width_mm * request.square_height_mm)
+    if not math.isfinite(cosine) or not -1 < cosine < 1:
+        raise ValueError("diagonal measurements cannot describe a valid calibration rectangle")
+    angle = math.degrees(math.acos(cosine))
+    if not 80 <= angle <= 100:
+        raise ValueError("measured skew exceeds the supported safe range of 80° through 100°")
+    return SkewCalibration(
+        enabled=True,
+        square_width_mm=request.square_width_mm,
+        square_height_mm=request.square_height_mm,
+        rising_diagonal_mm=request.rising_diagonal_mm,
+        falling_diagonal_mm=request.falling_diagonal_mm,
+        axis_angle_degrees=round(angle, 6),
     )
 
 
@@ -256,6 +333,77 @@ def _program_frames(text: str) -> list[str]:
     ]
 
 
+def _sd_project_folder(project_id: str, project_name: str) -> str:
+    name = re.sub(r"[^a-z0-9]+", "-", project_name.lower()).strip("-") or "project"
+    identifier = re.sub(r"[^a-zA-Z0-9_-]+", "-", project_id).strip("-")
+    return f"/plotbox/{name[:40]}-{identifier[:12]}"
+
+
+def _format_gcode_number(value: float, decimals: int = 3) -> str:
+    if decimals == 0:
+        return f"{value:.0f}"
+    rendered = f"{value:.{decimals}f}".rstrip("0").rstrip(".")
+    return "0" if rendered in {"", "-0"} else rendered
+
+
+def _resume_program_frames(
+    program: GcodeProgram,
+    profile: MachineProfile,
+    start_line: int,
+) -> list[str]:
+    """Build a pen-safe restart while retaining the validated source program."""
+    source_lines = program.text.splitlines()
+    if start_line < 1 or start_line > len(source_lines):
+        raise ValueError(
+            f"start line must be between 1 and {len(source_lines)} for {program.filename}"
+        )
+    if start_line == 1:
+        return _program_frames(program.text)
+
+    prior = [item for item in program.parsed_instructions if item.line_number < start_line]
+    remaining = [item for item in program.parsed_instructions if item.line_number >= start_line]
+    state = reconstruct_toolpath(prior, profile)
+    actuator = profile.pen_actuator
+    precision = profile.precision_decimals
+    preamble = [
+        "G21\n",
+        "G90\n",
+        "G17\n",
+        "G94\n",
+        (
+            f"G1 Z{_format_gcode_number(actuator.up_mm, precision)} "
+            f"F{_format_gcode_number(actuator.lift_feed_mm_min, 0)}\n"
+        ),
+    ]
+    if actuator.dwell_after_up_ms:
+        preamble.append(
+            f"G4 P{_format_gcode_number(actuator.dwell_after_up_ms / 1000, 3)}\n"
+        )
+    preamble.append(
+        f"G0 X{_format_gcode_number(state.final_position.x, precision)} "
+        f"Y{_format_gcode_number(state.final_position.y, precision)} "
+        f"F{_format_gcode_number(profile.motion.travel_feed_mm_min, 0)}\n"
+    )
+
+    first = remaining[0] if remaining else None
+    first_explicitly_lifts = bool(
+        first
+        and first.command in {"G0", "G1"}
+        and first.parameters.get("Z", actuator.up_mm - 1) >= actuator.up_mm - 1e-9
+    )
+    if state.final_z_mm < actuator.up_mm - 1e-9 and not first_explicitly_lifts:
+        preamble.append(
+            f"G1 Z{_format_gcode_number(state.final_z_mm, precision)} "
+            f"F{_format_gcode_number(actuator.lower_feed_mm_min, 0)}\n"
+        )
+        if actuator.dwell_after_down_ms:
+            preamble.append(
+                f"G4 P{_format_gcode_number(actuator.dwell_after_down_ms / 1000, 3)}\n"
+            )
+
+    return [*preamble, *_program_frames("\n".join(source_lines[start_line - 1 :]))]
+
+
 class FluidNCGateway:
     def __init__(self, config_path: Path | None = None) -> None:
         self.config_path = (config_path or default_fluidnc_config_path()).resolve()
@@ -310,7 +458,13 @@ class FluidNCGateway:
             test_id=request.test.test_id if request.test is not None else None,
         )
 
-    async def stream_program(self, program: GcodeProgram) -> FluidNCProgramResult:
+    async def stream_program(
+        self,
+        program: GcodeProgram,
+        *,
+        profile: MachineProfile | None = None,
+        start_line: int = 1,
+    ) -> FluidNCProgramResult:
         """Deliver a generated program one acknowledged line at a time.
 
         This gateway deliberately accepts a ``GcodeProgram`` rather than raw text.  The
@@ -320,7 +474,12 @@ class FluidNCGateway:
         """
         if not program.validation.valid:
             raise ValueError("refusing to stream a G-code program that failed validation")
-        frames = _program_frames(program.text)
+        if start_line == 1:
+            frames = _program_frames(program.text)
+        else:
+            if profile is None:
+                raise ValueError("a machine profile is required when resuming from a G-code line")
+            frames = _resume_program_frames(program, profile, start_line)
         if not frames:
             raise ValueError("refusing to stream an empty G-code program")
         if len(frames) > MAX_PROGRAM_COMMANDS:
@@ -397,6 +556,141 @@ class FluidNCGateway:
             response_lines=lines[-MAX_RESPONSE_LINES:],
             controller_state=_parse_controller_state(lines),
         )
+
+    async def store_and_run_project(
+        self,
+        project_id: str,
+        project_name: str,
+        pass_programs: Sequence[tuple[str, str, GcodeProgram]],
+        combined_program: GcodeProgram,
+    ) -> FluidNCProjectRunResult:
+        """Store validated pass files on FluidNC SD, then run their ordered combined job."""
+        if not pass_programs:
+            raise ValueError("refusing to store a project with no enabled pen passes")
+        programs = [program for _, _, program in pass_programs]
+        if any(not program.validation.valid for program in [*programs, combined_program]):
+            raise ValueError("refusing to upload a G-code program that failed validation")
+
+        settings = self.settings()
+        folder = _sd_project_folder(project_id, project_name)
+        await self._webdav_mkdir(settings, "/plotbox")
+        await self._webdav_mkdir(settings, folder)
+
+        stored: list[FluidNCStoredPass] = []
+        for priority, (pass_id, name, program) in enumerate(pass_programs, start=1):
+            path = f"{folder}/{program.filename}"
+            await self._webdav_put(settings, path, program.text.encode("utf-8"))
+            stored.append(
+                FluidNCStoredPass(
+                    pass_id=pass_id,
+                    name=name,
+                    priority=priority,
+                    filename=program.filename,
+                    sd_path=path,
+                    sha256=program.sha256,
+                    byte_count=len(program.text.encode("utf-8")),
+                )
+            )
+
+        run_path = f"{folder}/run-all.nc"
+        await self._webdav_put(settings, run_path, combined_program.text.encode("utf-8"))
+        try:
+            lines = await self._start_sd_program(settings, run_path)
+        except (OSError, TimeoutError, WebSocketException) as error:
+            raise ConnectionError(f"FluidNC SD run failed: {error}") from error
+        errors = [
+            line
+            for line in lines
+            if line.lower().startswith("error") or line.upper().startswith("ALARM")
+        ]
+        return FluidNCProjectRunResult(
+            project_id=project_id,
+            sd_folder=folder,
+            passes=stored,
+            run_path=run_path,
+            success=not errors,
+            response_lines=lines[-MAX_RESPONSE_LINES:],
+            controller_state=_parse_controller_state(lines),
+        )
+
+    async def _webdav_mkdir(self, settings: FluidNCSettings, sd_path: str) -> None:
+        await asyncio.to_thread(
+            self._webdav_request, settings, "MKCOL", sd_path, None, {200, 201, 204, 405}
+        )
+
+    async def _webdav_put(
+        self, settings: FluidNCSettings, sd_path: str, content: bytes
+    ) -> None:
+        await asyncio.to_thread(
+            self._webdav_request,
+            settings,
+            "PUT",
+            sd_path,
+            content,
+            {200, 201, 204},
+        )
+
+    def _webdav_request(
+        self,
+        settings: FluidNCSettings,
+        method: str,
+        sd_path: str,
+        content: bytes | None,
+        accepted_statuses: set[int],
+    ) -> None:
+        # FluidNC exposes the SD card as WebDAV under /sd.
+        encoded_path = urllib.parse.quote(sd_path, safe="/")
+        request = urllib.request.Request(
+            f"{settings.http_url}/sd{encoded_path}",
+            data=content,
+            method=method,
+            headers={"Content-Type": "application/octet-stream"},
+        )
+        try:
+            with urllib.request.urlopen(
+                request, timeout=settings.command_timeout_seconds
+            ) as response:
+                if response.status not in accepted_statuses:
+                    raise ConnectionError(
+                        f"FluidNC SD {method} returned HTTP {response.status} for {sd_path}"
+                    )
+        except urllib.error.HTTPError as error:
+            if error.code not in accepted_statuses:
+                raise ConnectionError(
+                    f"FluidNC SD {method} returned HTTP {error.code} for {sd_path}"
+                ) from error
+        except (OSError, TimeoutError) as error:
+            raise ConnectionError(f"FluidNC SD {method} failed for {sd_path}: {error}") from error
+
+    async def _start_sd_program(
+        self, settings: FluidNCSettings, sd_path: str
+    ) -> list[str]:
+        async with connect(
+            settings.websocket_url,
+            open_timeout=settings.command_timeout_seconds,
+            close_timeout=2,
+            ping_interval=20,
+            ping_timeout=10,
+            max_size=MAX_RESPONSE_BYTES,
+            max_queue=16,
+            compression=None,
+            proxy=None,
+        ) as connection:
+            await connection.send("?")
+            status = await self._receive_response(
+                connection, settings.command_timeout_seconds, allow_empty=False
+            )
+            state = _parse_controller_state(status)
+            if state != "Idle":
+                raise ValueError(
+                    "controller must report Idle before starting an SD project "
+                    f"(reported {state or 'no machine state'})"
+                )
+            await connection.send(f"$SD/Run={sd_path}\n")
+            response = await self._receive_response(
+                connection, settings.command_timeout_seconds, allow_empty=False
+            )
+            return [*status, *response]
 
     async def _exchange(
         self,

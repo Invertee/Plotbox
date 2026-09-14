@@ -34,6 +34,31 @@ def test_project_create_update_cache_and_reopen(tmp_path: Path) -> None:
     assert payload["schema_version"] == 1
 
 
+def test_reconcile_groups_layers_that_reuse_the_same_pass(tmp_path: Path) -> None:
+    store = ProjectStore(tmp_path)
+    recipe = store.create("Shared semantic role")
+    generated = generate_test_design(recipe)
+    structure = generated.layers[0]
+    design = generated.model_copy(
+        update={
+            "layers": [
+                structure,
+                structure.model_copy(
+                    update={"layer_id": "layer-structure-second", "name": "Structure second"}
+                ),
+            ]
+        }
+    )
+
+    reconciled = store.reconcile_passes(recipe, design)
+
+    assert [plot_pass.pass_id for plot_pass in reconciled.passes] == ["pass-black"]
+    assert reconciled.passes[0].source_layer_ids == [
+        structure.layer_id,
+        "layer-structure-second",
+    ]
+
+
 def test_project_delete_removes_only_the_selected_project(tmp_path: Path) -> None:
     store = ProjectStore(tmp_path)
     first = store.create("First")

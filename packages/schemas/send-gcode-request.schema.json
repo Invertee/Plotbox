@@ -67,6 +67,9 @@
           "title": "Schema Version",
           "type": "integer"
         },
+        "skew_calibration": {
+          "$ref": "#/$defs/SkewCalibration"
+        },
         "work_height_mm": {
           "default": 310.0,
           "exclusiveMinimum": 0,
@@ -162,6 +165,54 @@
       "title": "ParkSettings",
       "type": "object"
     },
+    "SkewCalibration": {
+      "additionalProperties": false,
+      "description": "Measured non-square XY axes and the correction derived from them.",
+      "properties": {
+        "axis_angle_degrees": {
+          "default": 90.0,
+          "maximum": 100.0,
+          "minimum": 80.0,
+          "title": "Axis Angle Degrees",
+          "type": "number"
+        },
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "falling_diagonal_mm": {
+          "default": 141.4213562373095,
+          "exclusiveMinimum": 0,
+          "maximum": 2000,
+          "title": "Falling Diagonal Mm",
+          "type": "number"
+        },
+        "rising_diagonal_mm": {
+          "default": 141.4213562373095,
+          "exclusiveMinimum": 0,
+          "maximum": 2000,
+          "title": "Rising Diagonal Mm",
+          "type": "number"
+        },
+        "square_height_mm": {
+          "default": 100.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "title": "Square Height Mm",
+          "type": "number"
+        },
+        "square_width_mm": {
+          "default": 100.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "title": "Square Width Mm",
+          "type": "number"
+        }
+      },
+      "title": "SkewCalibration",
+      "type": "object"
+    },
     "ZAxisActuator": {
       "additionalProperties": false,
       "properties": {
@@ -234,6 +285,13 @@
         }
       ],
       "default": null
+    },
+    "start_line": {
+      "default": 1,
+      "maximum": 1000000,
+      "minimum": 1,
+      "title": "Start Line",
+      "type": "integer"
     }
   },
   "required": [

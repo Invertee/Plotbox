@@ -564,6 +564,90 @@ button:focus-visible {
   white-space: nowrap;
 }
 
+.svg-part-effects {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: #f4efe4;
+}
+
+.svg-part-effects > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 11px;
+}
+
+.svg-part-list {
+  display: grid;
+  gap: 8px;
+}
+
+.svg-part-card {
+  padding: 9px;
+  border: 1px solid #c8c0b1;
+  background: var(--paper);
+}
+
+.svg-part-title {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.svg-part-title > strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svg-part-position {
+  width: 19px;
+  height: 19px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #ded7c9;
+  color: var(--muted);
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+}
+
+.svg-part-order-buttons {
+  display: flex;
+  gap: 3px;
+}
+
+.svg-part-order-buttons button,
+.svg-part-reset {
+  border: 1px solid #aaa497;
+  background: #fffdf7;
+  color: var(--ink);
+}
+
+.svg-part-order-buttons button {
+  width: 25px;
+  height: 23px;
+  padding: 0;
+  font-size: 11px;
+}
+
+.svg-part-order-buttons button:disabled {
+  opacity: 0.35;
+}
+
+.svg-part-reset {
+  width: 100%;
+  margin-top: 2px;
+  padding: 5px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
 .file-button {
   padding: 9px;
   display: block;
@@ -741,9 +825,9 @@ button:focus-visible {
 }
 
 .viewer-shell canvas {
-  width: min(100%, 900px);
-  max-height: 100%;
-  height: auto;
+  display: block;
+  width: 100%;
+  height: 100%;
   touch-action: none;
 }
 
@@ -957,6 +1041,7 @@ code {
 .header-actions,
 .app-navigation,
 .project-card-actions,
+.setup-card-actions,
 .diagnostic-actions,
 .setup-heading {
   display: flex;
@@ -1136,6 +1221,7 @@ code {
 }
 
 .project-card-actions,
+.setup-card-actions,
 .diagnostic-actions {
   gap: 8px;
   flex-wrap: wrap;
@@ -1628,4 +1714,62 @@ code {
   font-size: 0.75rem;
   line-height: 1.4;
   color: #52616b;
+}
+
+/* Map controls - version 0.4.1 */
+.map-control-sections {
+  display: grid;
+  gap: 7px;
+}
+
+.map-control-sections > details {
+  border: 1px solid #c7c0b3;
+  background: #fffdf7;
+}
+
+.map-control-sections > details > summary {
+  padding: 9px 10px;
+  cursor: pointer;
+  color: var(--moss);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.map-control-sections > details[open] > summary {
+  border-bottom: 1px solid #ddd6c9;
+  background: #eeeadf;
+}
+
+.map-control-sections > details > :not(summary) {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.map-control-sections > details > :last-child {
+  margin-bottom: 10px;
+}
+
+.map-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.map-preset-grid button {
+  min-width: 0;
+  padding: 7px 6px;
+  border: 1px solid #aaa497;
+  background: #fffdf7;
+  color: var(--ink);
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.map-preset-grid button.selected {
+  border-color: var(--moss);
+  background: var(--lime);
+  box-shadow: inset 0 -2px 0 var(--moss);
 }

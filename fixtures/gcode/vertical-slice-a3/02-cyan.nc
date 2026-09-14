@@ -1,5 +1,5 @@
-; Plotbox export - files only; no machine connection
-; Project: A3 vertical slice acceptance
+; Plotbox export - f
+; Project: A3 vertic
 ; Pass: Cyan
 G21
 G90
@@ -10,7 +10,7 @@ G94
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-signal-00
+; path accent-signal
 G0 X30.000 Y79.250 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -113,7 +113,7 @@ G1 X390.000 Y79.250 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-signal-01
+; path accent-signal
 G0 X390.000 Y148.500 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -216,7 +216,7 @@ G1 X30.000 Y148.500 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-signal-02
+; path accent-signal
 G0 X30.000 Y217.750 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -319,7 +319,7 @@ G1 X390.000 Y217.750 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-05
+; path accent-orbit-
 G0 X338.928 Y133.704 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -390,7 +390,7 @@ G1 X338.928 Y133.704 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-04
+; path accent-orbit-
 G0 X290.424 Y181.201 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -429,7 +429,7 @@ G1 X290.424 Y181.201 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-03
+; path accent-orbit-
 G0 X242.063 Y164.057 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -468,7 +468,7 @@ G1 X242.063 Y164.057 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-02
+; path accent-orbit-
 G0 X196.309 Y171.956 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -515,7 +515,7 @@ G1 X196.309 Y171.956 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-01
+; path accent-orbit-
 G0 X145.726 Y160.901 F6000
 G1 Z0.000 F400
 G4 P0.120
@@ -554,7 +554,7 @@ G1 X145.726 Y160.901 F1800
 G1 Z5.000 F900
 G4 P0.080
 
-; path accent-orbit-00
+; path accent-orbit-
 G0 X101.933 Y126.702 F6000
 G1 Z0.000 F400
 G4 P0.120

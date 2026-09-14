@@ -17,6 +17,18 @@ const settings = {
   port: 81,
   tls: false,
   command_timeout_seconds: 15,
+  safe_z_min_mm: -10,
+  safe_z_max_mm: 0,
+  pen_up_z_mm: 0,
+  pen_down_z_mm: -5,
+  skew_calibration: {
+    enabled: false,
+    square_width_mm: 100,
+    square_height_mm: 100,
+    rising_diagonal_mm: Math.sqrt(20_000),
+    falling_diagonal_mm: Math.sqrt(20_000),
+    axis_angle_degrees: 90,
+  },
 };
 
 afterEach(() => {
@@ -25,6 +37,69 @@ afterEach(() => {
 });
 
 describe("Plotter Setup calibration test library", () => {
+  it("draws a full skew square and saves both diagonal measurements", async () => {
+    const actionRequests: Record<string, unknown>[] = [];
+    const skewRequests: Record<string, unknown>[] = [];
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const path =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (path === "/api/fluidnc/settings") return Promise.resolve(response(settings));
+      if (path === "/api/fluidnc/actions") {
+        actionRequests.push(JSON.parse(init?.body as string) as Record<string, unknown>);
+        return Promise.resolve(
+          response({
+            schema_version: 1,
+            action: "commissioning_test",
+            success: true,
+            command_summary: ["diagonal_skew", "18 commands"],
+            response_lines: ["ok"],
+            controller_state: "Idle",
+            test_id: "diagonal_skew",
+          }),
+        );
+      }
+      if (path === "/api/fluidnc/calibration/skew") {
+        skewRequests.push(JSON.parse(init?.body as string) as Record<string, unknown>);
+        return Promise.resolve(
+          response({
+            ...settings,
+            skew_calibration: {
+              enabled: true,
+              ...skewRequests[0],
+              axis_angle_degrees: 89.5,
+            },
+          }),
+        );
+      }
+      return Promise.reject(new Error(`unexpected request: ${path}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<PlotterSetup />);
+
+    await user.click(await screen.findByRole("button", { name: "Draw calibration square" }));
+    await waitFor(() => expect(actionRequests).toHaveLength(1));
+    expect(actionRequests[0]).toMatchObject({
+      action: "commissioning_test",
+      test: { test_id: "diagonal_skew", width_mm: 100, height_mm: 100 },
+    });
+
+    await user.clear(screen.getByLabelText("Rising calibration diagonal"));
+    await user.type(screen.getByLabelText("Rising calibration diagonal"), "142");
+    await user.clear(screen.getByLabelText("Falling calibration diagonal"));
+    await user.type(screen.getByLabelText("Falling calibration diagonal"), "140.8");
+    await user.click(screen.getByRole("button", { name: "Save and enable correction" }));
+
+    await waitFor(() => expect(skewRequests).toHaveLength(1));
+    expect(skewRequests[0]).toEqual({
+      square_width_mm: 100,
+      square_height_mm: 100,
+      rising_diagonal_mm: 142,
+      falling_diagonal_mm: 140.8,
+    });
+    expect(await screen.findByText("89.500000°")).toBeVisible();
+  });
+
   it("lists and runs all named patterns without an application confirmation gate", async () => {
     const actionRequests: Record<string, unknown>[] = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {

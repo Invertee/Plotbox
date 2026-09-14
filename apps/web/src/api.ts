@@ -5,6 +5,7 @@ import type {
   ExportBundle,
   FluidNCActionRequest,
   FluidNCActionResult,
+  FluidNCProjectRunResult,
   FluidNCProgramResult,
   FluidNCSettings,
   JobState,
@@ -56,10 +57,14 @@ export const api = {
   health: () => request<{ status: "ok"; service: string }>("api/health"),
   modes: () => request<ModeManifest[]>("api/modes"),
   listProjects: () => request<ProjectRecipe[]>("api/projects"),
-  createProject: (name: string) =>
+  createProject: (
+    name: string,
+    pagePreset: "A3" | "A4" = "A3",
+    orientation: "landscape" | "portrait" = "landscape",
+  ) =>
     request<ProjectRecipe>("api/projects", {
       method: "POST",
-      body: JSON.stringify({ name, page_preset: "A3", orientation: "landscape" }),
+      body: JSON.stringify({ name, page_preset: pagePreset, orientation }),
     }),
   getProject: (projectId: string) => request<ProjectRecipe>(`api/projects/${projectId}`),
   patchProject: (projectId: string, changes: object) =>
@@ -127,10 +132,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ profile }),
     }),
-  sendGcode: (projectId: string, profile: MachineProfile, filename: string) =>
+  sendGcode: (projectId: string, profile: MachineProfile, filename: string, startLine: number) =>
     request<FluidNCProgramResult>(`api/projects/${projectId}/send/gcode`, {
       method: "POST",
-      body: JSON.stringify({ profile, filename, confirmed: true }),
+      body: JSON.stringify({ profile, filename, start_line: startLine, confirmed: true }),
+    }),
+  sendProjectToFluidNCSd: (projectId: string, profile: MachineProfile) =>
+    request<FluidNCProjectRunResult>(`api/projects/${projectId}/send/fluidnc-sd`, {
+      method: "POST",
+      body: JSON.stringify({ profile, confirmed: true }),
     }),
   exportSvg: (projectId: string) =>
     request<SvgExportBundle>(`api/projects/${projectId}/export/svg`, {
@@ -160,6 +170,21 @@ export const api = {
         current_steps_per_mm: currentStepsPerMm,
         commanded_distance_mm: commandedDistanceMm,
         measured_distance_mm: measuredDistanceMm,
+      }),
+    }),
+  saveSkewCalibration: (
+    squareWidthMm: number,
+    squareHeightMm: number,
+    risingDiagonalMm: number,
+    fallingDiagonalMm: number,
+  ) =>
+    request<FluidNCSettings>("api/fluidnc/calibration/skew", {
+      method: "POST",
+      body: JSON.stringify({
+        square_width_mm: squareWidthMm,
+        square_height_mm: squareHeightMm,
+        rising_diagonal_mm: risingDiagonalMm,
+        falling_diagonal_mm: fallingDiagonalMm,
       }),
     }),
 };

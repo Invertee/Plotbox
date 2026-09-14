@@ -67,4 +67,16 @@ describe("export profile validation", () => {
       ),
     ).toContain("Pen-up Z");
   });
+
+  it("blocks non-positive Z-axis speeds", () => {
+    expect(
+      validateProfile(
+        {
+          ...profile,
+          pen_actuator: { ...profile.pen_actuator, lift_feed_mm_min: 0 },
+        },
+        page,
+      ),
+    ).toContain("Z lift and lower speeds");
+  });
 });

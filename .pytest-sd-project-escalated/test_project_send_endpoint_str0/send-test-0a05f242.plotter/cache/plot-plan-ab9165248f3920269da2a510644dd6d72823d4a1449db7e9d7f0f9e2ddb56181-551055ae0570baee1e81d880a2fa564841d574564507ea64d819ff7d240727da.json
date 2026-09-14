@@ -1,0 +1,7606 @@
+{
+  "actions": [
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 14.0,
+        "y": 10.0
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 406.0,
+        "y": 10.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 14.0,
+        "y": 10.0
+      }
+    },
+    {
+      "end": {
+        "x": 406.9375,
+        "y": 10.0625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 406.0,
+        "y": 10.0
+      }
+    },
+    {
+      "end": {
+        "x": 407.75,
+        "y": 10.25
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 406.9375,
+        "y": 10.0625
+      }
+    },
+    {
+      "end": {
+        "x": 408.4375,
+        "y": 10.5625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 407.75,
+        "y": 10.25
+      }
+    },
+    {
+      "end": {
+        "x": 409.0,
+        "y": 11.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 408.4375,
+        "y": 10.5625
+      }
+    },
+    {
+      "end": {
+        "x": 409.4375,
+        "y": 11.5625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.0,
+        "y": 11.0
+      }
+    },
+    {
+      "end": {
+        "x": 409.75,
+        "y": 12.25
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.4375,
+        "y": 11.5625
+      }
+    },
+    {
+      "end": {
+        "x": 409.9375,
+        "y": 13.0625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.75,
+        "y": 12.25
+      }
+    },
+    {
+      "end": {
+        "x": 410.0,
+        "y": 14.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.9375,
+        "y": 13.0625
+      }
+    },
+    {
+      "end": {
+        "x": 410.0,
+        "y": 283.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 410.0,
+        "y": 14.0
+      }
+    },
+    {
+      "end": {
+        "x": 409.9375,
+        "y": 283.9375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 410.0,
+        "y": 283.0
+      }
+    },
+    {
+      "end": {
+        "x": 409.75,
+        "y": 284.75
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.9375,
+        "y": 283.9375
+      }
+    },
+    {
+      "end": {
+        "x": 409.4375,
+        "y": 285.4375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.75,
+        "y": 284.75
+      }
+    },
+    {
+      "end": {
+        "x": 409.0,
+        "y": 286.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.4375,
+        "y": 285.4375
+      }
+    },
+    {
+      "end": {
+        "x": 408.4375,
+        "y": 286.4375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 409.0,
+        "y": 286.0
+      }
+    },
+    {
+      "end": {
+        "x": 407.75,
+        "y": 286.75
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 408.4375,
+        "y": 286.4375
+      }
+    },
+    {
+      "end": {
+        "x": 406.9375,
+        "y": 286.9375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 407.75,
+        "y": 286.75
+      }
+    },
+    {
+      "end": {
+        "x": 406.0,
+        "y": 287.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 406.9375,
+        "y": 286.9375
+      }
+    },
+    {
+      "end": {
+        "x": 14.0,
+        "y": 287.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 406.0,
+        "y": 287.0
+      }
+    },
+    {
+      "end": {
+        "x": 13.0625,
+        "y": 286.9375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 14.0,
+        "y": 287.0
+      }
+    },
+    {
+      "end": {
+        "x": 12.25,
+        "y": 286.75
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 13.0625,
+        "y": 286.9375
+      }
+    },
+    {
+      "end": {
+        "x": 11.5625,
+        "y": 286.4375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 12.25,
+        "y": 286.75
+      }
+    },
+    {
+      "end": {
+        "x": 11.0,
+        "y": 286.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 11.5625,
+        "y": 286.4375
+      }
+    },
+    {
+      "end": {
+        "x": 10.5625,
+        "y": 285.4375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 11.0,
+        "y": 286.0
+      }
+    },
+    {
+      "end": {
+        "x": 10.25,
+        "y": 284.75
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.5625,
+        "y": 285.4375
+      }
+    },
+    {
+      "end": {
+        "x": 10.0625,
+        "y": 283.9375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.25,
+        "y": 284.75
+      }
+    },
+    {
+      "end": {
+        "x": 10.0,
+        "y": 283.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.0625,
+        "y": 283.9375
+      }
+    },
+    {
+      "end": {
+        "x": 10.0,
+        "y": 14.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.0,
+        "y": 283.0
+      }
+    },
+    {
+      "end": {
+        "x": 10.0625,
+        "y": 13.0625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.0,
+        "y": 14.0
+      }
+    },
+    {
+      "end": {
+        "x": 10.25,
+        "y": 12.25
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.0625,
+        "y": 13.0625
+      }
+    },
+    {
+      "end": {
+        "x": 10.5625,
+        "y": 11.5625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.25,
+        "y": 12.25
+      }
+    },
+    {
+      "end": {
+        "x": 11.0,
+        "y": 11.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 10.5625,
+        "y": 11.5625
+      }
+    },
+    {
+      "end": {
+        "x": 11.5625,
+        "y": 10.5625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 11.0,
+        "y": 11.0
+      }
+    },
+    {
+      "end": {
+        "x": 12.25,
+        "y": 10.25
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 11.5625,
+        "y": 10.5625
+      }
+    },
+    {
+      "end": {
+        "x": 13.0625,
+        "y": 10.0625
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 12.25,
+        "y": 10.25
+      }
+    },
+    {
+      "end": {
+        "x": 14.0,
+        "y": 10.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": {
+        "x": 13.0625,
+        "y": 10.0625
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 23.0,
+        "y": 18.0
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 14.0,
+        "y": 10.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 397.0,
+        "y": 18.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 23.0,
+        "y": 18.0
+      }
+    },
+    {
+      "end": {
+        "x": 398.171875,
+        "y": 18.078125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 397.0,
+        "y": 18.0
+      }
+    },
+    {
+      "end": {
+        "x": 399.1875,
+        "y": 18.3125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 398.171875,
+        "y": 18.078125
+      }
+    },
+    {
+      "end": {
+        "x": 400.046875,
+        "y": 18.703125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 399.1875,
+        "y": 18.3125
+      }
+    },
+    {
+      "end": {
+        "x": 400.75,
+        "y": 19.25
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 400.046875,
+        "y": 18.703125
+      }
+    },
+    {
+      "end": {
+        "x": 401.296875,
+        "y": 19.953125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 400.75,
+        "y": 19.25
+      }
+    },
+    {
+      "end": {
+        "x": 401.6875,
+        "y": 20.8125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 401.296875,
+        "y": 19.953125
+      }
+    },
+    {
+      "end": {
+        "x": 401.921875,
+        "y": 21.828125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 401.6875,
+        "y": 20.8125
+      }
+    },
+    {
+      "end": {
+        "x": 402.0,
+        "y": 23.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 401.921875,
+        "y": 21.828125
+      }
+    },
+    {
+      "end": {
+        "x": 402.0,
+        "y": 274.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 402.0,
+        "y": 23.0
+      }
+    },
+    {
+      "end": {
+        "x": 401.921875,
+        "y": 275.171875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 402.0,
+        "y": 274.0
+      }
+    },
+    {
+      "end": {
+        "x": 401.6875,
+        "y": 276.1875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 401.921875,
+        "y": 275.171875
+      }
+    },
+    {
+      "end": {
+        "x": 401.296875,
+        "y": 277.046875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 401.6875,
+        "y": 276.1875
+      }
+    },
+    {
+      "end": {
+        "x": 400.75,
+        "y": 277.75
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 401.296875,
+        "y": 277.046875
+      }
+    },
+    {
+      "end": {
+        "x": 400.046875,
+        "y": 278.296875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 400.75,
+        "y": 277.75
+      }
+    },
+    {
+      "end": {
+        "x": 399.1875,
+        "y": 278.6875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 400.046875,
+        "y": 278.296875
+      }
+    },
+    {
+      "end": {
+        "x": 398.171875,
+        "y": 278.921875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 399.1875,
+        "y": 278.6875
+      }
+    },
+    {
+      "end": {
+        "x": 397.0,
+        "y": 279.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 398.171875,
+        "y": 278.921875
+      }
+    },
+    {
+      "end": {
+        "x": 23.0,
+        "y": 279.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 397.0,
+        "y": 279.0
+      }
+    },
+    {
+      "end": {
+        "x": 21.828125,
+        "y": 278.921875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 23.0,
+        "y": 279.0
+      }
+    },
+    {
+      "end": {
+        "x": 20.8125,
+        "y": 278.6875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 21.828125,
+        "y": 278.921875
+      }
+    },
+    {
+      "end": {
+        "x": 19.953125,
+        "y": 278.296875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 20.8125,
+        "y": 278.6875
+      }
+    },
+    {
+      "end": {
+        "x": 19.25,
+        "y": 277.75
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 19.953125,
+        "y": 278.296875
+      }
+    },
+    {
+      "end": {
+        "x": 18.703125,
+        "y": 277.046875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 19.25,
+        "y": 277.75
+      }
+    },
+    {
+      "end": {
+        "x": 18.3125,
+        "y": 276.1875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.703125,
+        "y": 277.046875
+      }
+    },
+    {
+      "end": {
+        "x": 18.078125,
+        "y": 275.171875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.3125,
+        "y": 276.1875
+      }
+    },
+    {
+      "end": {
+        "x": 18.0,
+        "y": 274.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.078125,
+        "y": 275.171875
+      }
+    },
+    {
+      "end": {
+        "x": 18.0,
+        "y": 23.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.0,
+        "y": 274.0
+      }
+    },
+    {
+      "end": {
+        "x": 18.078125,
+        "y": 21.828125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.0,
+        "y": 23.0
+      }
+    },
+    {
+      "end": {
+        "x": 18.3125,
+        "y": 20.8125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.078125,
+        "y": 21.828125
+      }
+    },
+    {
+      "end": {
+        "x": 18.703125,
+        "y": 19.953125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.3125,
+        "y": 20.8125
+      }
+    },
+    {
+      "end": {
+        "x": 19.25,
+        "y": 19.25
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 18.703125,
+        "y": 19.953125
+      }
+    },
+    {
+      "end": {
+        "x": 19.953125,
+        "y": 18.703125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 19.25,
+        "y": 19.25
+      }
+    },
+    {
+      "end": {
+        "x": 20.8125,
+        "y": 18.3125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 19.953125,
+        "y": 18.703125
+      }
+    },
+    {
+      "end": {
+        "x": 21.828125,
+        "y": 18.078125
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 20.8125,
+        "y": 18.3125
+      }
+    },
+    {
+      "end": {
+        "x": 23.0,
+        "y": 18.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": {
+        "x": 21.828125,
+        "y": 18.078125
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-frame-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 51.97717335818065,
+        "y": 45.0
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-00",
+      "start": {
+        "x": 23.0,
+        "y": 18.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 51.97717335818065,
+        "y": 234.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-00",
+      "start": {
+        "x": 51.97717335818065,
+        "y": 45.0
+      }
+    },
+    {
+      "end": {
+        "x": 75.97717335818065,
+        "y": 242.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-00",
+      "start": {
+        "x": 51.97717335818065,
+        "y": 234.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 183.45683404284483,
+        "y": 244.0
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-01",
+      "start": {
+        "x": 75.97717335818065,
+        "y": 242.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 159.45683404284483,
+        "y": 252.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-01",
+      "start": {
+        "x": 183.45683404284483,
+        "y": 244.0
+      }
+    },
+    {
+      "end": {
+        "x": 159.45683404284483,
+        "y": 63.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-01",
+      "start": {
+        "x": 159.45683404284483,
+        "y": 252.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 259.8902205585578,
+        "y": 45.0
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-02",
+      "start": {
+        "x": 159.45683404284483,
+        "y": 63.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-02",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 259.8902205585578,
+        "y": 234.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-02",
+      "start": {
+        "x": 259.8902205585578,
+        "y": 45.0
+      }
+    },
+    {
+      "end": {
+        "x": 283.8902205585578,
+        "y": 242.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-02",
+      "start": {
+        "x": 259.8902205585578,
+        "y": 234.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-02",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 389.1322530399862,
+        "y": 244.0
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-03",
+      "start": {
+        "x": 283.8902205585578,
+        "y": 242.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-03",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 365.1322530399862,
+        "y": 252.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-03",
+      "start": {
+        "x": 389.1322530399862,
+        "y": 244.0
+      }
+    },
+    {
+      "end": {
+        "x": 365.1322530399862,
+        "y": 63.0
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-03",
+      "start": {
+        "x": 365.1322530399862,
+        "y": 252.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-black",
+      "path_id": "structure-corridor-03",
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pause_for_pen",
+      "message": "Change pen to Cyan",
+      "pass_id": "pass-black",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": null,
+      "start": null
+    },
+    {
+      "end": {
+        "x": 30.0,
+        "y": 102.33333333333333
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 365.1322530399862,
+        "y": 63.0
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 33.75,
+        "y": 103.85963172642985
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 30.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 37.5,
+        "y": 105.18242366711351
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 33.75,
+        "y": 103.85963172642985
+      }
+    },
+    {
+      "end": {
+        "x": 41.25,
+        "y": 106.30170915538429
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 37.5,
+        "y": 105.18242366711351
+      }
+    },
+    {
+      "end": {
+        "x": 45.0,
+        "y": 107.21748819124221
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 41.25,
+        "y": 106.30170915538429
+      }
+    },
+    {
+      "end": {
+        "x": 48.75,
+        "y": 107.92976077468727
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 45.0,
+        "y": 107.21748819124221
+      }
+    },
+    {
+      "end": {
+        "x": 52.5,
+        "y": 108.43852690571944
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 48.75,
+        "y": 107.92976077468727
+      }
+    },
+    {
+      "end": {
+        "x": 56.25,
+        "y": 108.74378658433874
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 52.5,
+        "y": 108.43852690571944
+      }
+    },
+    {
+      "end": {
+        "x": 60.0,
+        "y": 108.84553981054519
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 56.25,
+        "y": 108.74378658433874
+      }
+    },
+    {
+      "end": {
+        "x": 63.75,
+        "y": 108.74378658433875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 60.0,
+        "y": 108.84553981054519
+      }
+    },
+    {
+      "end": {
+        "x": 67.5,
+        "y": 108.43852690571943
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 63.75,
+        "y": 108.74378658433875
+      }
+    },
+    {
+      "end": {
+        "x": 71.25,
+        "y": 107.92976077468725
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 67.5,
+        "y": 108.43852690571943
+      }
+    },
+    {
+      "end": {
+        "x": 75.0,
+        "y": 107.21748819124221
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 71.25,
+        "y": 107.92976077468725
+      }
+    },
+    {
+      "end": {
+        "x": 78.75,
+        "y": 106.30170915538429
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 75.0,
+        "y": 107.21748819124221
+      }
+    },
+    {
+      "end": {
+        "x": 82.5,
+        "y": 105.18242366711351
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 78.75,
+        "y": 106.30170915538429
+      }
+    },
+    {
+      "end": {
+        "x": 86.25,
+        "y": 103.85963172642985
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 82.5,
+        "y": 105.18242366711351
+      }
+    },
+    {
+      "end": {
+        "x": 90.0,
+        "y": 102.33333333333333
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 86.25,
+        "y": 103.85963172642985
+      }
+    },
+    {
+      "end": {
+        "x": 93.75,
+        "y": 100.8070349402368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 90.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 97.5,
+        "y": 99.48424299955315
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 93.75,
+        "y": 100.8070349402368
+      }
+    },
+    {
+      "end": {
+        "x": 101.25,
+        "y": 98.36495751128237
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 97.5,
+        "y": 99.48424299955315
+      }
+    },
+    {
+      "end": {
+        "x": 105.0,
+        "y": 97.44917847542445
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 101.25,
+        "y": 98.36495751128237
+      }
+    },
+    {
+      "end": {
+        "x": 108.75,
+        "y": 96.7369058919794
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 105.0,
+        "y": 97.44917847542445
+      }
+    },
+    {
+      "end": {
+        "x": 112.5,
+        "y": 96.22813976094722
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 108.75,
+        "y": 96.7369058919794
+      }
+    },
+    {
+      "end": {
+        "x": 116.25,
+        "y": 95.92288008232791
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 112.5,
+        "y": 96.22813976094722
+      }
+    },
+    {
+      "end": {
+        "x": 120.0,
+        "y": 95.8211268561215
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 116.25,
+        "y": 95.92288008232791
+      }
+    },
+    {
+      "end": {
+        "x": 123.75,
+        "y": 95.92288008232791
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 120.0,
+        "y": 95.8211268561215
+      }
+    },
+    {
+      "end": {
+        "x": 127.5,
+        "y": 96.22813976094722
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 123.75,
+        "y": 95.92288008232791
+      }
+    },
+    {
+      "end": {
+        "x": 131.25,
+        "y": 96.7369058919794
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 127.5,
+        "y": 96.22813976094722
+      }
+    },
+    {
+      "end": {
+        "x": 135.0,
+        "y": 97.44917847542445
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 131.25,
+        "y": 96.7369058919794
+      }
+    },
+    {
+      "end": {
+        "x": 138.75,
+        "y": 98.36495751128236
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 135.0,
+        "y": 97.44917847542445
+      }
+    },
+    {
+      "end": {
+        "x": 142.5,
+        "y": 99.48424299955315
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 138.75,
+        "y": 98.36495751128236
+      }
+    },
+    {
+      "end": {
+        "x": 146.25,
+        "y": 100.8070349402368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 142.5,
+        "y": 99.48424299955315
+      }
+    },
+    {
+      "end": {
+        "x": 150.0,
+        "y": 102.33333333333333
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 146.25,
+        "y": 100.8070349402368
+      }
+    },
+    {
+      "end": {
+        "x": 153.75,
+        "y": 103.85963172642985
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 150.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 157.5,
+        "y": 105.18242366711351
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 153.75,
+        "y": 103.85963172642985
+      }
+    },
+    {
+      "end": {
+        "x": 161.25,
+        "y": 106.30170915538429
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 157.5,
+        "y": 105.18242366711351
+      }
+    },
+    {
+      "end": {
+        "x": 165.0,
+        "y": 107.21748819124221
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 161.25,
+        "y": 106.30170915538429
+      }
+    },
+    {
+      "end": {
+        "x": 168.75,
+        "y": 107.92976077468727
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 165.0,
+        "y": 107.21748819124221
+      }
+    },
+    {
+      "end": {
+        "x": 172.5,
+        "y": 108.43852690571944
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 168.75,
+        "y": 107.92976077468727
+      }
+    },
+    {
+      "end": {
+        "x": 176.25,
+        "y": 108.74378658433874
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 172.5,
+        "y": 108.43852690571944
+      }
+    },
+    {
+      "end": {
+        "x": 180.0,
+        "y": 108.84553981054519
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 176.25,
+        "y": 108.74378658433874
+      }
+    },
+    {
+      "end": {
+        "x": 183.75,
+        "y": 108.74378658433875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 180.0,
+        "y": 108.84553981054519
+      }
+    },
+    {
+      "end": {
+        "x": 187.5,
+        "y": 108.43852690571943
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 183.75,
+        "y": 108.74378658433875
+      }
+    },
+    {
+      "end": {
+        "x": 191.25,
+        "y": 107.92976077468725
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 187.5,
+        "y": 108.43852690571943
+      }
+    },
+    {
+      "end": {
+        "x": 195.0,
+        "y": 107.21748819124221
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 191.25,
+        "y": 107.92976077468725
+      }
+    },
+    {
+      "end": {
+        "x": 198.75,
+        "y": 106.30170915538429
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 195.0,
+        "y": 107.21748819124221
+      }
+    },
+    {
+      "end": {
+        "x": 202.5,
+        "y": 105.18242366711351
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 198.75,
+        "y": 106.30170915538429
+      }
+    },
+    {
+      "end": {
+        "x": 206.25,
+        "y": 103.85963172642985
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 202.5,
+        "y": 105.18242366711351
+      }
+    },
+    {
+      "end": {
+        "x": 210.0,
+        "y": 102.33333333333333
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 206.25,
+        "y": 103.85963172642985
+      }
+    },
+    {
+      "end": {
+        "x": 213.75,
+        "y": 100.8070349402368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 210.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 217.5,
+        "y": 99.48424299955315
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 213.75,
+        "y": 100.8070349402368
+      }
+    },
+    {
+      "end": {
+        "x": 221.25,
+        "y": 98.36495751128237
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 217.5,
+        "y": 99.48424299955315
+      }
+    },
+    {
+      "end": {
+        "x": 225.0,
+        "y": 97.44917847542445
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 221.25,
+        "y": 98.36495751128237
+      }
+    },
+    {
+      "end": {
+        "x": 228.75,
+        "y": 96.7369058919794
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 225.0,
+        "y": 97.44917847542445
+      }
+    },
+    {
+      "end": {
+        "x": 232.5,
+        "y": 96.22813976094722
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 228.75,
+        "y": 96.7369058919794
+      }
+    },
+    {
+      "end": {
+        "x": 236.25,
+        "y": 95.92288008232791
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 232.5,
+        "y": 96.22813976094722
+      }
+    },
+    {
+      "end": {
+        "x": 240.0,
+        "y": 95.8211268561215
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 236.25,
+        "y": 95.92288008232791
+      }
+    },
+    {
+      "end": {
+        "x": 243.75,
+        "y": 95.92288008232791
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 240.0,
+        "y": 95.8211268561215
+      }
+    },
+    {
+      "end": {
+        "x": 247.5,
+        "y": 96.22813976094722
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 243.75,
+        "y": 95.92288008232791
+      }
+    },
+    {
+      "end": {
+        "x": 251.25,
+        "y": 96.7369058919794
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 247.5,
+        "y": 96.22813976094722
+      }
+    },
+    {
+      "end": {
+        "x": 255.0,
+        "y": 97.44917847542445
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 251.25,
+        "y": 96.7369058919794
+      }
+    },
+    {
+      "end": {
+        "x": 258.75,
+        "y": 98.36495751128236
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 255.0,
+        "y": 97.44917847542445
+      }
+    },
+    {
+      "end": {
+        "x": 262.5,
+        "y": 99.48424299955315
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 258.75,
+        "y": 98.36495751128236
+      }
+    },
+    {
+      "end": {
+        "x": 266.25,
+        "y": 100.8070349402368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 262.5,
+        "y": 99.48424299955315
+      }
+    },
+    {
+      "end": {
+        "x": 270.0,
+        "y": 102.33333333333333
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 266.25,
+        "y": 100.8070349402368
+      }
+    },
+    {
+      "end": {
+        "x": 273.75,
+        "y": 103.85963172642985
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 270.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 277.5,
+        "y": 105.18242366711351
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 273.75,
+        "y": 103.85963172642985
+      }
+    },
+    {
+      "end": {
+        "x": 281.25,
+        "y": 106.30170915538429
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 277.5,
+        "y": 105.18242366711351
+      }
+    },
+    {
+      "end": {
+        "x": 285.0,
+        "y": 107.21748819124221
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 281.25,
+        "y": 106.30170915538429
+      }
+    },
+    {
+      "end": {
+        "x": 288.75,
+        "y": 107.92976077468727
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 285.0,
+        "y": 107.21748819124221
+      }
+    },
+    {
+      "end": {
+        "x": 292.5,
+        "y": 108.43852690571944
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 288.75,
+        "y": 107.92976077468727
+      }
+    },
+    {
+      "end": {
+        "x": 296.25,
+        "y": 108.74378658433874
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 292.5,
+        "y": 108.43852690571944
+      }
+    },
+    {
+      "end": {
+        "x": 300.0,
+        "y": 108.84553981054519
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 296.25,
+        "y": 108.74378658433874
+      }
+    },
+    {
+      "end": {
+        "x": 303.75,
+        "y": 108.74378658433875
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 300.0,
+        "y": 108.84553981054519
+      }
+    },
+    {
+      "end": {
+        "x": 307.5,
+        "y": 108.43852690571943
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 303.75,
+        "y": 108.74378658433875
+      }
+    },
+    {
+      "end": {
+        "x": 311.25,
+        "y": 107.92976077468725
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 307.5,
+        "y": 108.43852690571943
+      }
+    },
+    {
+      "end": {
+        "x": 315.0,
+        "y": 107.21748819124221
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 311.25,
+        "y": 107.92976077468725
+      }
+    },
+    {
+      "end": {
+        "x": 318.75,
+        "y": 106.30170915538429
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 315.0,
+        "y": 107.21748819124221
+      }
+    },
+    {
+      "end": {
+        "x": 322.5,
+        "y": 105.18242366711351
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 318.75,
+        "y": 106.30170915538429
+      }
+    },
+    {
+      "end": {
+        "x": 326.25,
+        "y": 103.85963172642985
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 322.5,
+        "y": 105.18242366711351
+      }
+    },
+    {
+      "end": {
+        "x": 330.0,
+        "y": 102.33333333333333
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 326.25,
+        "y": 103.85963172642985
+      }
+    },
+    {
+      "end": {
+        "x": 333.75,
+        "y": 100.8070349402368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 330.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 337.5,
+        "y": 99.48424299955315
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 333.75,
+        "y": 100.8070349402368
+      }
+    },
+    {
+      "end": {
+        "x": 341.25,
+        "y": 98.36495751128237
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 337.5,
+        "y": 99.48424299955315
+      }
+    },
+    {
+      "end": {
+        "x": 345.0,
+        "y": 97.44917847542445
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 341.25,
+        "y": 98.36495751128237
+      }
+    },
+    {
+      "end": {
+        "x": 348.75,
+        "y": 96.7369058919794
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 345.0,
+        "y": 97.44917847542445
+      }
+    },
+    {
+      "end": {
+        "x": 352.5,
+        "y": 96.22813976094722
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 348.75,
+        "y": 96.7369058919794
+      }
+    },
+    {
+      "end": {
+        "x": 356.25,
+        "y": 95.92288008232791
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 352.5,
+        "y": 96.22813976094722
+      }
+    },
+    {
+      "end": {
+        "x": 360.0,
+        "y": 95.8211268561215
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 356.25,
+        "y": 95.92288008232791
+      }
+    },
+    {
+      "end": {
+        "x": 363.75,
+        "y": 95.92288008232791
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 360.0,
+        "y": 95.8211268561215
+      }
+    },
+    {
+      "end": {
+        "x": 367.5,
+        "y": 96.22813976094722
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 363.75,
+        "y": 95.92288008232791
+      }
+    },
+    {
+      "end": {
+        "x": 371.25,
+        "y": 96.7369058919794
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 367.5,
+        "y": 96.22813976094722
+      }
+    },
+    {
+      "end": {
+        "x": 375.0,
+        "y": 97.44917847542445
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 371.25,
+        "y": 96.7369058919794
+      }
+    },
+    {
+      "end": {
+        "x": 378.75,
+        "y": 98.36495751128236
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 375.0,
+        "y": 97.44917847542445
+      }
+    },
+    {
+      "end": {
+        "x": 382.5,
+        "y": 99.48424299955315
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 378.75,
+        "y": 98.36495751128236
+      }
+    },
+    {
+      "end": {
+        "x": 386.25,
+        "y": 100.8070349402368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 382.5,
+        "y": 99.48424299955315
+      }
+    },
+    {
+      "end": {
+        "x": 390.0,
+        "y": 102.33333333333333
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": {
+        "x": 386.25,
+        "y": 100.8070349402368
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 390.0,
+        "y": 194.66666666666666
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 390.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 386.25,
+        "y": 193.11652304004826
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 390.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 382.5,
+        "y": 191.77306523031228
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 386.25,
+        "y": 193.11652304004826
+      }
+    },
+    {
+      "end": {
+        "x": 378.75,
+        "y": 190.6362932374588
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 382.5,
+        "y": 191.77306523031228
+      }
+    },
+    {
+      "end": {
+        "x": 375.0,
+        "y": 189.70620706148776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 378.75,
+        "y": 190.6362932374588
+      }
+    },
+    {
+      "end": {
+        "x": 371.25,
+        "y": 188.98280670239916
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 375.0,
+        "y": 189.70620706148776
+      }
+    },
+    {
+      "end": {
+        "x": 367.5,
+        "y": 188.46609216019303
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 371.25,
+        "y": 188.98280670239916
+      }
+    },
+    {
+      "end": {
+        "x": 363.75,
+        "y": 188.15606343486934
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 367.5,
+        "y": 188.46609216019303
+      }
+    },
+    {
+      "end": {
+        "x": 360.0,
+        "y": 188.05272052642815
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 363.75,
+        "y": 188.15606343486934
+      }
+    },
+    {
+      "end": {
+        "x": 356.25,
+        "y": 188.15606343486937
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 360.0,
+        "y": 188.05272052642815
+      }
+    },
+    {
+      "end": {
+        "x": 352.5,
+        "y": 188.46609216019303
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 356.25,
+        "y": 188.15606343486937
+      }
+    },
+    {
+      "end": {
+        "x": 348.75,
+        "y": 188.9828067023992
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 352.5,
+        "y": 188.46609216019303
+      }
+    },
+    {
+      "end": {
+        "x": 345.0,
+        "y": 189.70620706148776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 348.75,
+        "y": 188.9828067023992
+      }
+    },
+    {
+      "end": {
+        "x": 341.25,
+        "y": 190.63629323745877
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 345.0,
+        "y": 189.70620706148776
+      }
+    },
+    {
+      "end": {
+        "x": 337.5,
+        "y": 191.77306523031228
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 341.25,
+        "y": 190.63629323745877
+      }
+    },
+    {
+      "end": {
+        "x": 333.75,
+        "y": 193.11652304004824
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 337.5,
+        "y": 191.77306523031228
+      }
+    },
+    {
+      "end": {
+        "x": 330.0,
+        "y": 194.66666666666666
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 333.75,
+        "y": 193.11652304004824
+      }
+    },
+    {
+      "end": {
+        "x": 326.25,
+        "y": 196.21681029328508
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 330.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 322.5,
+        "y": 197.560268103021
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 326.25,
+        "y": 196.21681029328508
+      }
+    },
+    {
+      "end": {
+        "x": 318.75,
+        "y": 198.6970400958745
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 322.5,
+        "y": 197.560268103021
+      }
+    },
+    {
+      "end": {
+        "x": 315.0,
+        "y": 199.62712627184555
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 318.75,
+        "y": 198.6970400958745
+      }
+    },
+    {
+      "end": {
+        "x": 311.25,
+        "y": 200.35052663093416
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 315.0,
+        "y": 199.62712627184555
+      }
+    },
+    {
+      "end": {
+        "x": 307.5,
+        "y": 200.8672411731403
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 311.25,
+        "y": 200.35052663093416
+      }
+    },
+    {
+      "end": {
+        "x": 303.75,
+        "y": 201.17726989846398
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 307.5,
+        "y": 200.8672411731403
+      }
+    },
+    {
+      "end": {
+        "x": 300.0,
+        "y": 201.28061280690517
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 303.75,
+        "y": 201.17726989846398
+      }
+    },
+    {
+      "end": {
+        "x": 296.25,
+        "y": 201.17726989846395
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 300.0,
+        "y": 201.28061280690517
+      }
+    },
+    {
+      "end": {
+        "x": 292.5,
+        "y": 200.8672411731403
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 296.25,
+        "y": 201.17726989846395
+      }
+    },
+    {
+      "end": {
+        "x": 288.75,
+        "y": 200.35052663093416
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 292.5,
+        "y": 200.8672411731403
+      }
+    },
+    {
+      "end": {
+        "x": 285.0,
+        "y": 199.62712627184555
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 288.75,
+        "y": 200.35052663093416
+      }
+    },
+    {
+      "end": {
+        "x": 281.25,
+        "y": 198.6970400958745
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 285.0,
+        "y": 199.62712627184555
+      }
+    },
+    {
+      "end": {
+        "x": 277.5,
+        "y": 197.560268103021
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 281.25,
+        "y": 198.6970400958745
+      }
+    },
+    {
+      "end": {
+        "x": 273.75,
+        "y": 196.21681029328508
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 277.5,
+        "y": 197.560268103021
+      }
+    },
+    {
+      "end": {
+        "x": 270.0,
+        "y": 194.66666666666666
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 273.75,
+        "y": 196.21681029328508
+      }
+    },
+    {
+      "end": {
+        "x": 266.25,
+        "y": 193.11652304004826
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 270.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 262.5,
+        "y": 191.77306523031228
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 266.25,
+        "y": 193.11652304004826
+      }
+    },
+    {
+      "end": {
+        "x": 258.75,
+        "y": 190.6362932374588
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 262.5,
+        "y": 191.77306523031228
+      }
+    },
+    {
+      "end": {
+        "x": 255.0,
+        "y": 189.70620706148776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 258.75,
+        "y": 190.6362932374588
+      }
+    },
+    {
+      "end": {
+        "x": 251.25,
+        "y": 188.98280670239916
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 255.0,
+        "y": 189.70620706148776
+      }
+    },
+    {
+      "end": {
+        "x": 247.5,
+        "y": 188.46609216019303
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 251.25,
+        "y": 188.98280670239916
+      }
+    },
+    {
+      "end": {
+        "x": 243.75,
+        "y": 188.15606343486934
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 247.5,
+        "y": 188.46609216019303
+      }
+    },
+    {
+      "end": {
+        "x": 240.0,
+        "y": 188.05272052642815
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 243.75,
+        "y": 188.15606343486934
+      }
+    },
+    {
+      "end": {
+        "x": 236.25,
+        "y": 188.15606343486937
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 240.0,
+        "y": 188.05272052642815
+      }
+    },
+    {
+      "end": {
+        "x": 232.5,
+        "y": 188.46609216019303
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 236.25,
+        "y": 188.15606343486937
+      }
+    },
+    {
+      "end": {
+        "x": 228.75,
+        "y": 188.9828067023992
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 232.5,
+        "y": 188.46609216019303
+      }
+    },
+    {
+      "end": {
+        "x": 225.0,
+        "y": 189.70620706148776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 228.75,
+        "y": 188.9828067023992
+      }
+    },
+    {
+      "end": {
+        "x": 221.25,
+        "y": 190.63629323745877
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 225.0,
+        "y": 189.70620706148776
+      }
+    },
+    {
+      "end": {
+        "x": 217.5,
+        "y": 191.77306523031228
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 221.25,
+        "y": 190.63629323745877
+      }
+    },
+    {
+      "end": {
+        "x": 213.75,
+        "y": 193.11652304004824
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 217.5,
+        "y": 191.77306523031228
+      }
+    },
+    {
+      "end": {
+        "x": 210.0,
+        "y": 194.66666666666666
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 213.75,
+        "y": 193.11652304004824
+      }
+    },
+    {
+      "end": {
+        "x": 206.25,
+        "y": 196.21681029328508
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 210.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 202.5,
+        "y": 197.560268103021
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 206.25,
+        "y": 196.21681029328508
+      }
+    },
+    {
+      "end": {
+        "x": 198.75,
+        "y": 198.6970400958745
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 202.5,
+        "y": 197.560268103021
+      }
+    },
+    {
+      "end": {
+        "x": 195.0,
+        "y": 199.62712627184555
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 198.75,
+        "y": 198.6970400958745
+      }
+    },
+    {
+      "end": {
+        "x": 191.25,
+        "y": 200.35052663093416
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 195.0,
+        "y": 199.62712627184555
+      }
+    },
+    {
+      "end": {
+        "x": 187.5,
+        "y": 200.8672411731403
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 191.25,
+        "y": 200.35052663093416
+      }
+    },
+    {
+      "end": {
+        "x": 183.75,
+        "y": 201.17726989846398
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 187.5,
+        "y": 200.8672411731403
+      }
+    },
+    {
+      "end": {
+        "x": 180.0,
+        "y": 201.28061280690517
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 183.75,
+        "y": 201.17726989846398
+      }
+    },
+    {
+      "end": {
+        "x": 176.25,
+        "y": 201.17726989846395
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 180.0,
+        "y": 201.28061280690517
+      }
+    },
+    {
+      "end": {
+        "x": 172.5,
+        "y": 200.8672411731403
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 176.25,
+        "y": 201.17726989846395
+      }
+    },
+    {
+      "end": {
+        "x": 168.75,
+        "y": 200.35052663093416
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 172.5,
+        "y": 200.8672411731403
+      }
+    },
+    {
+      "end": {
+        "x": 165.0,
+        "y": 199.62712627184555
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 168.75,
+        "y": 200.35052663093416
+      }
+    },
+    {
+      "end": {
+        "x": 161.25,
+        "y": 198.6970400958745
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 165.0,
+        "y": 199.62712627184555
+      }
+    },
+    {
+      "end": {
+        "x": 157.5,
+        "y": 197.560268103021
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 161.25,
+        "y": 198.6970400958745
+      }
+    },
+    {
+      "end": {
+        "x": 153.75,
+        "y": 196.21681029328508
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 157.5,
+        "y": 197.560268103021
+      }
+    },
+    {
+      "end": {
+        "x": 150.0,
+        "y": 194.66666666666666
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 153.75,
+        "y": 196.21681029328508
+      }
+    },
+    {
+      "end": {
+        "x": 146.25,
+        "y": 193.11652304004826
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 150.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 142.5,
+        "y": 191.77306523031228
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 146.25,
+        "y": 193.11652304004826
+      }
+    },
+    {
+      "end": {
+        "x": 138.75,
+        "y": 190.6362932374588
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 142.5,
+        "y": 191.77306523031228
+      }
+    },
+    {
+      "end": {
+        "x": 135.0,
+        "y": 189.70620706148776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 138.75,
+        "y": 190.6362932374588
+      }
+    },
+    {
+      "end": {
+        "x": 131.25,
+        "y": 188.98280670239916
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 135.0,
+        "y": 189.70620706148776
+      }
+    },
+    {
+      "end": {
+        "x": 127.5,
+        "y": 188.46609216019303
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 131.25,
+        "y": 188.98280670239916
+      }
+    },
+    {
+      "end": {
+        "x": 123.75,
+        "y": 188.15606343486934
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 127.5,
+        "y": 188.46609216019303
+      }
+    },
+    {
+      "end": {
+        "x": 120.0,
+        "y": 188.05272052642815
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 123.75,
+        "y": 188.15606343486934
+      }
+    },
+    {
+      "end": {
+        "x": 116.25,
+        "y": 188.15606343486937
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 120.0,
+        "y": 188.05272052642815
+      }
+    },
+    {
+      "end": {
+        "x": 112.5,
+        "y": 188.46609216019303
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 116.25,
+        "y": 188.15606343486937
+      }
+    },
+    {
+      "end": {
+        "x": 108.75,
+        "y": 188.9828067023992
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 112.5,
+        "y": 188.46609216019303
+      }
+    },
+    {
+      "end": {
+        "x": 105.0,
+        "y": 189.70620706148776
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 108.75,
+        "y": 188.9828067023992
+      }
+    },
+    {
+      "end": {
+        "x": 101.25,
+        "y": 190.63629323745877
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 105.0,
+        "y": 189.70620706148776
+      }
+    },
+    {
+      "end": {
+        "x": 97.5,
+        "y": 191.77306523031228
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 101.25,
+        "y": 190.63629323745877
+      }
+    },
+    {
+      "end": {
+        "x": 93.75,
+        "y": 193.11652304004824
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 97.5,
+        "y": 191.77306523031228
+      }
+    },
+    {
+      "end": {
+        "x": 90.0,
+        "y": 194.66666666666666
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 93.75,
+        "y": 193.11652304004824
+      }
+    },
+    {
+      "end": {
+        "x": 86.25,
+        "y": 196.21681029328508
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 90.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 82.5,
+        "y": 197.560268103021
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 86.25,
+        "y": 196.21681029328508
+      }
+    },
+    {
+      "end": {
+        "x": 78.75,
+        "y": 198.6970400958745
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 82.5,
+        "y": 197.560268103021
+      }
+    },
+    {
+      "end": {
+        "x": 75.0,
+        "y": 199.62712627184555
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 78.75,
+        "y": 198.6970400958745
+      }
+    },
+    {
+      "end": {
+        "x": 71.25,
+        "y": 200.35052663093416
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 75.0,
+        "y": 199.62712627184555
+      }
+    },
+    {
+      "end": {
+        "x": 67.5,
+        "y": 200.8672411731403
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 71.25,
+        "y": 200.35052663093416
+      }
+    },
+    {
+      "end": {
+        "x": 63.75,
+        "y": 201.17726989846398
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 67.5,
+        "y": 200.8672411731403
+      }
+    },
+    {
+      "end": {
+        "x": 60.0,
+        "y": 201.28061280690517
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 63.75,
+        "y": 201.17726989846398
+      }
+    },
+    {
+      "end": {
+        "x": 56.25,
+        "y": 201.17726989846395
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 60.0,
+        "y": 201.28061280690517
+      }
+    },
+    {
+      "end": {
+        "x": 52.5,
+        "y": 200.8672411731403
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 56.25,
+        "y": 201.17726989846395
+      }
+    },
+    {
+      "end": {
+        "x": 48.75,
+        "y": 200.35052663093416
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 52.5,
+        "y": 200.8672411731403
+      }
+    },
+    {
+      "end": {
+        "x": 45.0,
+        "y": 199.62712627184555
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 48.75,
+        "y": 200.35052663093416
+      }
+    },
+    {
+      "end": {
+        "x": 41.25,
+        "y": 198.6970400958745
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 45.0,
+        "y": 199.62712627184555
+      }
+    },
+    {
+      "end": {
+        "x": 37.5,
+        "y": 197.560268103021
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 41.25,
+        "y": 198.6970400958745
+      }
+    },
+    {
+      "end": {
+        "x": 33.75,
+        "y": 196.21681029328508
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 37.5,
+        "y": 197.560268103021
+      }
+    },
+    {
+      "end": {
+        "x": 30.0,
+        "y": 194.66666666666666
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": {
+        "x": 33.75,
+        "y": 196.21681029328508
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-signal-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 137.29005566955308,
+        "y": 126.70158801732896
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 30.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 137.23951071576488,
+        "y": 127.70256433862883
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 137.29005566955308,
+        "y": 126.70158801732896
+      }
+    },
+    {
+      "end": {
+        "x": 137.09115653408804,
+        "y": 128.67462570548247
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 137.23951071576488,
+        "y": 127.70256433862883
+      }
+    },
+    {
+      "end": {
+        "x": 136.52070456519476,
+        "y": 130.51231949772466
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 137.09115653408804,
+        "y": 128.67462570548247
+      }
+    },
+    {
+      "end": {
+        "x": 135.61806791912608,
+        "y": 132.1753012378027
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 136.52070456519476,
+        "y": 130.51231949772466
+      }
+    },
+    {
+      "end": {
+        "x": 134.4226147521348,
+        "y": 133.62420276946375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 135.61806791912608,
+        "y": 132.1753012378027
+      }
+    },
+    {
+      "end": {
+        "x": 132.97371322047374,
+        "y": 134.81965593645504
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 134.4226147521348,
+        "y": 133.62420276946375
+      }
+    },
+    {
+      "end": {
+        "x": 131.3107314803957,
+        "y": 135.72229258252372
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 132.97371322047374,
+        "y": 134.81965593645504
+      }
+    },
+    {
+      "end": {
+        "x": 129.4730376881535,
+        "y": 136.292744551417
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 131.3107314803957,
+        "y": 135.72229258252372
+      }
+    },
+    {
+      "end": {
+        "x": 128.50097632129987,
+        "y": 136.44109873309384
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 129.4730376881535,
+        "y": 136.292744551417
+      }
+    },
+    {
+      "end": {
+        "x": 127.5,
+        "y": 136.49164368688204
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 128.50097632129987,
+        "y": 136.44109873309384
+      }
+    },
+    {
+      "end": {
+        "x": 126.49902367870013,
+        "y": 136.44109873309384
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 127.5,
+        "y": 136.49164368688204
+      }
+    },
+    {
+      "end": {
+        "x": 125.52696231184649,
+        "y": 136.292744551417
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 126.49902367870013,
+        "y": 136.44109873309384
+      }
+    },
+    {
+      "end": {
+        "x": 123.6892685196043,
+        "y": 135.72229258252372
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 125.52696231184649,
+        "y": 136.292744551417
+      }
+    },
+    {
+      "end": {
+        "x": 122.02628677952626,
+        "y": 134.81965593645504
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 123.6892685196043,
+        "y": 135.72229258252372
+      }
+    },
+    {
+      "end": {
+        "x": 120.57738524786521,
+        "y": 133.62420276946375
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 122.02628677952626,
+        "y": 134.81965593645504
+      }
+    },
+    {
+      "end": {
+        "x": 119.38193208087392,
+        "y": 132.1753012378027
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 120.57738524786521,
+        "y": 133.62420276946375
+      }
+    },
+    {
+      "end": {
+        "x": 118.47929543480525,
+        "y": 130.51231949772466
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 119.38193208087392,
+        "y": 132.1753012378027
+      }
+    },
+    {
+      "end": {
+        "x": 117.90884346591196,
+        "y": 128.67462570548247
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 118.47929543480525,
+        "y": 130.51231949772466
+      }
+    },
+    {
+      "end": {
+        "x": 117.76048928423512,
+        "y": 127.70256433862883
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 117.90884346591196,
+        "y": 128.67462570548247
+      }
+    },
+    {
+      "end": {
+        "x": 117.70994433044692,
+        "y": 126.70158801732896
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 117.76048928423512,
+        "y": 127.70256433862883
+      }
+    },
+    {
+      "end": {
+        "x": 117.7604892842351,
+        "y": 125.70061169602909
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 117.70994433044692,
+        "y": 126.70158801732896
+      }
+    },
+    {
+      "end": {
+        "x": 117.90884346591197,
+        "y": 124.72855032917543
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 117.7604892842351,
+        "y": 125.70061169602909
+      }
+    },
+    {
+      "end": {
+        "x": 118.47929543480524,
+        "y": 122.89085653693327
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 117.90884346591197,
+        "y": 124.72855032917543
+      }
+    },
+    {
+      "end": {
+        "x": 119.38193208087394,
+        "y": 121.22787479685523
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 118.47929543480524,
+        "y": 122.89085653693327
+      }
+    },
+    {
+      "end": {
+        "x": 120.57738524786521,
+        "y": 119.77897326519417
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 119.38193208087394,
+        "y": 121.22787479685523
+      }
+    },
+    {
+      "end": {
+        "x": 122.02628677952626,
+        "y": 118.58352009820288
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 120.57738524786521,
+        "y": 119.77897326519417
+      }
+    },
+    {
+      "end": {
+        "x": 123.6892685196043,
+        "y": 117.6808834521342
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 122.02628677952626,
+        "y": 118.58352009820288
+      }
+    },
+    {
+      "end": {
+        "x": 125.52696231184649,
+        "y": 117.11043148324093
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 123.6892685196043,
+        "y": 117.6808834521342
+      }
+    },
+    {
+      "end": {
+        "x": 126.49902367870013,
+        "y": 116.96207730156408
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 125.52696231184649,
+        "y": 117.11043148324093
+      }
+    },
+    {
+      "end": {
+        "x": 127.5,
+        "y": 116.91153234777587
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 126.49902367870013,
+        "y": 116.96207730156408
+      }
+    },
+    {
+      "end": {
+        "x": 128.50097632129985,
+        "y": 116.96207730156407
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 127.5,
+        "y": 116.91153234777587
+      }
+    },
+    {
+      "end": {
+        "x": 129.4730376881535,
+        "y": 117.11043148324093
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 128.50097632129985,
+        "y": 116.96207730156407
+      }
+    },
+    {
+      "end": {
+        "x": 131.3107314803957,
+        "y": 117.6808834521342
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 129.4730376881535,
+        "y": 117.11043148324093
+      }
+    },
+    {
+      "end": {
+        "x": 132.97371322047374,
+        "y": 118.58352009820288
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 131.3107314803957,
+        "y": 117.6808834521342
+      }
+    },
+    {
+      "end": {
+        "x": 134.4226147521348,
+        "y": 119.77897326519417
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 132.97371322047374,
+        "y": 118.58352009820288
+      }
+    },
+    {
+      "end": {
+        "x": 135.61806791912608,
+        "y": 121.22787479685525
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 134.4226147521348,
+        "y": 119.77897326519417
+      }
+    },
+    {
+      "end": {
+        "x": 136.52070456519476,
+        "y": 122.89085653693326
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 135.61806791912608,
+        "y": 121.22787479685525
+      }
+    },
+    {
+      "end": {
+        "x": 137.09115653408804,
+        "y": 124.72855032917543
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 136.52070456519476,
+        "y": 122.89085653693326
+      }
+    },
+    {
+      "end": {
+        "x": 137.23951071576488,
+        "y": 125.70061169602909
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 137.09115653408804,
+        "y": 124.72855032917543
+      }
+    },
+    {
+      "end": {
+        "x": 137.29005566955308,
+        "y": 126.70158801732896
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": {
+        "x": 137.23951071576488,
+        "y": 125.70061169602909
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-00",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 216.4405331524753,
+        "y": 160.90120626022374
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 137.29005566955308,
+        "y": 126.70158801732896
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 216.3096844097102,
+        "y": 162.19919833203144
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 216.4405331524753,
+        "y": 160.90120626022374
+      }
+    },
+    {
+      "end": {
+        "x": 215.93440413127644,
+        "y": 163.40815241692422
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 216.3096844097102,
+        "y": 162.19919833203144
+      }
+    },
+    {
+      "end": {
+        "x": 215.34059124196628,
+        "y": 164.50216959010976
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 215.93440413127644,
+        "y": 163.40815241692422
+      }
+    },
+    {
+      "end": {
+        "x": 214.55414466657206,
+        "y": 165.4553509267958
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 215.34059124196628,
+        "y": 164.50216959010976
+      }
+    },
+    {
+      "end": {
+        "x": 213.600963329886,
+        "y": 166.24179750219002
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 214.55414466657206,
+        "y": 165.4553509267958
+      }
+    },
+    {
+      "end": {
+        "x": 212.50694615670045,
+        "y": 166.83561039150015
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 213.600963329886,
+        "y": 166.24179750219002
+      }
+    },
+    {
+      "end": {
+        "x": 211.2979920718077,
+        "y": 167.21089066993395
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 212.50694615670045,
+        "y": 166.83561039150015
+      }
+    },
+    {
+      "end": {
+        "x": 210.0,
+        "y": 167.34173941269904
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 211.2979920718077,
+        "y": 167.21089066993395
+      }
+    },
+    {
+      "end": {
+        "x": 208.7020079281923,
+        "y": 167.21089066993397
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 210.0,
+        "y": 167.34173941269904
+      }
+    },
+    {
+      "end": {
+        "x": 207.49305384329952,
+        "y": 166.83561039150015
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 208.7020079281923,
+        "y": 167.21089066993397
+      }
+    },
+    {
+      "end": {
+        "x": 206.399036670114,
+        "y": 166.24179750219002
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 207.49305384329952,
+        "y": 166.83561039150015
+      }
+    },
+    {
+      "end": {
+        "x": 205.44585533342791,
+        "y": 165.4553509267958
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 206.399036670114,
+        "y": 166.24179750219002
+      }
+    },
+    {
+      "end": {
+        "x": 204.65940875803375,
+        "y": 164.50216959010976
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 205.44585533342791,
+        "y": 165.4553509267958
+      }
+    },
+    {
+      "end": {
+        "x": 204.06559586872356,
+        "y": 163.40815241692422
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 204.65940875803375,
+        "y": 164.50216959010976
+      }
+    },
+    {
+      "end": {
+        "x": 203.6903155902898,
+        "y": 162.19919833203144
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 204.06559586872356,
+        "y": 163.40815241692422
+      }
+    },
+    {
+      "end": {
+        "x": 203.5594668475247,
+        "y": 160.90120626022374
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 203.6903155902898,
+        "y": 162.19919833203144
+      }
+    },
+    {
+      "end": {
+        "x": 203.6903155902898,
+        "y": 159.60321418841605
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 203.5594668475247,
+        "y": 160.90120626022374
+      }
+    },
+    {
+      "end": {
+        "x": 204.06559586872356,
+        "y": 158.39426010352327
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 203.6903155902898,
+        "y": 159.60321418841605
+      }
+    },
+    {
+      "end": {
+        "x": 204.65940875803372,
+        "y": 157.30024293033773
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 204.06559586872356,
+        "y": 158.39426010352327
+      }
+    },
+    {
+      "end": {
+        "x": 205.44585533342794,
+        "y": 156.3470615936517
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 204.65940875803372,
+        "y": 157.30024293033773
+      }
+    },
+    {
+      "end": {
+        "x": 206.399036670114,
+        "y": 155.56061501825747
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 205.44585533342794,
+        "y": 156.3470615936517
+      }
+    },
+    {
+      "end": {
+        "x": 207.49305384329955,
+        "y": 154.9668021289473
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 206.399036670114,
+        "y": 155.56061501825747
+      }
+    },
+    {
+      "end": {
+        "x": 208.7020079281923,
+        "y": 154.59152185051354
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 207.49305384329955,
+        "y": 154.9668021289473
+      }
+    },
+    {
+      "end": {
+        "x": 210.0,
+        "y": 154.46067310774845
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 208.7020079281923,
+        "y": 154.59152185051354
+      }
+    },
+    {
+      "end": {
+        "x": 211.2979920718077,
+        "y": 154.59152185051354
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 210.0,
+        "y": 154.46067310774845
+      }
+    },
+    {
+      "end": {
+        "x": 212.50694615670048,
+        "y": 154.96680212894728
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 211.2979920718077,
+        "y": 154.59152185051354
+      }
+    },
+    {
+      "end": {
+        "x": 213.600963329886,
+        "y": 155.56061501825747
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 212.50694615670048,
+        "y": 154.96680212894728
+      }
+    },
+    {
+      "end": {
+        "x": 214.55414466657209,
+        "y": 156.3470615936517
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 213.600963329886,
+        "y": 155.56061501825747
+      }
+    },
+    {
+      "end": {
+        "x": 215.34059124196625,
+        "y": 157.30024293033773
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 214.55414466657209,
+        "y": 156.3470615936517
+      }
+    },
+    {
+      "end": {
+        "x": 215.93440413127644,
+        "y": 158.39426010352327
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 215.34059124196625,
+        "y": 157.30024293033773
+      }
+    },
+    {
+      "end": {
+        "x": 216.3096844097102,
+        "y": 159.60321418841605
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 215.93440413127644,
+        "y": 158.39426010352327
+      }
+    },
+    {
+      "end": {
+        "x": 216.4405331524753,
+        "y": 160.90120626022374
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": {
+        "x": 216.3096844097102,
+        "y": 159.60321418841605
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-01",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 302.38055027049984,
+        "y": 171.95573319384607
+      },
+      "kind": "travel",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 216.4405331524753,
+        "y": 160.90120626022374
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_down",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": null
+    },
+    {
+      "end": {
+        "x": 302.3295381032884,
+        "y": 172.9659620624052
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 302.38055027049984,
+        "y": 171.95573319384607
+      }
+    },
+    {
+      "end": {
+        "x": 302.1798126063788,
+        "y": 173.94700870048285
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 302.3295381032884,
+        "y": 172.9659620624052
+      }
+    },
+    {
+      "end": {
+        "x": 301.6040876518124,
+        "y": 175.80168925684615
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 302.1798126063788,
+        "y": 173.94700870048285
+      }
+    },
+    {
+      "end": {
+        "x": 300.69310746349606,
+        "y": 177.48004280624065
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 301.6040876518124,
+        "y": 175.80168925684615
+      }
+    },
+    {
+      "end": {
+        "x": 299.486604098125,
+        "y": 178.94233729197106
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 300.69310746349606,
+        "y": 177.48004280624065
+      }
+    },
+    {
+      "end": {
+        "x": 298.0243096123946,
+        "y": 180.14884065734213
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 299.486604098125,
+        "y": 178.94233729197106
+      }
+    },
+    {
+      "end": {
+        "x": 296.3459560630001,
+        "y": 181.05982084565846
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 298.0243096123946,
+        "y": 180.14884065734213
+      }
+    },
+    {
+      "end": {
+        "x": 294.4912755066368,
+        "y": 181.63554580022483
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 296.3459560630001,
+        "y": 181.05982084565846
+      }
+    },
+    {
+      "end": {
+        "x": 293.5102288685591,
+        "y": 181.7852712971345
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 294.4912755066368,
+        "y": 181.63554580022483
+      }
+    },
+    {
+      "end": {
+        "x": 292.5,
+        "y": 181.8362834643459
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 293.5102288685591,
+        "y": 181.7852712971345
+      }
+    },
+    {
+      "end": {
+        "x": 291.4897711314409,
+        "y": 181.7852712971345
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 292.5,
+        "y": 181.8362834643459
+      }
+    },
+    {
+      "end": {
+        "x": 290.5087244933632,
+        "y": 181.63554580022483
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 291.4897711314409,
+        "y": 181.7852712971345
+      }
+    },
+    {
+      "end": {
+        "x": 288.6540439369999,
+        "y": 181.05982084565846
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 290.5087244933632,
+        "y": 181.63554580022483
+      }
+    },
+    {
+      "end": {
+        "x": 286.9756903876054,
+        "y": 180.1488406573421
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 288.6540439369999,
+        "y": 181.05982084565846
+      }
+    },
+    {
+      "end": {
+        "x": 285.513395901875,
+        "y": 178.94233729197109
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 286.9756903876054,
+        "y": 180.1488406573421
+      }
+    },
+    {
+      "end": {
+        "x": 284.30689253650394,
+        "y": 177.48004280624068
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 285.513395901875,
+        "y": 178.94233729197109
+      }
+    },
+    {
+      "end": {
+        "x": 283.3959123481876,
+        "y": 175.80168925684615
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 284.30689253650394,
+        "y": 177.48004280624068
+      }
+    },
+    {
+      "end": {
+        "x": 282.8201873936212,
+        "y": 173.94700870048285
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 283.3959123481876,
+        "y": 175.80168925684615
+      }
+    },
+    {
+      "end": {
+        "x": 282.6704618967116,
+        "y": 172.9659620624052
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 282.8201873936212,
+        "y": 173.94700870048285
+      }
+    },
+    {
+      "end": {
+        "x": 282.61944972950016,
+        "y": 171.95573319384607
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 282.6704618967116,
+        "y": 172.9659620624052
+      }
+    },
+    {
+      "end": {
+        "x": 282.6704618967116,
+        "y": 170.94550432528695
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 282.61944972950016,
+        "y": 171.95573319384607
+      }
+    },
+    {
+      "end": {
+        "x": 282.8201873936212,
+        "y": 169.96445768720932
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 282.6704618967116,
+        "y": 170.94550432528695
+      }
+    },
+    {
+      "end": {
+        "x": 283.3959123481876,
+        "y": 168.109777130846
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 282.8201873936212,
+        "y": 169.96445768720932
+      }
+    },
+    {
+      "end": {
+        "x": 284.30689253650394,
+        "y": 166.4314235814515
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 283.3959123481876,
+        "y": 168.109777130846
+      }
+    },
+    {
+      "end": {
+        "x": 285.513395901875,
+        "y": 164.9691290957211
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 284.30689253650394,
+        "y": 166.4314235814515
+      }
+    },
+    {
+      "end": {
+        "x": 286.9756903876054,
+        "y": 163.76262573035
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 285.513395901875,
+        "y": 164.9691290957211
+      }
+    },
+    {
+      "end": {
+        "x": 288.6540439369999,
+        "y": 162.85164554203368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 286.9756903876054,
+        "y": 163.76262573035
+      }
+    },
+    {
+      "end": {
+        "x": 290.5087244933632,
+        "y": 162.2759205874673
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 288.6540439369999,
+        "y": 162.85164554203368
+      }
+    },
+    {
+      "end": {
+        "x": 291.4897711314409,
+        "y": 162.12619509055764
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 290.5087244933632,
+        "y": 162.2759205874673
+      }
+    },
+    {
+      "end": {
+        "x": 292.5,
+        "y": 162.07518292334623
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 291.4897711314409,
+        "y": 162.12619509055764
+      }
+    },
+    {
+      "end": {
+        "x": 293.5102288685591,
+        "y": 162.12619509055767
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 292.5,
+        "y": 162.07518292334623
+      }
+    },
+    {
+      "end": {
+        "x": 294.4912755066368,
+        "y": 162.2759205874673
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 293.5102288685591,
+        "y": 162.12619509055767
+      }
+    },
+    {
+      "end": {
+        "x": 296.3459560630001,
+        "y": 162.85164554203368
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 294.4912755066368,
+        "y": 162.2759205874673
+      }
+    },
+    {
+      "end": {
+        "x": 298.0243096123946,
+        "y": 163.76262573035004
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 296.3459560630001,
+        "y": 162.85164554203368
+      }
+    },
+    {
+      "end": {
+        "x": 299.486604098125,
+        "y": 164.96912909572106
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 298.0243096123946,
+        "y": 163.76262573035004
+      }
+    },
+    {
+      "end": {
+        "x": 300.69310746349606,
+        "y": 166.43142358145147
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 299.486604098125,
+        "y": 164.96912909572106
+      }
+    },
+    {
+      "end": {
+        "x": 301.6040876518124,
+        "y": 168.109777130846
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 300.69310746349606,
+        "y": 166.43142358145147
+      }
+    },
+    {
+      "end": {
+        "x": 302.1798126063788,
+        "y": 169.9644576872093
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 301.6040876518124,
+        "y": 168.109777130846
+      }
+    },
+    {
+      "end": {
+        "x": 302.3295381032884,
+        "y": 170.94550432528695
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 302.1798126063788,
+        "y": 169.9644576872093
+      }
+    },
+    {
+      "end": {
+        "x": 302.38055027049984,
+        "y": 171.95573319384607
+      },
+      "kind": "draw",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": {
+        "x": 302.3295381032884,
+        "y": 170.94550432528695
+      }
+    },
+    {
+      "end": null,
+      "kind": "pen_up",
+      "message": null,
+      "pass_id": "pass-cyan",
+      "path_id": "accent-orbit-02",
+      "start": null
+    }
+  ],
+  "normalized_sha256": "64eed42d6860971a3185dd011cf45f74cba0694220576fa21649303bc52c92b5",
+  "page": {
+    "height_mm": 297.0,
+    "margin_mm": 10.0,
+    "orientation": "landscape",
+    "preset": "A3",
+    "schema_version": 1,
+    "width_mm": 420.0
+  },
+  "passes": [
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Black",
+      "ordered_paths": [
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "structure-frame-00",
+          "points": [
+            {
+              "x": 14.0,
+              "y": 10.0
+            },
+            {
+              "x": 406.0,
+              "y": 10.0
+            },
+            {
+              "x": 406.9375,
+              "y": 10.0625
+            },
+            {
+              "x": 407.75,
+              "y": 10.25
+            },
+            {
+              "x": 408.4375,
+              "y": 10.5625
+            },
+            {
+              "x": 409.0,
+              "y": 11.0
+            },
+            {
+              "x": 409.4375,
+              "y": 11.5625
+            },
+            {
+              "x": 409.75,
+              "y": 12.25
+            },
+            {
+              "x": 409.9375,
+              "y": 13.0625
+            },
+            {
+              "x": 410.0,
+              "y": 14.0
+            },
+            {
+              "x": 410.0,
+              "y": 283.0
+            },
+            {
+              "x": 409.9375,
+              "y": 283.9375
+            },
+            {
+              "x": 409.75,
+              "y": 284.75
+            },
+            {
+              "x": 409.4375,
+              "y": 285.4375
+            },
+            {
+              "x": 409.0,
+              "y": 286.0
+            },
+            {
+              "x": 408.4375,
+              "y": 286.4375
+            },
+            {
+              "x": 407.75,
+              "y": 286.75
+            },
+            {
+              "x": 406.9375,
+              "y": 286.9375
+            },
+            {
+              "x": 406.0,
+              "y": 287.0
+            },
+            {
+              "x": 14.0,
+              "y": 287.0
+            },
+            {
+              "x": 13.0625,
+              "y": 286.9375
+            },
+            {
+              "x": 12.25,
+              "y": 286.75
+            },
+            {
+              "x": 11.5625,
+              "y": 286.4375
+            },
+            {
+              "x": 11.0,
+              "y": 286.0
+            },
+            {
+              "x": 10.5625,
+              "y": 285.4375
+            },
+            {
+              "x": 10.25,
+              "y": 284.75
+            },
+            {
+              "x": 10.0625,
+              "y": 283.9375
+            },
+            {
+              "x": 10.0,
+              "y": 283.0
+            },
+            {
+              "x": 10.0,
+              "y": 14.0
+            },
+            {
+              "x": 10.0625,
+              "y": 13.0625
+            },
+            {
+              "x": 10.25,
+              "y": 12.25
+            },
+            {
+              "x": 10.5625,
+              "y": 11.5625
+            },
+            {
+              "x": 11.0,
+              "y": 11.0
+            },
+            {
+              "x": 11.5625,
+              "y": 10.5625
+            },
+            {
+              "x": 12.25,
+              "y": 10.25
+            },
+            {
+              "x": 13.0625,
+              "y": 10.0625
+            },
+            {
+              "x": 14.0,
+              "y": 10.0
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-structure"
+        },
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "structure-frame-01",
+          "points": [
+            {
+              "x": 23.0,
+              "y": 18.0
+            },
+            {
+              "x": 397.0,
+              "y": 18.0
+            },
+            {
+              "x": 398.171875,
+              "y": 18.078125
+            },
+            {
+              "x": 399.1875,
+              "y": 18.3125
+            },
+            {
+              "x": 400.046875,
+              "y": 18.703125
+            },
+            {
+              "x": 400.75,
+              "y": 19.25
+            },
+            {
+              "x": 401.296875,
+              "y": 19.953125
+            },
+            {
+              "x": 401.6875,
+              "y": 20.8125
+            },
+            {
+              "x": 401.921875,
+              "y": 21.828125
+            },
+            {
+              "x": 402.0,
+              "y": 23.0
+            },
+            {
+              "x": 402.0,
+              "y": 274.0
+            },
+            {
+              "x": 401.921875,
+              "y": 275.171875
+            },
+            {
+              "x": 401.6875,
+              "y": 276.1875
+            },
+            {
+              "x": 401.296875,
+              "y": 277.046875
+            },
+            {
+              "x": 400.75,
+              "y": 277.75
+            },
+            {
+              "x": 400.046875,
+              "y": 278.296875
+            },
+            {
+              "x": 399.1875,
+              "y": 278.6875
+            },
+            {
+              "x": 398.171875,
+              "y": 278.921875
+            },
+            {
+              "x": 397.0,
+              "y": 279.0
+            },
+            {
+              "x": 23.0,
+              "y": 279.0
+            },
+            {
+              "x": 21.828125,
+              "y": 278.921875
+            },
+            {
+              "x": 20.8125,
+              "y": 278.6875
+            },
+            {
+              "x": 19.953125,
+              "y": 278.296875
+            },
+            {
+              "x": 19.25,
+              "y": 277.75
+            },
+            {
+              "x": 18.703125,
+              "y": 277.046875
+            },
+            {
+              "x": 18.3125,
+              "y": 276.1875
+            },
+            {
+              "x": 18.078125,
+              "y": 275.171875
+            },
+            {
+              "x": 18.0,
+              "y": 274.0
+            },
+            {
+              "x": 18.0,
+              "y": 23.0
+            },
+            {
+              "x": 18.078125,
+              "y": 21.828125
+            },
+            {
+              "x": 18.3125,
+              "y": 20.8125
+            },
+            {
+              "x": 18.703125,
+              "y": 19.953125
+            },
+            {
+              "x": 19.25,
+              "y": 19.25
+            },
+            {
+              "x": 19.953125,
+              "y": 18.703125
+            },
+            {
+              "x": 20.8125,
+              "y": 18.3125
+            },
+            {
+              "x": 21.828125,
+              "y": 18.078125
+            },
+            {
+              "x": 23.0,
+              "y": 18.0
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-structure"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "structure-corridor-00",
+          "points": [
+            {
+              "x": 51.97717335818065,
+              "y": 45.0
+            },
+            {
+              "x": 51.97717335818065,
+              "y": 234.0
+            },
+            {
+              "x": 75.97717335818065,
+              "y": 242.0
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-structure"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "structure-corridor-01",
+          "points": [
+            {
+              "x": 183.45683404284483,
+              "y": 244.0
+            },
+            {
+              "x": 159.45683404284483,
+              "y": 252.0
+            },
+            {
+              "x": 159.45683404284483,
+              "y": 63.0
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-structure"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "structure-corridor-02",
+          "points": [
+            {
+              "x": 259.8902205585578,
+              "y": 45.0
+            },
+            {
+              "x": 259.8902205585578,
+              "y": 234.0
+            },
+            {
+              "x": 283.8902205585578,
+              "y": 242.0
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-structure"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "structure-corridor-03",
+          "points": [
+            {
+              "x": 389.1322530399862,
+              "y": 244.0
+            },
+            {
+              "x": 365.1322530399862,
+              "y": 252.0
+            },
+            {
+              "x": 365.1322530399862,
+              "y": 63.0
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-structure"
+        }
+      ],
+      "pass_id": "pass-black",
+      "pen_profile_id": "black-05",
+      "preview_color": "#171717",
+      "semantic_role": "structure",
+      "source_layer_ids": [
+        "layer-structure"
+      ]
+    },
+    {
+      "draw_feed_mm_min": 1800.0,
+      "enabled": true,
+      "name": "Cyan",
+      "ordered_paths": [
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "accent-signal-00",
+          "points": [
+            {
+              "x": 30.0,
+              "y": 102.33333333333333
+            },
+            {
+              "x": 33.75,
+              "y": 103.85963172642985
+            },
+            {
+              "x": 37.5,
+              "y": 105.18242366711351
+            },
+            {
+              "x": 41.25,
+              "y": 106.30170915538429
+            },
+            {
+              "x": 45.0,
+              "y": 107.21748819124221
+            },
+            {
+              "x": 48.75,
+              "y": 107.92976077468727
+            },
+            {
+              "x": 52.5,
+              "y": 108.43852690571944
+            },
+            {
+              "x": 56.25,
+              "y": 108.74378658433874
+            },
+            {
+              "x": 60.0,
+              "y": 108.84553981054519
+            },
+            {
+              "x": 63.75,
+              "y": 108.74378658433875
+            },
+            {
+              "x": 67.5,
+              "y": 108.43852690571943
+            },
+            {
+              "x": 71.25,
+              "y": 107.92976077468725
+            },
+            {
+              "x": 75.0,
+              "y": 107.21748819124221
+            },
+            {
+              "x": 78.75,
+              "y": 106.30170915538429
+            },
+            {
+              "x": 82.5,
+              "y": 105.18242366711351
+            },
+            {
+              "x": 86.25,
+              "y": 103.85963172642985
+            },
+            {
+              "x": 90.0,
+              "y": 102.33333333333333
+            },
+            {
+              "x": 93.75,
+              "y": 100.8070349402368
+            },
+            {
+              "x": 97.5,
+              "y": 99.48424299955315
+            },
+            {
+              "x": 101.25,
+              "y": 98.36495751128237
+            },
+            {
+              "x": 105.0,
+              "y": 97.44917847542445
+            },
+            {
+              "x": 108.75,
+              "y": 96.7369058919794
+            },
+            {
+              "x": 112.5,
+              "y": 96.22813976094722
+            },
+            {
+              "x": 116.25,
+              "y": 95.92288008232791
+            },
+            {
+              "x": 120.0,
+              "y": 95.8211268561215
+            },
+            {
+              "x": 123.75,
+              "y": 95.92288008232791
+            },
+            {
+              "x": 127.5,
+              "y": 96.22813976094722
+            },
+            {
+              "x": 131.25,
+              "y": 96.7369058919794
+            },
+            {
+              "x": 135.0,
+              "y": 97.44917847542445
+            },
+            {
+              "x": 138.75,
+              "y": 98.36495751128236
+            },
+            {
+              "x": 142.5,
+              "y": 99.48424299955315
+            },
+            {
+              "x": 146.25,
+              "y": 100.8070349402368
+            },
+            {
+              "x": 150.0,
+              "y": 102.33333333333333
+            },
+            {
+              "x": 153.75,
+              "y": 103.85963172642985
+            },
+            {
+              "x": 157.5,
+              "y": 105.18242366711351
+            },
+            {
+              "x": 161.25,
+              "y": 106.30170915538429
+            },
+            {
+              "x": 165.0,
+              "y": 107.21748819124221
+            },
+            {
+              "x": 168.75,
+              "y": 107.92976077468727
+            },
+            {
+              "x": 172.5,
+              "y": 108.43852690571944
+            },
+            {
+              "x": 176.25,
+              "y": 108.74378658433874
+            },
+            {
+              "x": 180.0,
+              "y": 108.84553981054519
+            },
+            {
+              "x": 183.75,
+              "y": 108.74378658433875
+            },
+            {
+              "x": 187.5,
+              "y": 108.43852690571943
+            },
+            {
+              "x": 191.25,
+              "y": 107.92976077468725
+            },
+            {
+              "x": 195.0,
+              "y": 107.21748819124221
+            },
+            {
+              "x": 198.75,
+              "y": 106.30170915538429
+            },
+            {
+              "x": 202.5,
+              "y": 105.18242366711351
+            },
+            {
+              "x": 206.25,
+              "y": 103.85963172642985
+            },
+            {
+              "x": 210.0,
+              "y": 102.33333333333333
+            },
+            {
+              "x": 213.75,
+              "y": 100.8070349402368
+            },
+            {
+              "x": 217.5,
+              "y": 99.48424299955315
+            },
+            {
+              "x": 221.25,
+              "y": 98.36495751128237
+            },
+            {
+              "x": 225.0,
+              "y": 97.44917847542445
+            },
+            {
+              "x": 228.75,
+              "y": 96.7369058919794
+            },
+            {
+              "x": 232.5,
+              "y": 96.22813976094722
+            },
+            {
+              "x": 236.25,
+              "y": 95.92288008232791
+            },
+            {
+              "x": 240.0,
+              "y": 95.8211268561215
+            },
+            {
+              "x": 243.75,
+              "y": 95.92288008232791
+            },
+            {
+              "x": 247.5,
+              "y": 96.22813976094722
+            },
+            {
+              "x": 251.25,
+              "y": 96.7369058919794
+            },
+            {
+              "x": 255.0,
+              "y": 97.44917847542445
+            },
+            {
+              "x": 258.75,
+              "y": 98.36495751128236
+            },
+            {
+              "x": 262.5,
+              "y": 99.48424299955315
+            },
+            {
+              "x": 266.25,
+              "y": 100.8070349402368
+            },
+            {
+              "x": 270.0,
+              "y": 102.33333333333333
+            },
+            {
+              "x": 273.75,
+              "y": 103.85963172642985
+            },
+            {
+              "x": 277.5,
+              "y": 105.18242366711351
+            },
+            {
+              "x": 281.25,
+              "y": 106.30170915538429
+            },
+            {
+              "x": 285.0,
+              "y": 107.21748819124221
+            },
+            {
+              "x": 288.75,
+              "y": 107.92976077468727
+            },
+            {
+              "x": 292.5,
+              "y": 108.43852690571944
+            },
+            {
+              "x": 296.25,
+              "y": 108.74378658433874
+            },
+            {
+              "x": 300.0,
+              "y": 108.84553981054519
+            },
+            {
+              "x": 303.75,
+              "y": 108.74378658433875
+            },
+            {
+              "x": 307.5,
+              "y": 108.43852690571943
+            },
+            {
+              "x": 311.25,
+              "y": 107.92976077468725
+            },
+            {
+              "x": 315.0,
+              "y": 107.21748819124221
+            },
+            {
+              "x": 318.75,
+              "y": 106.30170915538429
+            },
+            {
+              "x": 322.5,
+              "y": 105.18242366711351
+            },
+            {
+              "x": 326.25,
+              "y": 103.85963172642985
+            },
+            {
+              "x": 330.0,
+              "y": 102.33333333333333
+            },
+            {
+              "x": 333.75,
+              "y": 100.8070349402368
+            },
+            {
+              "x": 337.5,
+              "y": 99.48424299955315
+            },
+            {
+              "x": 341.25,
+              "y": 98.36495751128237
+            },
+            {
+              "x": 345.0,
+              "y": 97.44917847542445
+            },
+            {
+              "x": 348.75,
+              "y": 96.7369058919794
+            },
+            {
+              "x": 352.5,
+              "y": 96.22813976094722
+            },
+            {
+              "x": 356.25,
+              "y": 95.92288008232791
+            },
+            {
+              "x": 360.0,
+              "y": 95.8211268561215
+            },
+            {
+              "x": 363.75,
+              "y": 95.92288008232791
+            },
+            {
+              "x": 367.5,
+              "y": 96.22813976094722
+            },
+            {
+              "x": 371.25,
+              "y": 96.7369058919794
+            },
+            {
+              "x": 375.0,
+              "y": 97.44917847542445
+            },
+            {
+              "x": 378.75,
+              "y": 98.36495751128236
+            },
+            {
+              "x": 382.5,
+              "y": 99.48424299955315
+            },
+            {
+              "x": 386.25,
+              "y": 100.8070349402368
+            },
+            {
+              "x": 390.0,
+              "y": 102.33333333333333
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-accent"
+        },
+        {
+          "closed": false,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "accent-signal-01",
+          "points": [
+            {
+              "x": 390.0,
+              "y": 194.66666666666666
+            },
+            {
+              "x": 386.25,
+              "y": 193.11652304004826
+            },
+            {
+              "x": 382.5,
+              "y": 191.77306523031228
+            },
+            {
+              "x": 378.75,
+              "y": 190.6362932374588
+            },
+            {
+              "x": 375.0,
+              "y": 189.70620706148776
+            },
+            {
+              "x": 371.25,
+              "y": 188.98280670239916
+            },
+            {
+              "x": 367.5,
+              "y": 188.46609216019303
+            },
+            {
+              "x": 363.75,
+              "y": 188.15606343486934
+            },
+            {
+              "x": 360.0,
+              "y": 188.05272052642815
+            },
+            {
+              "x": 356.25,
+              "y": 188.15606343486937
+            },
+            {
+              "x": 352.5,
+              "y": 188.46609216019303
+            },
+            {
+              "x": 348.75,
+              "y": 188.9828067023992
+            },
+            {
+              "x": 345.0,
+              "y": 189.70620706148776
+            },
+            {
+              "x": 341.25,
+              "y": 190.63629323745877
+            },
+            {
+              "x": 337.5,
+              "y": 191.77306523031228
+            },
+            {
+              "x": 333.75,
+              "y": 193.11652304004824
+            },
+            {
+              "x": 330.0,
+              "y": 194.66666666666666
+            },
+            {
+              "x": 326.25,
+              "y": 196.21681029328508
+            },
+            {
+              "x": 322.5,
+              "y": 197.560268103021
+            },
+            {
+              "x": 318.75,
+              "y": 198.6970400958745
+            },
+            {
+              "x": 315.0,
+              "y": 199.62712627184555
+            },
+            {
+              "x": 311.25,
+              "y": 200.35052663093416
+            },
+            {
+              "x": 307.5,
+              "y": 200.8672411731403
+            },
+            {
+              "x": 303.75,
+              "y": 201.17726989846398
+            },
+            {
+              "x": 300.0,
+              "y": 201.28061280690517
+            },
+            {
+              "x": 296.25,
+              "y": 201.17726989846395
+            },
+            {
+              "x": 292.5,
+              "y": 200.8672411731403
+            },
+            {
+              "x": 288.75,
+              "y": 200.35052663093416
+            },
+            {
+              "x": 285.0,
+              "y": 199.62712627184555
+            },
+            {
+              "x": 281.25,
+              "y": 198.6970400958745
+            },
+            {
+              "x": 277.5,
+              "y": 197.560268103021
+            },
+            {
+              "x": 273.75,
+              "y": 196.21681029328508
+            },
+            {
+              "x": 270.0,
+              "y": 194.66666666666666
+            },
+            {
+              "x": 266.25,
+              "y": 193.11652304004826
+            },
+            {
+              "x": 262.5,
+              "y": 191.77306523031228
+            },
+            {
+              "x": 258.75,
+              "y": 190.6362932374588
+            },
+            {
+              "x": 255.0,
+              "y": 189.70620706148776
+            },
+            {
+              "x": 251.25,
+              "y": 188.98280670239916
+            },
+            {
+              "x": 247.5,
+              "y": 188.46609216019303
+            },
+            {
+              "x": 243.75,
+              "y": 188.15606343486934
+            },
+            {
+              "x": 240.0,
+              "y": 188.05272052642815
+            },
+            {
+              "x": 236.25,
+              "y": 188.15606343486937
+            },
+            {
+              "x": 232.5,
+              "y": 188.46609216019303
+            },
+            {
+              "x": 228.75,
+              "y": 188.9828067023992
+            },
+            {
+              "x": 225.0,
+              "y": 189.70620706148776
+            },
+            {
+              "x": 221.25,
+              "y": 190.63629323745877
+            },
+            {
+              "x": 217.5,
+              "y": 191.77306523031228
+            },
+            {
+              "x": 213.75,
+              "y": 193.11652304004824
+            },
+            {
+              "x": 210.0,
+              "y": 194.66666666666666
+            },
+            {
+              "x": 206.25,
+              "y": 196.21681029328508
+            },
+            {
+              "x": 202.5,
+              "y": 197.560268103021
+            },
+            {
+              "x": 198.75,
+              "y": 198.6970400958745
+            },
+            {
+              "x": 195.0,
+              "y": 199.62712627184555
+            },
+            {
+              "x": 191.25,
+              "y": 200.35052663093416
+            },
+            {
+              "x": 187.5,
+              "y": 200.8672411731403
+            },
+            {
+              "x": 183.75,
+              "y": 201.17726989846398
+            },
+            {
+              "x": 180.0,
+              "y": 201.28061280690517
+            },
+            {
+              "x": 176.25,
+              "y": 201.17726989846395
+            },
+            {
+              "x": 172.5,
+              "y": 200.8672411731403
+            },
+            {
+              "x": 168.75,
+              "y": 200.35052663093416
+            },
+            {
+              "x": 165.0,
+              "y": 199.62712627184555
+            },
+            {
+              "x": 161.25,
+              "y": 198.6970400958745
+            },
+            {
+              "x": 157.5,
+              "y": 197.560268103021
+            },
+            {
+              "x": 153.75,
+              "y": 196.21681029328508
+            },
+            {
+              "x": 150.0,
+              "y": 194.66666666666666
+            },
+            {
+              "x": 146.25,
+              "y": 193.11652304004826
+            },
+            {
+              "x": 142.5,
+              "y": 191.77306523031228
+            },
+            {
+              "x": 138.75,
+              "y": 190.6362932374588
+            },
+            {
+              "x": 135.0,
+              "y": 189.70620706148776
+            },
+            {
+              "x": 131.25,
+              "y": 188.98280670239916
+            },
+            {
+              "x": 127.5,
+              "y": 188.46609216019303
+            },
+            {
+              "x": 123.75,
+              "y": 188.15606343486934
+            },
+            {
+              "x": 120.0,
+              "y": 188.05272052642815
+            },
+            {
+              "x": 116.25,
+              "y": 188.15606343486937
+            },
+            {
+              "x": 112.5,
+              "y": 188.46609216019303
+            },
+            {
+              "x": 108.75,
+              "y": 188.9828067023992
+            },
+            {
+              "x": 105.0,
+              "y": 189.70620706148776
+            },
+            {
+              "x": 101.25,
+              "y": 190.63629323745877
+            },
+            {
+              "x": 97.5,
+              "y": 191.77306523031228
+            },
+            {
+              "x": 93.75,
+              "y": 193.11652304004824
+            },
+            {
+              "x": 90.0,
+              "y": 194.66666666666666
+            },
+            {
+              "x": 86.25,
+              "y": 196.21681029328508
+            },
+            {
+              "x": 82.5,
+              "y": 197.560268103021
+            },
+            {
+              "x": 78.75,
+              "y": 198.6970400958745
+            },
+            {
+              "x": 75.0,
+              "y": 199.62712627184555
+            },
+            {
+              "x": 71.25,
+              "y": 200.35052663093416
+            },
+            {
+              "x": 67.5,
+              "y": 200.8672411731403
+            },
+            {
+              "x": 63.75,
+              "y": 201.17726989846398
+            },
+            {
+              "x": 60.0,
+              "y": 201.28061280690517
+            },
+            {
+              "x": 56.25,
+              "y": 201.17726989846395
+            },
+            {
+              "x": 52.5,
+              "y": 200.8672411731403
+            },
+            {
+              "x": 48.75,
+              "y": 200.35052663093416
+            },
+            {
+              "x": 45.0,
+              "y": 199.62712627184555
+            },
+            {
+              "x": 41.25,
+              "y": 198.6970400958745
+            },
+            {
+              "x": 37.5,
+              "y": 197.560268103021
+            },
+            {
+              "x": 33.75,
+              "y": 196.21681029328508
+            },
+            {
+              "x": 30.0,
+              "y": 194.66666666666666
+            }
+          ],
+          "reversible": true,
+          "source_layer_id": "layer-accent"
+        },
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "accent-orbit-00",
+          "points": [
+            {
+              "x": 137.29005566955308,
+              "y": 126.70158801732896
+            },
+            {
+              "x": 137.23951071576488,
+              "y": 127.70256433862883
+            },
+            {
+              "x": 137.09115653408804,
+              "y": 128.67462570548247
+            },
+            {
+              "x": 136.52070456519476,
+              "y": 130.51231949772466
+            },
+            {
+              "x": 135.61806791912608,
+              "y": 132.1753012378027
+            },
+            {
+              "x": 134.4226147521348,
+              "y": 133.62420276946375
+            },
+            {
+              "x": 132.97371322047374,
+              "y": 134.81965593645504
+            },
+            {
+              "x": 131.3107314803957,
+              "y": 135.72229258252372
+            },
+            {
+              "x": 129.4730376881535,
+              "y": 136.292744551417
+            },
+            {
+              "x": 128.50097632129987,
+              "y": 136.44109873309384
+            },
+            {
+              "x": 127.5,
+              "y": 136.49164368688204
+            },
+            {
+              "x": 126.49902367870013,
+              "y": 136.44109873309384
+            },
+            {
+              "x": 125.52696231184649,
+              "y": 136.292744551417
+            },
+            {
+              "x": 123.6892685196043,
+              "y": 135.72229258252372
+            },
+            {
+              "x": 122.02628677952626,
+              "y": 134.81965593645504
+            },
+            {
+              "x": 120.57738524786521,
+              "y": 133.62420276946375
+            },
+            {
+              "x": 119.38193208087392,
+              "y": 132.1753012378027
+            },
+            {
+              "x": 118.47929543480525,
+              "y": 130.51231949772466
+            },
+            {
+              "x": 117.90884346591196,
+              "y": 128.67462570548247
+            },
+            {
+              "x": 117.76048928423512,
+              "y": 127.70256433862883
+            },
+            {
+              "x": 117.70994433044692,
+              "y": 126.70158801732896
+            },
+            {
+              "x": 117.7604892842351,
+              "y": 125.70061169602909
+            },
+            {
+              "x": 117.90884346591197,
+              "y": 124.72855032917543
+            },
+            {
+              "x": 118.47929543480524,
+              "y": 122.89085653693327
+            },
+            {
+              "x": 119.38193208087394,
+              "y": 121.22787479685523
+            },
+            {
+              "x": 120.57738524786521,
+              "y": 119.77897326519417
+            },
+            {
+              "x": 122.02628677952626,
+              "y": 118.58352009820288
+            },
+            {
+              "x": 123.6892685196043,
+              "y": 117.6808834521342
+            },
+            {
+              "x": 125.52696231184649,
+              "y": 117.11043148324093
+            },
+            {
+              "x": 126.49902367870013,
+              "y": 116.96207730156408
+            },
+            {
+              "x": 127.5,
+              "y": 116.91153234777587
+            },
+            {
+              "x": 128.50097632129985,
+              "y": 116.96207730156407
+            },
+            {
+              "x": 129.4730376881535,
+              "y": 117.11043148324093
+            },
+            {
+              "x": 131.3107314803957,
+              "y": 117.6808834521342
+            },
+            {
+              "x": 132.97371322047374,
+              "y": 118.58352009820288
+            },
+            {
+              "x": 134.4226147521348,
+              "y": 119.77897326519417
+            },
+            {
+              "x": 135.61806791912608,
+              "y": 121.22787479685525
+            },
+            {
+              "x": 136.52070456519476,
+              "y": 122.89085653693326
+            },
+            {
+              "x": 137.09115653408804,
+              "y": 124.72855032917543
+            },
+            {
+              "x": 137.23951071576488,
+              "y": 125.70061169602909
+            },
+            {
+              "x": 137.29005566955308,
+              "y": 126.70158801732896
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-accent"
+        },
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "accent-orbit-01",
+          "points": [
+            {
+              "x": 216.4405331524753,
+              "y": 160.90120626022374
+            },
+            {
+              "x": 216.3096844097102,
+              "y": 162.19919833203144
+            },
+            {
+              "x": 215.93440413127644,
+              "y": 163.40815241692422
+            },
+            {
+              "x": 215.34059124196628,
+              "y": 164.50216959010976
+            },
+            {
+              "x": 214.55414466657206,
+              "y": 165.4553509267958
+            },
+            {
+              "x": 213.600963329886,
+              "y": 166.24179750219002
+            },
+            {
+              "x": 212.50694615670045,
+              "y": 166.83561039150015
+            },
+            {
+              "x": 211.2979920718077,
+              "y": 167.21089066993395
+            },
+            {
+              "x": 210.0,
+              "y": 167.34173941269904
+            },
+            {
+              "x": 208.7020079281923,
+              "y": 167.21089066993397
+            },
+            {
+              "x": 207.49305384329952,
+              "y": 166.83561039150015
+            },
+            {
+              "x": 206.399036670114,
+              "y": 166.24179750219002
+            },
+            {
+              "x": 205.44585533342791,
+              "y": 165.4553509267958
+            },
+            {
+              "x": 204.65940875803375,
+              "y": 164.50216959010976
+            },
+            {
+              "x": 204.06559586872356,
+              "y": 163.40815241692422
+            },
+            {
+              "x": 203.6903155902898,
+              "y": 162.19919833203144
+            },
+            {
+              "x": 203.5594668475247,
+              "y": 160.90120626022374
+            },
+            {
+              "x": 203.6903155902898,
+              "y": 159.60321418841605
+            },
+            {
+              "x": 204.06559586872356,
+              "y": 158.39426010352327
+            },
+            {
+              "x": 204.65940875803372,
+              "y": 157.30024293033773
+            },
+            {
+              "x": 205.44585533342794,
+              "y": 156.3470615936517
+            },
+            {
+              "x": 206.399036670114,
+              "y": 155.56061501825747
+            },
+            {
+              "x": 207.49305384329955,
+              "y": 154.9668021289473
+            },
+            {
+              "x": 208.7020079281923,
+              "y": 154.59152185051354
+            },
+            {
+              "x": 210.0,
+              "y": 154.46067310774845
+            },
+            {
+              "x": 211.2979920718077,
+              "y": 154.59152185051354
+            },
+            {
+              "x": 212.50694615670048,
+              "y": 154.96680212894728
+            },
+            {
+              "x": 213.600963329886,
+              "y": 155.56061501825747
+            },
+            {
+              "x": 214.55414466657209,
+              "y": 156.3470615936517
+            },
+            {
+              "x": 215.34059124196625,
+              "y": 157.30024293033773
+            },
+            {
+              "x": 215.93440413127644,
+              "y": 158.39426010352327
+            },
+            {
+              "x": 216.3096844097102,
+              "y": 159.60321418841605
+            },
+            {
+              "x": 216.4405331524753,
+              "y": 160.90120626022374
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-accent"
+        },
+        {
+          "closed": true,
+          "dot_diameter_mm": null,
+          "kind": "stroke",
+          "path_id": "accent-orbit-02",
+          "points": [
+            {
+              "x": 302.38055027049984,
+              "y": 171.95573319384607
+            },
+            {
+              "x": 302.3295381032884,
+              "y": 172.9659620624052
+            },
+            {
+              "x": 302.1798126063788,
+              "y": 173.94700870048285
+            },
+            {
+              "x": 301.6040876518124,
+              "y": 175.80168925684615
+            },
+            {
+              "x": 300.69310746349606,
+              "y": 177.48004280624065
+            },
+            {
+              "x": 299.486604098125,
+              "y": 178.94233729197106
+            },
+            {
+              "x": 298.0243096123946,
+              "y": 180.14884065734213
+            },
+            {
+              "x": 296.3459560630001,
+              "y": 181.05982084565846
+            },
+            {
+              "x": 294.4912755066368,
+              "y": 181.63554580022483
+            },
+            {
+              "x": 293.5102288685591,
+              "y": 181.7852712971345
+            },
+            {
+              "x": 292.5,
+              "y": 181.8362834643459
+            },
+            {
+              "x": 291.4897711314409,
+              "y": 181.7852712971345
+            },
+            {
+              "x": 290.5087244933632,
+              "y": 181.63554580022483
+            },
+            {
+              "x": 288.6540439369999,
+              "y": 181.05982084565846
+            },
+            {
+              "x": 286.9756903876054,
+              "y": 180.1488406573421
+            },
+            {
+              "x": 285.513395901875,
+              "y": 178.94233729197109
+            },
+            {
+              "x": 284.30689253650394,
+              "y": 177.48004280624068
+            },
+            {
+              "x": 283.3959123481876,
+              "y": 175.80168925684615
+            },
+            {
+              "x": 282.8201873936212,
+              "y": 173.94700870048285
+            },
+            {
+              "x": 282.6704618967116,
+              "y": 172.9659620624052
+            },
+            {
+              "x": 282.61944972950016,
+              "y": 171.95573319384607
+            },
+            {
+              "x": 282.6704618967116,
+              "y": 170.94550432528695
+            },
+            {
+              "x": 282.8201873936212,
+              "y": 169.96445768720932
+            },
+            {
+              "x": 283.3959123481876,
+              "y": 168.109777130846
+            },
+            {
+              "x": 284.30689253650394,
+              "y": 166.4314235814515
+            },
+            {
+              "x": 285.513395901875,
+              "y": 164.9691290957211
+            },
+            {
+              "x": 286.9756903876054,
+              "y": 163.76262573035
+            },
+            {
+              "x": 288.6540439369999,
+              "y": 162.85164554203368
+            },
+            {
+              "x": 290.5087244933632,
+              "y": 162.2759205874673
+            },
+            {
+              "x": 291.4897711314409,
+              "y": 162.12619509055764
+            },
+            {
+              "x": 292.5,
+              "y": 162.07518292334623
+            },
+            {
+              "x": 293.5102288685591,
+              "y": 162.12619509055767
+            },
+            {
+              "x": 294.4912755066368,
+              "y": 162.2759205874673
+            },
+            {
+              "x": 296.3459560630001,
+              "y": 162.85164554203368
+            },
+            {
+              "x": 298.0243096123946,
+              "y": 163.76262573035004
+            },
+            {
+              "x": 299.486604098125,
+              "y": 164.96912909572106
+            },
+            {
+              "x": 300.69310746349606,
+              "y": 166.43142358145147
+            },
+            {
+              "x": 301.6040876518124,
+              "y": 168.109777130846
+            },
+            {
+              "x": 302.1798126063788,
+              "y": 169.9644576872093
+            },
+            {
+              "x": 302.3295381032884,
+              "y": 170.94550432528695
+            },
+            {
+              "x": 302.38055027049984,
+              "y": 171.95573319384607
+            }
+          ],
+          "reversible": false,
+          "source_layer_id": "layer-accent"
+        }
+      ],
+      "pass_id": "pass-cyan",
+      "pen_profile_id": "cyan-05",
+      "preview_color": "#00a6c8",
+      "semantic_role": "accent",
+      "source_layer_ids": [
+        "layer-accent"
+      ]
+    }
+  ],
+  "project_id": "send-test-0a05f242",
+  "removed_geometry": {
+    "clipped_paths": 0,
+    "degenerate_paths": 0,
+    "non_finite_paths": 0,
+    "short_paths": 0
+  },
+  "schema_version": 1,
+  "source_design_sha256": "551055ae0570baee1e81d880a2fa564841d574564507ea64d819ff7d240727da",
+  "statistics": {
+    "draw_length_mm": 4393.669406040306,
+    "estimated_seconds": 157.58852959715878,
+    "layer_count": 2,
+    "lift_count": 11,
+    "pass_count": 2,
+    "path_count": 11,
+    "travel_length_mm": 1113.2882729148573,
+    "vertex_count": 395
+  },
+  "travel_segments": [
+    {
+      "end": {
+        "x": 14.0,
+        "y": 10.0
+      },
+      "pass_id": "pass-black",
+      "start": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "end": {
+        "x": 23.0,
+        "y": 18.0
+      },
+      "pass_id": "pass-black",
+      "start": {
+        "x": 14.0,
+        "y": 10.0
+      }
+    },
+    {
+      "end": {
+        "x": 51.97717335818065,
+        "y": 45.0
+      },
+      "pass_id": "pass-black",
+      "start": {
+        "x": 23.0,
+        "y": 18.0
+      }
+    },
+    {
+      "end": {
+        "x": 183.45683404284483,
+        "y": 244.0
+      },
+      "pass_id": "pass-black",
+      "start": {
+        "x": 75.97717335818065,
+        "y": 242.0
+      }
+    },
+    {
+      "end": {
+        "x": 259.8902205585578,
+        "y": 45.0
+      },
+      "pass_id": "pass-black",
+      "start": {
+        "x": 159.45683404284483,
+        "y": 63.0
+      }
+    },
+    {
+      "end": {
+        "x": 389.1322530399862,
+        "y": 244.0
+      },
+      "pass_id": "pass-black",
+      "start": {
+        "x": 283.8902205585578,
+        "y": 242.0
+      }
+    },
+    {
+      "end": {
+        "x": 30.0,
+        "y": 102.33333333333333
+      },
+      "pass_id": "pass-cyan",
+      "start": {
+        "x": 365.1322530399862,
+        "y": 63.0
+      }
+    },
+    {
+      "end": {
+        "x": 390.0,
+        "y": 194.66666666666666
+      },
+      "pass_id": "pass-cyan",
+      "start": {
+        "x": 390.0,
+        "y": 102.33333333333333
+      }
+    },
+    {
+      "end": {
+        "x": 137.29005566955308,
+        "y": 126.70158801732896
+      },
+      "pass_id": "pass-cyan",
+      "start": {
+        "x": 30.0,
+        "y": 194.66666666666666
+      }
+    },
+    {
+      "end": {
+        "x": 216.4405331524753,
+        "y": 160.90120626022374
+      },
+      "pass_id": "pass-cyan",
+      "start": {
+        "x": 137.29005566955308,
+        "y": 126.70158801732896
+      }
+    },
+    {
+      "end": {
+        "x": 302.38055027049984,
+        "y": 171.95573319384607
+      },
+      "pass_id": "pass-cyan",
+      "start": {
+        "x": 216.4405331524753,
+        "y": 160.90120626022374
+      }
+    }
+  ],
+  "warnings": []
+}

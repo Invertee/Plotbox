@@ -56,7 +56,11 @@ function controlHelp(label: string): string {
 }
 
 /** Version 0.3.2 — preserve numeric inputs only when no finite range is defined. */
-export function NumericInput(props: InputHTMLAttributes<HTMLInputElement>) {
+type NumericInputProps = InputHTMLAttributes<HTMLInputElement> & {
+  slider?: boolean;
+};
+
+export function NumericInput({ slider = true, ...props }: NumericInputProps) {
   const id = useId();
   const bounded =
     props.type === "number" &&
@@ -64,7 +68,7 @@ export function NumericInput(props: InputHTMLAttributes<HTMLInputElement>) {
     props.max !== undefined &&
     Number.isFinite(Number(props.min)) &&
     Number.isFinite(Number(props.max));
-  if (!bounded) return <input {...props} />;
+  if (!bounded || !slider) return <input {...props} />;
   const help = props.title || controlHelp(props["aria-label"] || "value");
   return (
     <span className="slider-control">

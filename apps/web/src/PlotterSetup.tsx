@@ -1,5 +1,5 @@
 import { NumericInput } from "./NumericInput";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "./api";
 import type {
@@ -15,12 +15,21 @@ const DEFAULT_SETTINGS: FluidNCSettings = {
   schema_version: 1,
   host: "fluidnc.local",
   port: 81,
+  http_port: 80,
   tls: false,
   command_timeout_seconds: 15,
   safe_z_min_mm: -10,
   safe_z_max_mm: 0,
   pen_up_z_mm: 0,
   pen_down_z_mm: -5,
+  skew_calibration: {
+    enabled: false,
+    square_width_mm: 100,
+    square_height_mm: 100,
+    rising_diagonal_mm: Math.sqrt(20_000),
+    falling_diagonal_mm: Math.sqrt(20_000),
+    axis_angle_degrees: 90,
+  },
 };
 
 const COMMISSIONING_TEST_DEFINITIONS: Record<
@@ -158,11 +167,30 @@ export function PlotterSetup() {
   const [commandedDistance, setCommandedDistance] = useState(100);
   const [measuredDistance, setMeasuredDistance] = useState(100);
   const [calibration, setCalibration] = useState<AxisCalibrationResult | null>(null);
+  const savedConnectionRef = useRef<Pick<FluidNCSettings, "host" | "port" | "tls"> | null>(null);
+  const [skewWidth, setSkewWidth] = useState(100);
+  const [skewHeight, setSkewHeight] = useState(100);
+  const [risingDiagonal, setRisingDiagonal] = useState(Number(Math.sqrt(20_000).toFixed(3)));
+  const [fallingDiagonal, setFallingDiagonal] = useState(Number(Math.sqrt(20_000).toFixed(3)));
 
   useEffect(() => {
     void api
       .getFluidNCSettings()
-      .then(setSettings)
+      .then((loaded) => {
+        // Older saved settings and lightweight test doubles predate the SD HTTP port.
+        setSettings({ ...DEFAULT_SETTINGS, ...loaded });
+        savedConnectionRef.current = {
+          host: loaded.host,
+          port: loaded.port,
+          tls: loaded.tls,
+        };
+        if (loaded.skew_calibration) {
+          setSkewWidth(loaded.skew_calibration.square_width_mm);
+          setSkewHeight(loaded.skew_calibration.square_height_mm);
+          setRisingDiagonal(loaded.skew_calibration.rising_diagonal_mm);
+          setFallingDiagonal(loaded.skew_calibration.falling_diagonal_mm);
+        }
+      })
       .catch((reason: unknown) => setError(messageFor(reason)))
       .finally(() => setBusy(null));
   }, []);
@@ -176,6 +204,7 @@ export function PlotterSetup() {
     setBusy(label);
     setError(null);
     try {
+      await ensureConnectionSettings();
       const actionResult = await api.runFluidNCAction(request);
       const parsed = parseAxisPositions(actionResult.response_lines);
       if (parsed) {
@@ -191,10 +220,30 @@ export function PlotterSetup() {
     }
   };
 
+  const ensureConnectionSettings = useCallback(async () => {
+    const saved = savedConnectionRef.current;
+    if (
+      saved &&
+      saved.host === settings.host &&
+      saved.port === settings.port &&
+      saved.tls === settings.tls
+    ) {
+      return;
+    }
+    const persisted = await api.saveFluidNCSettings(settings);
+    savedConnectionRef.current = {
+      host: persisted.host,
+      port: persisted.port,
+      tls: persisted.tls,
+    };
+    setSettings({ ...DEFAULT_SETTINGS, ...persisted });
+  }, [settings]);
+
   const refreshPosition = async () => {
     setPositionBusy(true);
     setError(null);
     try {
+      await ensureConnectionSettings();
       const statusResult = await api.runFluidNCAction({ action: "status" });
       const parsed = parseAxisPositions(statusResult.response_lines);
       if (parsed) {
@@ -219,6 +268,7 @@ export function PlotterSetup() {
       if (disposed || polling || busy !== null || positionBusy) return;
       polling = true;
       try {
+        await ensureConnectionSettings();
         const statusResult = await api.runFluidNCAction({ action: "status" });
         if (disposed) return;
         const parsed = parseAxisPositions(statusResult.response_lines);
@@ -240,7 +290,7 @@ export function PlotterSetup() {
       disposed = true;
       window.clearInterval(timer);
     };
-  }, [busy, positionBusy]);
+  }, [busy, positionBusy, ensureConnectionSettings]);
 
   const selectedCommissioningTest = COMMISSIONING_TEST_DEFINITIONS[commissioningTest.test_id];
   const jogReady =
@@ -253,7 +303,13 @@ export function PlotterSetup() {
     setBusy("save-settings");
     setError(null);
     try {
-      setSettings(await api.saveFluidNCSettings(settings));
+      const persisted = await api.saveFluidNCSettings(settings);
+      setSettings({ ...DEFAULT_SETTINGS, ...persisted });
+      savedConnectionRef.current = {
+        host: persisted.host,
+        port: persisted.port,
+        tls: persisted.tls,
+      };
     } catch (reason) {
       setError(messageFor(reason));
     } finally {
@@ -268,6 +324,53 @@ export function PlotterSetup() {
       setCalibration(
         await api.calculateAxisCalibration(currentSteps, commandedDistance, measuredDistance),
       );
+    } catch (reason) {
+      setError(messageFor(reason));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const drawSkewSquare = async () => {
+    await runAction("skew-square", {
+      action: "commissioning_test",
+      test: {
+        ...commissioningTest,
+        test_id: "diagonal_skew",
+        width_mm: skewWidth,
+        height_mm: skewHeight,
+        z_up_mm: settings.pen_up_z_mm,
+        z_down_mm: settings.pen_down_z_mm,
+      },
+    });
+  };
+
+  const saveSkewCalibration = async () => {
+    setBusy("save-skew");
+    setError(null);
+    try {
+      setSettings({
+        ...DEFAULT_SETTINGS,
+        ...(await api.saveSkewCalibration(skewWidth, skewHeight, risingDiagonal, fallingDiagonal)),
+      });
+    } catch (reason) {
+      setError(messageFor(reason));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const disableSkewCalibration = async () => {
+    setBusy("disable-skew");
+    setError(null);
+    try {
+      setSettings({
+        ...DEFAULT_SETTINGS,
+        ...(await api.saveFluidNCSettings({
+          ...settings,
+          skew_calibration: { ...settings.skew_calibration, enabled: false },
+        })),
+      });
     } catch (reason) {
       setError(messageFor(reason));
     } finally {
@@ -545,6 +648,105 @@ export function PlotterSetup() {
           </div>
         </section>
 
+        <section className="setup-card skew-calibration-card">
+          <p className="eyebrow">SKEW CALIBRATION</p>
+          <h3>Square and diagonal correction</h3>
+          <p>
+            Draw an uncorrected rectangle, measure both corner-to-corner diagonals, then save the
+            correction used by every future G-code export.
+          </p>
+          <div className="field-row two">
+            <label>
+              Rectangle width mm
+              <NumericInput
+                aria-label="Skew calibration rectangle width"
+                type="number"
+                min="10"
+                step="0.1"
+                value={skewWidth}
+                onChange={(event) => setSkewWidth(Number(event.target.value))}
+              />
+            </label>
+            <label>
+              Rectangle height mm
+              <NumericInput
+                aria-label="Skew calibration rectangle height"
+                type="number"
+                min="10"
+                step="0.1"
+                value={skewHeight}
+                onChange={(event) => setSkewHeight(Number(event.target.value))}
+              />
+            </label>
+          </div>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void drawSkewSquare()}
+          >
+            {busy === "skew-square" ? "Drawing calibration square…" : "Draw calibration square"}
+          </button>
+          <p className="field-help">
+            The rectangle starts at the commissioning origin ({commissioningTest.origin_x_mm},{" "}
+            {commissioningTest.origin_y_mm}) and includes its outline plus both full diagonals.
+            Calibrate X/Y distance first.
+          </p>
+          <div className="field-row two">
+            <label>
+              Rising diagonal ↗ mm
+              <NumericInput
+                aria-label="Rising calibration diagonal"
+                type="number"
+                min="1"
+                step="0.001"
+                value={risingDiagonal}
+                onChange={(event) => setRisingDiagonal(Number(event.target.value))}
+              />
+            </label>
+            <label>
+              Falling diagonal ↘ mm
+              <NumericInput
+                aria-label="Falling calibration diagonal"
+                type="number"
+                min="1"
+                step="0.001"
+                value={fallingDiagonal}
+                onChange={(event) => setFallingDiagonal(Number(event.target.value))}
+              />
+            </label>
+          </div>
+          <div className="setup-card-actions">
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void saveSkewCalibration()}
+            >
+              {busy === "save-skew" ? "Saving correction…" : "Save and enable correction"}
+            </button>
+            {settings.skew_calibration?.enabled && (
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={busy !== null}
+                onClick={() => void disableSkewCalibration()}
+              >
+                Disable correction
+              </button>
+            )}
+          </div>
+          {settings.skew_calibration?.enabled && (
+            <div className="calibration-result" aria-live="polite">
+              <span>Active XY axis angle</span>
+              <strong>{settings.skew_calibration.axis_angle_degrees.toFixed(6)}°</strong>
+              <small>
+                {Math.abs(90 - settings.skew_calibration.axis_angle_degrees).toFixed(6)}° from
+                square · automatically applied during G-code export and send
+              </small>
+            </div>
+          )}
+        </section>
+
         <section className="setup-card">
           <p className="eyebrow">CONNECTION</p>
           <h3>FluidNC endpoint</h3>
@@ -564,8 +766,23 @@ export function PlotterSetup() {
                 type="number"
                 min="1"
                 max="65535"
+                slider={false}
                 value={settings.port}
                 onChange={(event) => setSettings({ ...settings, port: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              HTTP / SD port
+              <NumericInput
+                aria-label="FluidNC HTTP port"
+                type="number"
+                min="1"
+                max="65535"
+                slider={false}
+                value={settings.http_port}
+                onChange={(event) =>
+                  setSettings({ ...settings, http_port: Number(event.target.value) })
+                }
               />
             </label>
             <label>

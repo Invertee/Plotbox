@@ -1,0 +1,80 @@
+{
+  "document_id": "raster-api-e7df55d8-raster-edge-design",
+  "layers": [
+    {
+      "layer_id": "layer-raster-edge",
+      "locked": false,
+      "metadata": {
+        "algorithm": "edge",
+        "path_count": 1,
+        "removed_components": 0,
+        "removed_segments": 0,
+        "source": "raster",
+        "working_height_px": 353,
+        "working_width_px": 707
+      },
+      "name": "Raster Edge",
+      "paths": [
+        {
+          "closed": false,
+          "commands": [
+            {
+              "kind": "move",
+              "point": {
+                "x": 212.8328611898017,
+                "y": 247.36363636363635
+              }
+            },
+            {
+              "kind": "line",
+              "point": {
+                "x": 212.8328611898017,
+                "y": 49.63636363636365
+              }
+            }
+          ],
+          "metadata": {
+            "algorithm": "edge",
+            "source": "raster"
+          },
+          "path_id": "raster-edge-000001",
+          "reversible": true
+        }
+      ],
+      "preview_color": "#171717",
+      "semantic_role": "structure",
+      "visible": true
+    }
+  ],
+  "metadata": {
+    "diagnostics": [
+      {
+        "code": "raster-vectorization-report",
+        "element_id": null,
+        "message": "edge emitted 1 paths; removed 0 components and 0 short segments.",
+        "severity": "warning"
+      },
+      {
+        "code": "vectorization-resolution-reduced",
+        "element_id": null,
+        "message": "edge used a bounded 707 x 353 working image; page-space output scale is unchanged.",
+        "severity": "warning"
+      }
+    ],
+    "generator_id": "import.raster",
+    "generator_version": "1.0.0",
+    "normalized_sha256": "09fcdf0976d7b6821b82c7220fcfe08fdba8a57c7088da147c322ed3325a923b",
+    "quality": "draft",
+    "seed": "",
+    "source_asset_sha256": "a39217a6862b4c84179954fc5834b1a1b9a7e69ecaaaf67d728079ae1bf6225b"
+  },
+  "page": {
+    "height_mm": 297.0,
+    "margin_mm": 10.0,
+    "orientation": "landscape",
+    "preset": "A3",
+    "schema_version": 1,
+    "width_mm": 420.0
+  },
+  "schema_version": 1
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="100mm"
+     height="50mm"
+     viewBox="0 0 100 50">
+  <defs>
+    <circle id="marker" cx="0" cy="0" r="2"/>
+  </defs>
+  <g id="structure" transform="translate(10 5)" fill="none" stroke="#111111">
+    <path id="curve" d="M 0 0 L 30 0 Q 40 0 40 10 C 40 20 50 20 50 10"/>
+    <line id="dashed" x1="0" y1="20" x2="60" y2="20" stroke-dasharray="5 3"/>
+    <use id="marker-use" xlink:href="#marker" x="65" y="20"/>
+  </g>
+  <g id="accent" transform="translate(75 5)" fill="#e34b32" stroke="none">
+    <rect id="filled-panel" x="0" y="0" width="20" height="30"/>
+    <filter id="unsupported-filter"/>
+    <text id="unsupported-text" x="0" y="40">A</text>
+  </g>
+</svg>

@@ -1,21 +1,27 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import re
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from plotter_core.models import GcodeProgram
+from plotter_core.gcode.parser import parse_gcode
+from plotter_core.models import GcodeProgram, MachineProfile, SkewCalibration
 from plotterapp_api.fluidnc import (
     AxisCalibrationRequest,
     FluidNCActionRequest,
     FluidNCActionResult,
     FluidNCGateway,
     FluidNCProgramResult,
+    FluidNCProjectRunResult,
     FluidNCSettings,
+    FluidNCStoredPass,
+    SkewCalibrationRequest,
     build_action_frames,
     calculate_axis_calibration,
+    calculate_skew_calibration,
 )
 from plotterapp_api.fluidnc_tests import MAX_TEST_COMMANDS, FluidNCCommissioningTestRequest
 from plotterapp_api.main import create_app
@@ -76,6 +82,10 @@ class FakeFluidNCGateway:
         self.current = FluidNCSettings()
         self.requests: list[FluidNCActionRequest] = []
         self.programs: list[GcodeProgram] = []
+        self.program_options: list[tuple[MachineProfile | None, int]] = []
+        self.sd_projects: list[
+            tuple[str, str, list[tuple[str, str, GcodeProgram]], GcodeProgram]
+        ] = []
 
     def settings(self) -> FluidNCSettings:
         return self.current
@@ -94,8 +104,15 @@ class FakeFluidNCGateway:
             controller_state="Idle",
         )
 
-    async def stream_program(self, program: GcodeProgram) -> FluidNCProgramResult:
+    async def stream_program(
+        self,
+        program: GcodeProgram,
+        *,
+        profile: MachineProfile | None = None,
+        start_line: int = 1,
+    ) -> FluidNCProgramResult:
         self.programs.append(program)
+        self.program_options.append((profile, start_line))
         return FluidNCProgramResult(
             filename=program.filename,
             sha256=program.sha256,
@@ -106,12 +123,42 @@ class FakeFluidNCGateway:
             controller_state="Idle",
         )
 
+    async def store_and_run_project(
+        self,
+        project_id: str,
+        project_name: str,
+        pass_programs: list[tuple[str, str, GcodeProgram]],
+        combined_program: GcodeProgram,
+    ) -> FluidNCProjectRunResult:
+        self.sd_projects.append((project_id, project_name, pass_programs, combined_program))
+        folder = f"/plotbox/{project_id}"
+        return FluidNCProjectRunResult(
+            project_id=project_id,
+            sd_folder=folder,
+            passes=[
+                FluidNCStoredPass(
+                    pass_id=pass_id,
+                    name=name,
+                    priority=priority,
+                    filename=program.filename,
+                    sd_path=f"{folder}/{program.filename}",
+                    sha256=program.sha256,
+                    byte_count=len(program.text.encode("utf-8")),
+                )
+                for priority, (pass_id, name, program) in enumerate(pass_programs, start=1)
+            ],
+            run_path=f"{folder}/run-all.nc",
+            success=True,
+            response_lines=["<Idle|MPos:0,0,0>", "ok"],
+            controller_state="Idle",
+        )
+
 
 def _valid_program(text: str, sha256: str = "a" * 64) -> GcodeProgram:
     return GcodeProgram(
         filename="boundary.nc",
         text=text,
-        parsed_instructions=[],
+        parsed_instructions=parse_gcode(text),
         reconstructed_toolpath={
             "segments": [],
             "draw_paths": [],
@@ -270,6 +317,24 @@ def test_axis_calibration_formula() -> None:
     assert result.distance_error_percent == -2
 
 
+def test_skew_calibration_formula_uses_both_rectangle_diagonals() -> None:
+    angle = math.radians(89)
+    rising = math.sqrt(20_000 + 20_000 * math.cos(angle))
+    falling = math.sqrt(20_000 - 20_000 * math.cos(angle))
+
+    result = calculate_skew_calibration(
+        SkewCalibrationRequest(
+            square_width_mm=100,
+            square_height_mm=100,
+            rising_diagonal_mm=rising,
+            falling_diagonal_mm=falling,
+        )
+    )
+
+    assert result.enabled is True
+    assert result.axis_angle_degrees == pytest.approx(89)
+
+
 def test_limit_check_always_sends_exit_realtime_command(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -316,6 +381,36 @@ def test_streamed_program_requires_idle_and_acknowledges_each_executable_command
     assert connection.sent == ["?", "G21\n", "G90\n", "G0 X1 Y2\n", "M2\n"]
 
 
+def test_resumed_program_lifts_repositions_and_restores_pen_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    connection = ProgramWebSocketConnection()
+    monkeypatch.setattr("plotterapp_api.fluidnc.connect", lambda *_args, **_kwargs: connection)
+    gateway = FluidNCGateway(tmp_path / "fluidnc.json")
+    profile = MachineProfile()
+    program = _valid_program(
+        "G21\nG90\nG0 X10 Y20 F6000\nG1 Z0 F400\n"
+        "G1 X15 Y25 F1800\nG1 X20 Y30 F1800\nG1 Z5 F900\n"
+    )
+
+    result = asyncio.run(gateway.stream_program(program, profile=profile, start_line=6))
+
+    assert result.success is True
+    assert connection.sent[:10] == [
+        "?",
+        "G21\n",
+        "G90\n",
+        "G17\n",
+        "G94\n",
+        "G1 Z5 F900\n",
+        "G4 P0.08\n",
+        "G0 X15 Y25 F6000\n",
+        "G1 Z0 F400\n",
+        "G4 P0.12\n",
+    ]
+    assert connection.sent[10:] == ["G1 X20 Y30 F1800\n", "G1 Z5 F900\n"]
+
+
 def test_streamed_program_holds_on_controller_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -329,6 +424,54 @@ def test_streamed_program_holds_on_controller_error(
     assert result.success is False
     assert result.accepted_command_count == 1
     assert connection.sent == ["?", "G21\n", "G90\n", "!"]
+
+
+def test_sd_project_uploads_passes_in_priority_order_and_starts_combined_job(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gateway = FluidNCGateway(tmp_path / "fluidnc.json")
+    uploaded: list[tuple[str, bytes]] = []
+    directories: list[str] = []
+
+    async def mkdir(_settings: FluidNCSettings, path: str) -> None:
+        directories.append(path)
+
+    async def put(_settings: FluidNCSettings, path: str, content: bytes) -> None:
+        uploaded.append((path, content))
+
+    async def start(_settings: FluidNCSettings, path: str) -> list[str]:
+        assert path.endswith("/run-all.nc")
+        return ["<Idle|MPos:0,0,0>", "ok"]
+
+    monkeypatch.setattr(gateway, "_webdav_mkdir", mkdir)
+    monkeypatch.setattr(gateway, "_webdav_put", put)
+    monkeypatch.setattr(gateway, "_start_sd_program", start)
+    first = _valid_program("G21\nM2\n").model_copy(update={"filename": "01-black.nc"})
+    second = _valid_program("G21\nM2\n", sha256="b" * 64).model_copy(
+        update={"filename": "02-cyan.nc"}
+    )
+    combined = _valid_program("G21\nM0 (CHANGE PEN)\nM2\n", sha256="c" * 64).model_copy(
+        update={"filename": "combined.nc"}
+    )
+
+    result = asyncio.run(
+        gateway.store_and_run_project(
+            "project-1234567890",
+            "Priority Test",
+            [("pass-black", "Black", first), ("pass-cyan", "Cyan", second)],
+            combined,
+        )
+    )
+
+    assert directories == ["/plotbox", "/plotbox/priority-test-project-1234"]
+    assert [path.rsplit("/", 1)[-1] for path, _ in uploaded] == [
+        "01-black.nc",
+        "02-cyan.nc",
+        "run-all.nc",
+    ]
+    assert [item.pass_id for item in result.passes] == ["pass-black", "pass-cyan"]
+    assert [item.priority for item in result.passes] == [1, 2]
+    assert result.success is True
 
 
 def test_fluidnc_api_uses_gateway_without_application_action_confirmation() -> None:
@@ -392,6 +535,18 @@ def test_fluidnc_api_uses_gateway_without_application_action_confirmation() -> N
         )
         assert calibration.status_code == 200
         assert calibration.json()["corrected_steps_per_mm"] == pytest.approx(81.632653)
+        skew = client.post(
+            "/api/fluidnc/calibration/skew",
+            json={
+                "square_width_mm": 100,
+                "square_height_mm": 100,
+                "rising_diagonal_mm": 142,
+                "falling_diagonal_mm": 140.8,
+            },
+        )
+        assert skew.status_code == 200, skew.text
+        assert skew.json()["skew_calibration"]["enabled"] is True
+        assert gateway.current.skew_calibration.enabled is True
 
 
 def test_project_send_endpoint_streams_only_a_fresh_validated_export(
@@ -421,6 +576,31 @@ def test_project_send_endpoint_streams_only_a_fresh_validated_export(
         assert sent.status_code == 200, sent.text
         assert sent.json()["success"] is True
         assert gateway.programs[-1].filename == "combined.nc"
+        assert gateway.programs[-1].validation.valid is True
+        assert gateway.program_options[-1][1] == 1
+        uncorrected_text = gateway.programs[-1].text
+
+        resumed = client.post(
+            f"/api/projects/{project_id}/send/gcode",
+            json={"filename": "combined.nc", "start_line": 10, "confirmed": True},
+        )
+        assert resumed.status_code == 200, resumed.text
+        assert gateway.program_options[-1][1] == 10
+
+        gateway.current = gateway.current.model_copy(
+            update={
+                "skew_calibration": SkewCalibration(
+                    enabled=True,
+                    axis_angle_degrees=89.5,
+                )
+            }
+        )
+        corrected = client.post(
+            f"/api/projects/{project_id}/send/gcode",
+            json={"filename": "combined.nc", "confirmed": True},
+        )
+        assert corrected.status_code == 200, corrected.text
+        assert gateway.programs[-1].text != uncorrected_text
         assert gateway.programs[-1].validation.valid is True
 
         unsafe_profile = {
@@ -465,3 +645,41 @@ def test_project_send_endpoint_streams_only_a_fresh_validated_export(
             json={"filename": "untrusted.nc", "confirmed": True},
         )
         assert missing.status_code == 422
+
+
+def test_project_sd_endpoint_regenerates_all_passes_in_configured_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PLOTTERAPP_PROJECTS_ROOT", str(tmp_path))
+    gateway = FakeFluidNCGateway()
+    with TestClient(create_app(fluidnc_gateway=gateway)) as client:
+        project = client.post("/api/projects", json={"name": "SD queue"}).json()
+        project_id = project["project_id"]
+        generated = client.post(
+            f"/api/projects/{project_id}/generate", json={"quality": "draft"}
+        )
+        assert generated.status_code == 200, generated.text
+        planned = client.post(f"/api/projects/{project_id}/plan")
+        assert planned.status_code == 200, planned.text
+
+        rejected = client.post(
+            f"/api/projects/{project_id}/send/fluidnc-sd", json={"confirmed": False}
+        )
+        assert rejected.status_code == 422
+        assert gateway.sd_projects == []
+
+        sent = client.post(
+            f"/api/projects/{project_id}/send/fluidnc-sd", json={"confirmed": True}
+        )
+        assert sent.status_code == 200, sent.text
+        payload = sent.json()
+        expected_ids = [item["pass_id"] for item in planned.json()["passes"]]
+        assert [item["pass_id"] for item in payload["passes"]] == expected_ids
+        assert [item["priority"] for item in payload["passes"]] == list(
+            range(1, len(expected_ids) + 1)
+        )
+        assert payload["run_path"].endswith("/run-all.nc")
+        _, _, pass_programs, combined = gateway.sd_projects[-1]
+        assert all(program.validation.valid for _, _, program in pass_programs)
+        assert combined.filename == "combined.nc"
+        assert "M0 (CHANGE PEN TO" in combined.text

@@ -1,0 +1,47 @@
+{
+  "design_sha256": "dfb763852819b95f0b0ce8b0fb7f66792f39af523e9d170b88aafcdc08f128d9",
+  "entries": [
+    {
+      "byte_count": 2865,
+      "filename": "01-black.nc",
+      "kind": "pass",
+      "pass_id": "pass-black",
+      "sha256": "a1f87ca056d2e0ad8ae7548a29d62e6632efb622eb430953c5d5fa0d77d2d48d"
+    },
+    {
+      "byte_count": 8818,
+      "filename": "02-cyan.nc",
+      "kind": "pass",
+      "pass_id": "pass-cyan",
+      "sha256": "c6a77b5eff070f11f1de6c2b39f0ef044661d94d791b0928ca96c6ac1d9df108"
+    },
+    {
+      "byte_count": 11607,
+      "filename": "combined.nc",
+      "kind": "combined",
+      "pass_id": null,
+      "sha256": "43de304bc1d60915ec10be30b59c194a7f1c3ac5275d098d932be54a59b0ab7f"
+    },
+    {
+      "byte_count": 10725,
+      "filename": "dry-run.nc",
+      "kind": "dry-run",
+      "pass_id": null,
+      "sha256": "a3eee47182ca1a5d07df3033d65161dc751d4bf78860eef5e908e43183b6988d"
+    },
+    {
+      "byte_count": 318,
+      "filename": "page-boundary.nc",
+      "kind": "page-boundary",
+      "pass_id": null,
+      "sha256": "ef5f14561179616055cf840038526a51c94fe52ca63e1d933997a49c0ed0544a"
+    }
+  ],
+  "manifest_sha256": "dd19b2922b0060049c91eccc23ab2ab2e7b6238388d8f302eb69cf95992932af",
+  "plot_plan_sha256": "73a9c8d579a966998cd3aac4d2b95701de626c517501eb8fe0c9dacaadc2e6b2",
+  "profile_id": "fluidnc-z-axis-a3",
+  "project_id": "send-test-068dd730",
+  "round_trip_tolerance_mm": 0.001,
+  "schema_version": 1,
+  "valid": true
+}

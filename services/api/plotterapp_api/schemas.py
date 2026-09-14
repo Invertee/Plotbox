@@ -21,8 +21,8 @@ class HealthResponse(StrictModel):
 
 class CreateProjectRequest(StrictModel):
     name: str = Field(default="A3 test project", min_length=1, max_length=120)
-    page_preset: Literal["A3"] = "A3"
-    orientation: Literal["landscape"] = "landscape"
+    page_preset: Literal["A3", "A4"] = "A3"
+    orientation: Literal["landscape", "portrait"] = "landscape"
 
 
 class GenerateRequest(StrictModel):
@@ -43,6 +43,14 @@ class SendGcodeRequest(StrictModel):
 
     profile: MachineProfile | None = None
     filename: str = Field(min_length=1, max_length=200)
+    start_line: int = Field(default=1, ge=1, le=1_000_000)
+    confirmed: Literal[True]
+
+
+class SendProjectToSdRequest(StrictModel):
+    """Regenerate all enabled pen passes, store them on FluidNC SD, and start in order."""
+
+    profile: MachineProfile | None = None
     confirmed: Literal[True]
 
 
