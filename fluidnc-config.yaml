@@ -125,16 +125,16 @@ axes:
         # Lower for higher torque, reduces smoothness
         run_mode: StealthChop
 
-# Dashboard macros. FluidNC's Z range is -10..0, so keep every target inside
-# that configured range. '&' separates commands within one macro line.
-macros:
-  # FluidNC's Grbl homing-enable setting is stored separately from the YAML.
-  # Set it automatically at startup so $H is accepted after a reboot.
-  startup_line0: $22=1
-  macro0: G90&G0Z0
-  macro1: G90&G0Z-2.5
-  macro2: G90&G0Z-5
-  macro3: G90&G0Z-7.5
+# # Dashboard macros. FluidNC's Z range is -10..0, so keep every target inside
+# # that configured range. '&' separates commands within one macro line.
+# macros:
+#   # FluidNC's Grbl homing-enable setting is stored separately from the YAML.
+#   # Set it automatically at startup so $H is accepted after a reboot.
+#   startup_line0: $22=1
+#   macro0: G90&G0Z0
+#   macro1: G90&G0Z-2.5
+#   macro2: G90&G0Z-5
+#   macro3: G90&G0Z-7.5
 
 # Do not permit motion with an unknown machine position, and alarm if a limit
 # input is already active when the controller starts.
