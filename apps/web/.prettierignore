@@ -1,5 +1,0 @@
-dist/
-node_modules/
-.e2e-data/
-playwright-report/
-test-results/

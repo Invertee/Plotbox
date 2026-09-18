@@ -1,7 +1,0 @@
-0a1ee093db62ae6886023456a85561e4cc2b0f6960c41897f654a6c58564011e  ./CHANGES.md
-a214d0f8a57e7a0d208b7679371bedec2be4d1604222c62fdc8e3ad483da0ada  ./README_APPLY.md
-ddd96fd8c1b95274ab48f180e45ae42d906222a95b7e2f878563a067383d6043  ./apply_plotbox_map_expansion.ps1
-2b5519290be4c8deb0be5c9ebd538415f0e8edc3caf6f7105cb9400b14ea9ce3  ./overlay/apps/web/src/maps/MapControls.tsx
-5eff4e6216eb2205ea4e92c71ae63a7da892723380ae9c0e6d500d53673003ec  ./overlay/packages/plotter_core/plotter_core/maps/osm.py
-a871635714f4db52a2abb853ff699f3df8e79f596e8b1c96f3cd0a8b9f401ab3  ./overlay/packages/plotter_core/plotter_core/maps/terrain.py
-b6207b7bdd380501c60a901e1d653ec19d84a1cba15ee3c7bac98bac30458f78  ./overlay/packages/plotter_core/tests/test_osm_extended.py

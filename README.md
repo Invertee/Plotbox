@@ -1,368 +1,90 @@
 # Plotbox
 
-Plotbox is a local, single-user React and FastAPI application that turns deterministic artwork
-recipes into inspectable plot plans and validated G-code files. It also ships as a Home Assistant
-app/add-on and provides a separate, guarded FluidNC commissioning workspace.
+Plotbox is a local-first browser application for turning generated artwork and raster images into pen-plotter-ready G-code. Its canonical artwork format is vector geometry measured in millimetres; the preview and G-code exporter consume that same geometry.
 
-The implemented offline vertical slice preserves:
+- Local project list with A4, A3, A2 and custom paper sizes, portrait/landscape orientation and a 10 mm default safe margin
+- SQLite project persistence and debounced autosave
+- Zoomable/pannable SVG preview with pen-colour and physical line-width rendering
+- Viewport zoom that scales and pans the entire sheet while keeping plot geometry unchanged
+- Editable pens and passes, including Z up/down and feed rates
+- Combined or per-pass G-code with configurable origin, park position and pen-change pause
+- A built-in physical test pattern
+- Raster preprocessing: brightness, contrast, gamma, blur, threshold and inversion
+- Raster contain, cover and stretch fitting with independent scale and millimetre offsets
+- Worker-based edge, hatch, crosshatch, adaptive crosshatch, dither, stipple, tonal-dash and scanline vectorisation
+- Continuous spiroglyph image rendering with adjustable line spacing, wave frequency, smoothing, tone thresholds, amplitude, shape and placement
+- Seeded flow-field, Truchet and guilloché generators
+- Standard TurtleToy script execution through the `turtletoy` package in a disposable worker
+- SVG import with named-group decomposition, transform flattening and editable per-layer treatments
+- OpenStreetMap place search and bounded feature import with classified roads, railways, buildings, water, parks and boundaries
+- Per-layer outline, hatch, crosshatch and stipple treatments with independent pen-pass assignment
+- Shared path optimisation before G-code generation
+
+## Map provider configuration
+
+Map imports are initiated only when the user submits a place search or chooses a result. Search responses and Overpass extracts are cached in SQLite. Plotbox identifies its requests, limits public Nominatim traffic to one request per second, restricts imports to a 0.1–5 km radius, and displays OpenStreetMap attribution.
+
+Provider endpoints can be changed without rebuilding the app:
+
+```bash
+NOMINATIM_URL=https://your-nominatim.example
+OVERPASS_URL=https://your-overpass.example/api/interpreter
+PLOTBOX_USER_AGENT="Plotbox/0.2 (your contact URL or email)"
+```
+
+Review the [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/) and the [Overpass API guidance](https://wiki.openstreetmap.org/wiki/Overpass_API) before distributing or operating Plotbox for multiple users. A self-hosted or commercial provider is recommended beyond light personal use.
+
+## Run locally
+
+Requirements: Node.js 24 or newer and npm 11 or newer.
+
+```bash
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173>. The API runs at <http://127.0.0.1:8787> and creates `data/plotter.sqlite` on first use.
+
+## Validation
+
+```bash
+npm test
+npm run typecheck
+npm run build
+```
+
+The production server serves `apps/web/dist` after a build:
+
+```bash
+npm run build
+npm start
+```
+
+Open <http://127.0.0.1:8787>.
+
+## TurtleToy scripts
+
+Plotbox accepts standard TurtleToy code using `Canvas`, `new Turtle()`, and an optional `walk(i)` function. The official-compatible `turtletoy` npm package captures the resulting lines directly into Plotbox geometry. Scripts are intended for trusted local use and run in a disposable Web Worker so a new render can terminate the previous job.
+
+## Repository layout
 
 ```text
-ProjectRecipe -> DesignDocument -> PlotPlan -> GcodeProgram
+apps/web          React/Vite editor and render worker
+apps/server       Fastify API and SQLite persistence
+packages/core     Project and canonical geometry types
+packages/geometry Geometry processing and path ordering
+packages/algorithms Seeded vector generators and algorithm metadata
+packages/gcode    Deterministic machine output
+tests             Core algorithm and G-code tests
 ```
 
-It creates an A3 landscape project, generates deterministic procedural modes including hierarchical
-Glyphscape artwork, imports a safe SVG subset, or converts bounded PNG/JPEG sources at a physical
-plot resolution using edge, centerline, hatch, crosshatch, squiggle, tone-contour, single-line
-circular-scribble, or quantized color-region geometry. Work runs as cancellable background jobs. Vector designs continue through physical
-pen-pass planning, pen-down/travel preview, and validated
-FluidNC/Grbl-compatible G-code or per-pass SVG export. Every generated G-code file is parsed back and
-blocked if reconstruction differs from the `PlotPlan`.
 
-## Requirements
+### Colour separation for flat artwork
 
-- Python 3.12 or newer.
-- Node.js 22 or newer.
-- `pnpm` 10.15.
-- `uv` (install with `python -m pip install uv`).
-- GNU Make for the canonical commands. On Windows, the equivalent underlying commands can also be
-  run directly from `Makefile`.
+In a raster project, select **Vectorisation → Colour separation**. Start with 6–8 palette colours, then use **Colours & pieces** to set a treatment and pen pass for each colour. Every detected colour gets an automatic pass; set its physical pen colour, width and calibration under **Pens & passes**. Individual connected pieces can override the colour treatment or use a separate pass. Selecting a piece highlights it in the preview; choose the empty option to see all pieces normally.
 
-## Setup
+Treatments include hatching, crosshatching, dense fill, outline only and no fill, with optional outlines. Hatch spacing and angle are independent per colour or piece. Dense fill uses spacing of 85% of the assigned pen width. Existing combined and split G-code exports support these passes, and intentional gaps are preserved during path optimisation.
 
-```bash
-make setup
-pnpm --filter @plotterapp/web exec playwright install chromium
-```
+The algorithm uses deterministic, weighted CIELAB palette clustering, conservative edge cleanup and four-connected component separation. It intersects hatch lines with each region’s boundaries using even–odd filling, so interior holes remain unfilled. Segments are clipped to the paper’s safe area. Transparent pixels and, optionally, pale neutral paper remain blank. Grayscale preprocessing is bypassed. Images use the editor’s existing maximum processing dimension of 1000 pixels; minimum region size is measured at that resolution.
 
-`make setup` uses the committed `uv.lock` and `pnpm-lock.yaml`. The normal application and all tests
-run without internet access after dependencies and Playwright Chromium are installed.
-
-## Start the local app
-
-```bash
-make dev
-```
-
-Open:
-
-- Frontend: <http://127.0.0.1:5173>
-- Local API and interactive schema: <http://127.0.0.1:8000/docs>
-- Health endpoint: <http://127.0.0.1:8000/api/health>
-
-Projects default to `.plotterapp-data/projects`. Override the location with
-`PLOTTERAPP_PROJECTS_ROOT`. Each project is an ordinary `.plotter` directory containing readable
-`project.json`, disposable content-keyed caches, and validated exports.
-
-The **Projects** page lists every saved project. Names can be changed without changing the stable
-project ID or directory path. Deletion requires a second explicit confirmation and permanently
-removes only the selected project directory, including its local sources, caches, and exports.
-
-## Artwork workflow
-
-1. Create an A3 project.
-2. Either keep/edit seed `codex-vertical-slice-1`, or choose an SVG, PNG, or JPEG source.
-3. For SVG, select fill treatment (`ignore`, `outline`, `hatch`, or `crosshatch`) and stroke
-   treatment (`centerline`, `outline`, or `parallel`).
-4. For raster sources, crop, rotate, fit, scale, choose a grayscale channel, and tune invert,
-   contrast, gamma, blur, sharpen, global/adaptive threshold, and morphology settings. The preprocessing preview updates automatically as settings change. Choose and tune a raster vectorization algorithm.
-5. Choose draft, standard, or export quality and start generation or vectorization.
-   Progress is streamed from the local service; Cancel stops work at the next cooperative
-   checkpoint.
-6. Inspect the source overlay, physical raster sampling readout, or vector design/import warnings.
-7. For vector designs, assign physical pens, hide/solo/enable passes, drag or button-reorder them,
-   and merge/split layer mappings. Quantized colors receive perceptual nearest-pen suggestions, but
-   remain fully manually assignable. Applying pass changes replans without rerunning conversion.
-   Enable physical-pen overprint to preview mapped colors in pass order.
-8. Export either the per-pass/combined SVG ZIP or the validated G-code ZIP.
-9. Save, reopen, and reproduce the output.
-
-The bundle contains:
-
-- `01-black.nc`
-- `02-cyan.nc`
-- `combined.nc` with exactly one `M0` pen-change pause
-- `dry-run.nc`, which never lowers the pen
-- `page-boundary.nc`, which never lowers the pen
-- `manifest.json` with file, design, plan, and validation hashes
-
-Validated files are also written to the project’s `exports/` directory.
-
-SVG archives contain one SVG for each enabled pass plus `combined.svg`. Source SVG files are stored
-immutably by SHA-256 under the project’s `assets/` directory.
-
-## SVG support and diagnostics
-
-The current importer supports physical root units/viewBox, paths, lines, polylines, polygons,
-rectangles (including rounded corners), circles, ellipses, relative/absolute path commands, arcs,
-nested transforms, inherited presentation styles, local `<use>` references, dashed strokes,
-deterministic text outlines through the bundled Plotter 5x7 fixture font, and stable top-level group
-names. Top-level groups and ungrouped objects are emitted as separate parts. After the first
-conversion, the SVG conversion panel can override each part independently with ignore, outline,
-hatch, crosshatch, regular pen dots, or deterministic organic stipple, then reconvert and plan the
-result as normal. Hatch angle/spacing and dot spacing/diameter are shared physical controls.
-
-Filters, masks, `foreignObject`, CSS, active content, external resources, and clip-path
-approximations are reported as structured warnings rather than silently discarded. The fixture font
-is deliberately basic and uppercases text; it makes labels deterministic without depending on
-host-installed fonts. DTD and entity declarations, oversized files, excessive node counts, and
-malformed content are rejected.
-
-## Raster preprocessing
-
-PNG and JPEG assets are identified by content and decoded with explicit source-pixel and dimension
-limits before full image allocation. EXIF orientation is normalized, animated inputs use the first
-frame with a warning, and transparency is explicitly composited over white.
-
-The preprocessing result is a versioned contract containing source/crop dimensions, lower-left page
-placement, output pixel dimensions, millimetres per pixel, warnings, and a PNG preview. Resolution
-is derived from page placement, active pen width, sampling density, and draft/standard/export
-quality, then bounded by the configured megapixel budget. Preprocessing has its own content-keyed
-cache and does not create or replace `DesignDocument`.
-
-Raster vectorization converts that physical preview into a normal `DesignDocument` using one of
-deterministic algorithms:
-
-- edge drawing with response threshold and small-component removal;
-- thresholded centerline skeleton tracing with short-branch pruning;
-- tone-clipped hatch and four-angle crosshatch;
-- continuous luminance-modulated squiggle scanlines;
-- single-line tone-aware circular scribbles with smaller, more closely spaced loops in darker regions;
-- single-line spiral waves with tone-dependent radial amplitude and frequency;
-- single-line overlapping arcs along a tone-weighted travelling-salesman route;
-- a non-crossing single-line travelling-salesman tour with optional corner rounding;
-- multi-level marching-squares tone contours.
-- quantized color-region outlines;
-- quantized color-region hatching.
-- ordered-dithered halftone marks with selectable dots or crosses.
-
-The halftone controls use physical millimetres: grid spacing, minimum and maximum mark size,
-mark contrast, gamma, and a highlight threshold. Choose **Contrast bands** to emit separate stable
-tone layers; each layer appears in **Pen passes** and can be assigned to a different physical pen.
-The converter uses a deterministic ordered pattern, so the same source and settings reproduce the
-same design hash. Preprocessing contrast and gamma remain available for broader image correction.
-
-All output coordinates are lower-left-origin page millimetres. The conversion report records path,
-removed-component, and removed-segment counts. Changing only vectorizer settings reuses
-preprocessing; changing only pass mapping reuses vector geometry. Quantized source colors are stored
-as stable semantic roles and preview colors, separately from physical pen profiles.
-
-## OpenStreetMap artwork
-
-Choose **Mapping** to navigate an attributed OpenStreetMap basemap. Submit a town, postcode, or
-landmark search and select a result, or enter the selection centre as latitude and longitude. Pan
-and zoom until the orange page overlay covers the intended area, then choose **Use page overlay
-extent**. Semantic data downloads are limited to 25 km² and happen only when **Download and freeze
-map data** is selected.
-
-The basemap is for interactive navigation only; Plotbox does not prefetch or archive tiles. Place
-searches are submitted explicitly rather than using autocomplete and are cached locally. Frozen
-Overpass data is stored with the project, so later generation and export do not need another network
-request. `PLOTTERAPP_OVERPASS_ENDPOINTS` may contain a comma-separated endpoint list, and
-`PLOTTERAPP_NOMINATIM_ENDPOINT` may select a compatible search provider.
-
-## Glyphscape artwork
-
-Choose **Glyphscape** in the procedural gallery and start with City Circuit, Industrial Skyline,
-Fairground Island, or Mixed Perimeter. The mode places deterministic parameterized glyphs into
-macro regions, builds a capacity-aware port graph, routes around physical clearance envelopes,
-decorates connectors inside explicit corridors, and fills selected negative space within the
-configured path and vertex budgets.
-
-Glyph structures, details, accents, backbone connectors, loop connectors, junctions, and fillers
-remain stable semantic layers that can be remapped to physical pens without regenerating the
-design. Lock a macro region and advance the regional regeneration step to preserve that region
-while changing unlocked regions. See [the Glyphscape workflow](docs/GLYPHSCAPE.md) for controls,
-diagnostics, and reproducibility behavior.
-
-## Map-to-Glyphscape artwork
-
-After freezing an OpenStreetMap snapshot in **Mapping**, choose **Map-to-Glyphscape** in the generic
-gallery. Circuit Metropolis, Fairground Atlas, and Industrial Borough preserve map roads as locked
-connector topology while deterministically replacing buildings and POIs with themed glyphs. Water
-and parks can exclude or fill composition space, and the fidelity control ranges from exact
-projected road geometry to a strongly stylized physical grid.
-
-Hybrid layers use the normal pass editor, planner, SVG exporter, and validated G-code pipeline. See
-[the Map-to-Glyphscape workflow](docs/MAP_TO_GLYPHSCAPE.md) for source, mask, fidelity, and
-reproducibility behavior.
-
-## Jobs and disposable cache
-
-Expensive generation, SVG import, raster preprocessing, and raster vectorization calls support
-queued/running/terminal job state, progress events at `/api/jobs/{job_id}/events`, and cancellation with
-`DELETE /api/jobs/{job_id}`. Results are published only when the captured project revision is still
-current.
-
-Operator cache keys include operator/version, input content hash, parameters, and quality. Cache
-statistics and bounded pruning are available at `/api/projects/{project_id}/cache`. Cache files are
-disposable; source assets and `project.json` are not.
-
-## Home Assistant app/add-on
-
-The repository root is an installable Home Assistant app folder. Copy it beneath the local
-`/addons` directory, reload the app store, install **Plotbox**, and use **Open Web UI** or its
-sidebar entry. The multi-stage [Dockerfile](Dockerfile) builds the Vite frontend and Python service
-for `amd64` and `aarch64`, serving both on internal port 5616.
-
-Ingress handles authentication and your existing Home Assistant reverse proxy handles SSL. The
-frontend uses relative asset, API, and event-stream URLs so the changing Ingress session prefix is
-preserved. Host port 5616 is published for a trusted reverse proxy such as Nginx Proxy Manager.
-The packaged app accepts clients from RFC1918 private networks (including direct `192.168.x.x`
-access), loopback, and the Home Assistant/container networks. Keep the app behind a firewall or
-trusted reverse proxy because Plotbox has no user accounts; custom deployments can narrow
-`PLOTTERAPP_ALLOWED_CLIENT_NETWORKS` to specific CIDRs.
-
-Persistent state lives under Home Assistant's `/data` volume:
-
-- `/data/projects` for ordinary `.plotter` project directories;
-- `/data/fluidnc.json` for the controller endpoint;
-- each project's `exports/` directory for validated output.
-
-See [Home Assistant app documentation](DOCS.md) for installation, backup, network, and safety notes.
-
-## FluidNC commissioning
-
-Open **Plotter setup** to configure the controller hostname, WebSocket port (normally 81), optional
-controller-side TLS, and command timeout. The WebSocket originates in FastAPI, so an HTTPS browser
-session never attempts a mixed-content `ws://` connection.
-
-The current allowlisted actions are:
-
-- identity, machine-state, active-mode, and configuration queries;
-- a bounded limit-switch check that exits FluidNC limit-reporting mode;
-- realtime feed hold;
-- all-axis or single-axis homing;
-- relative X/Y/Z jogs using the speed and distance limits configured in FluidNC;
-- an absolute-Z pen up/down/up cycle with bounded positions and feed.
-- named calibration patterns: scale grid, circle/arc, diagonal/skew,
-
-Plotbox does not add a separate confirmation step or jog speed/distance ceiling to these
-controller actions. FluidNC remains responsible for the machine configuration and limits.
-  backlash ladder, speed, Z-depth/pen pressure, lift delay, registration, pen swatches,
-  line spacing, and hatch density. Each pattern has a bounded test area and is constructed
-  server-side; there is no raw G-code entry.
-
-The axis calculator uses `corrected = current × commanded / measured`. It only suggests a value;
-Plotbox never writes FluidNC firmware settings. Calibration patterns also finish with the pen up and
-cannot change work zero. Clear the machine, verify limit inputs and homing direction, and keep a
-physical emergency stop available before any motion test.
-
-The skew calibration tool draws an uncorrected rectangle with two full diagonals. After X/Y distance
-has been calibrated, enter the rising (bottom-left to top-right) and falling diagonal measurements.
-Plotbox derives and saves the physical angle between the axes in `fluidnc.json`; enabled skew
-compensation is then applied automatically to every validated G-code export and direct send. The
-calibration can be disabled from Plotter setup without discarding its measurements.
-
-## Development commands
-
-```bash
-make setup
-make dev
-make lint
-make typecheck
-make test
-make e2e
-make verify
-```
-
-`make verify` runs Python and TypeScript formatting checks, Ruff and ESLint, strict mypy and
-TypeScript checks, pytest/Hypothesis/API tests, Vitest/React Testing Library, and the Playwright
-acceptance workflow.
-
-Regenerate intentionally changed schema and golden contracts with:
-
-```bash
-uv run python scripts/export_schemas.py
-make fixtures
-```
-
-Golden artifacts live under `fixtures/`. Do not regenerate them merely to hide a behavioral
-regression.
-
-## Product boundary
-
-This repository supports backend FluidNC WebSocket commissioning as described above. From the editor,
-an operator can also select one of the app's validated G-code exports and explicitly send it to the
-configured FluidNC machine. Plotbox regenerates and independently round-trip validates that selected
-file immediately before streaming it. It never accepts raw G-code from the browser and will only begin
-when FluidNC reports `Idle`; a successful response means all lines were accepted, not that physical
-motion has finished.
-
-The editor can also store every enabled pen pass on the controller SD card with **Store all passes
-on SD & start**. Plotbox creates `/plotbox/<project>/`, uploads one independently validated `.nc`
-file per pass in the pass-card priority order, uploads an ordered `run-all.nc`, and starts that job
-with FluidNC's `$SD/Run` command. The combined job retains `M0` pauses between passes so the operator
-can change pens. FluidNC's HTTP port (normally 80) is configured separately from its WebSocket port.
-
-It still has no serial/Telnet transport, arbitrary command console, work-zero editor, start-from-current
-pen-position mode, firmware configuration writer, unattended plotting, or hardware job recovery.
-See [AGENTS.md](AGENTS.md), [architecture decisions](docs/DECISIONS.md), and the
-[dithered-halftone ExecPlan](docs/exec-plans/0010-raster-dithered-halftone.md).
-
-## Flow Field generator
-
-Choose **Artwork → Flow Field** for seeded generative streamlines. Start with Curl ribbons,
-Wandering threads, Sunburst, or Vortex rings, then drag density, integration step, and collision
-spacing to tune the drawing. Help text is always visible beneath each slider. Use **Regenerate seed** for a new
-composition and **Generate design** to create plot-ready paths for the normal pen and export workflow.
-
-Release 0.3.2 adds slider controls and automatic raster preprocessing previews. Production frontend
-assets use Vite content hashes so updated JavaScript and CSS receive new cache URLs.
-
-## Continuous-line image conversion (0.3.3)
-
-In **Image import → Algorithm**, choose one of these styles, adjust its sliders, then select
-**Vectorize and plan**. Each nonblank result is one continuous path in the normal pen-pass,
-SVG, and validated G-code workflow.
-
-| Style | Drawing | Main controls |
-| --- | --- | --- |
-| Single-line spiral waves | A centre-outward spiral with stronger, faster waves over dark areas | Turn spacing, wave height, wavelength, dark frequency, tone gamma |
-| Single-line overlapping arcs | An image-guided route decorated with overlapping loops, smaller and tighter in shadows | Ink density, edge detail, tone gamma, dark/light radius, overlap |
-| Single-line travelling salesman | A tone-weighted point tour with intersections removed, optionally rounded | Ink density, edge detail, tone gamma, minimum darkness, corner smoothing |
-
-The spiral uses the largest circle inside the fitted image, so rectangular image corners are omitted.
-Wave height is limited to 45% of turn spacing. Increasing frequency adds shadow density; preprocessing
-contrast and gamma are useful for portraits. Spiral quality controls the samples per wave.
-
-Since v0.3.5, route density is derived from absolute image darkness, gamma, physical placement and
-the selected pen width. Ink density 1 targets the source tones; values above 1 darken the drawing.
-Dark images receive more ink than light images instead of sharing a fixed point count. Stratified
-sites in adaptive image tiles avoid random clumps, while local TSP tours with 2-opt shortening
-join through neighbouring tile portals into one open line. This is a hierarchical heuristic; it
-does not solve a global shortest tour. The open endpoints avoid a closing diagonal across the image.
-Corner smoothing uses sampled quadratic curves and is reduced if it would create a centreline
-intersection. Closely spaced strokes can still touch when drawn with a thick physical pen.
-
-The overlapping arc style is an original implementation inspired by the virtual-path and
-tone-controlled loop idea in [Chiu et al. (2015)](https://cgv.cs.nthu.edu.tw/projects/Recreational_Graphics/CircularScribbleArt)
-and the [MarginallyClever reference](https://github.com/MarginallyClever/chiuEtAl2015).
-It does not copy that implementation or reproduce every stage of the paper. The existing
-**Circular scribble scanlines** option remains available.
-
-Arc overlap controls loop packing, and tighter shadow loops can fill nearly all the paper. Curve
-sampling follows pen width and quality to avoid redundant tiny segments. Set the pen width to match
-the pen you will use. Very thin pens on large images may need more detail than the 400,000-vertex
-budget allows: the route modes automatically rebuild the complete image at coarser detail and show
-a diagnostic. This can lighten the result; a wider pen or smaller placement retains finer tones.
-Spiral generation is unchanged and still reports an error for excessive wave detail. Background
-progress and cancellation remain available. Minimum-segment filtering is disabled to preserve
-continuity; empty sources produce no route. Older projects load the new controls with defaults;
-legacy point-count and loop-spacing fields remain readable but no longer govern these two modes.
-
-## Extended pen-plot map layers (0.4.1)
-
-The OpenStreetMap workspace now exposes grouped transport, water, landuse, boundary,
-infrastructure and POI controls rather than treating the source as a conventional raster map.
-Roads can use centerline, casing, classified, dashed or dotted treatments; rail can use single,
-double or sleeper geometry. Polygon sources support outline, hatch, outline+hatch, crosshatch and
-plotter-safe stipple treatments, with a parallel ripple option for water.
-
-Physical detail filtering is applied after geographic coordinates are transformed to page
-millimetres. Minimum line length, polygon area, POI spacing and vertex simplification therefore
-track the actual plotted size rather than source-map units.
-
-Optional terrain contours use the public AWS Open Data Terrain Tiles Terrarium PNG source. Terrain
-pixels are decoded to elevation, contoured with marching squares and converted to normal Plotbox
-vector paths; terrain imagery is never added to the plot. Standard and index contours are emitted
-as separate semantic roles. Network access is required only while terrain contours are generated.
+This separates connected colour shapes rather than recognising semantic objects. Small omitted regions become blank; thin details may require a smaller pen or denser hatching. Outlines follow pixel boundaries; dense fill is a pen-line approximation, and real coverage depends on the pen and paper. Changing palette/segmentation settings or replacing the source resets colour treatments and automatic pens, so finish separation before calibrating those pens. Placement changes retain treatments.

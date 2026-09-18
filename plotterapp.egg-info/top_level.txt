@@ -1,3 +1,0 @@
-plotter_core
-plotterapp_api
-tests
