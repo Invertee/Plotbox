@@ -81,6 +81,45 @@ describe('colour separation', () => {
     const result = generateColourSeparation(image, canvas, { ...DEFAULT_RASTER_PLACEMENT, fit: 'cover', offsetXmm: 4 }, settings, config, [], []);
     for (const point of result.paths.flatMap(p => p.points)) { expect(point.x).toBeGreaterThanOrEqual(-1e-8); expect(point.x).toBeLessThanOrEqual(20 + 1e-8); expect(point.y).toBeGreaterThanOrEqual(-1e-8); expect(point.y).toBeLessThanOrEqual(20 + 1e-8); }
   });
+  it('supports tone-based treatments per colour while keeping every mark inside its piece', () => {
+    const image = pixels(['RRRRR', 'R...R', 'R...R', 'R...R', 'RRRRR']);
+    const separated = separateColours(image, settings);
+    const colourId = separated.palette[0]!.id;
+    const treatments = [
+      { fill: 'dither' as const, algorithmSettings: { spacing: 0.8, markSize: 1.2, markStyle: 'ring', overlap: 0.4, seed: 17 } },
+      { fill: 'stipple' as const, algorithmSettings: { count: 1200, markSize: 1.2, markStyle: 'cross', overlap: 0.4, tonePower: 1, seed: 17 } },
+      { fill: 'tonal-dashes' as const, algorithmSettings: { spacing: 0.8, density: 2, dashLength: 5, minDashLength: 1, angle: 30, angleVariation: 40, overlap: 0.5, tonePower: 1, seed: 17 } },
+    ];
+    for (const treatment of treatments) {
+      const config: ColourSeparationSettings = { colours: { [colourId]: treatment }, regions: {} };
+      const first = render(image, config);
+      const second = render(image, config);
+      expect(first.paths.length).toBeGreaterThan(0);
+      expect(first.paths).toEqual(second.paths);
+      for (const path of first.paths) {
+        for (let segment = 0; segment + 1 < path.points.length; segment++) {
+          const a = path.points[segment]!; const b = path.points[segment + 1]!;
+          for (let t = 0.01; t < 1; t += 0.1) {
+            const x = Math.floor((a.x + (b.x - a.x) * t) / 20 * image.width);
+            const y = Math.floor((a.y + (b.y - a.y) * t) / 20 * image.height);
+            const regionIndex = separated.regionLabels[y * image.width + x]!;
+            expect(separated.regions[regionIndex]?.id).toBe(path.channel);
+          }
+        }
+      }
+    }
+  });
+  it('allows one piece to override its colour with a tone-based treatment', () => {
+    const image = pixels(['RR..RR', 'RR..RR']);
+    const separated = separateColours(image, settings);
+    const [selected] = separated.regions;
+    const result = render(image, {
+      colours: { [selected!.colourId]: { fill: 'none', algorithmSettings: { markStyle: 'cross', markSize: 0.8, overlap: 0, seed: 29 } } },
+      regions: { [selected!.id]: { fill: 'dither', algorithmSettings: { spacing: 0.6 } } },
+    });
+    expect(result.paths.length).toBeGreaterThan(0);
+    expect(new Set(result.paths.map(path => path.channel))).toEqual(new Set([selected!.id]));
+  });
   it('creates calibrated passes once and exports a separate file per detected colour', () => {
     const image = pixels(['RRBB', 'RRBB']);
     const result = render(image);

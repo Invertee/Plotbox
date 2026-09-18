@@ -11,7 +11,7 @@ Plotbox is a local-first browser application for turning generated artwork and r
 - A built-in physical test pattern
 - Raster preprocessing: brightness, contrast, gamma, blur, threshold and inversion
 - Raster contain, cover and stretch fitting with independent scale and millimetre offsets
-- Worker-based edge, hatch, crosshatch, adaptive crosshatch, dither, stipple, tonal-dash and scanline vectorisation
+- Worker-based edge, contour-tracing, hatch, crosshatch, adaptive crosshatch, dither, stipple, tonal-dash and scanline vectorisation
 - Continuous spiroglyph image rendering with adjustable line spacing, wave frequency, smoothing, tone thresholds, amplitude, shape and placement
 - Seeded flow-field, Truchet and guilloché generators
 - Standard TurtleToy script execution through the `turtletoy` package in a disposable worker
@@ -61,6 +61,14 @@ npm start
 ```
 
 Open <http://127.0.0.1:8787>.
+
+## Home Assistant add-on
+
+This repository is also a Home Assistant add-on repository. Add the repository URL in **Settings → Apps → App store → ⋮ → Repositories**, then install **Plotbox**. The add-on stores its SQLite database in Home Assistant's persistent `/data` volume, so projects survive upgrades and restarts.
+
+Plotbox publishes TCP port `8787` and does not use Home Assistant Ingress. Point your Home Assistant reverse proxy at the add-on's port, or use the add-on's **Open Web UI** button for a direct local URL. The app is served from `/`, so proxy it as its own host or location without a path prefix. WebSocket forwarding is needed for direct FluidNC control from the browser.
+
+The add-on settings expose the Nominatim and Overpass endpoints and the identifying User-Agent used for map imports. Keep the defaults for light personal use, or set them to a self-hosted/commercial provider as described above.
 
 ## TurtleToy scripts
 

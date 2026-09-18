@@ -1,6 +1,7 @@
 import type { CanvasSettings, PlotGeometry, PlotLayer, PlotPath, Point, SourcePath } from '@plotter/core';
 import { drawableBounds, type Bounds } from '@plotter/geometry';
 export { DEFAULT_COLOUR_TREATMENT, colourPassId, separateColours, generateColourSeparation, ensureColourPasses } from './colourSeparation';
+export { traceRasterContours, type RasterContourOptions } from './rasterContours';
 
 export type ControlDefinition = {
   key: string;
@@ -34,6 +35,11 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'spacing', label: 'Grid spacing', type: 'range', min: 5, max: 30, step: 1, unit: 'mm', default: 15 },
   ] },
   { id: 'raster.edge', name: 'Edge drawing', group: 'raster', worker: true, controls: [{ key: 'edgeThreshold', label: 'Edge threshold', type: 'range', min: 10, max: 240, step: 1, default: 70 }] },
+  { id: 'raster.contours', name: 'Contour tracing', group: 'raster', worker: true, controls: [
+    { key: 'edgeThreshold', label: 'Edge threshold', type: 'range', min: 10, max: 240, step: 1, default: 55 },
+    { key: 'minimumLength', label: 'Minimum line length', type: 'range', min: 0, max: 20, step: 0.25, unit: 'mm', default: 1 },
+    { key: 'simplification', label: 'Line smoothing', type: 'range', min: 0, max: 2, step: 0.05, unit: 'mm', default: 0.15 },
+  ] },
   { id: 'raster.hatch', name: 'Hatching', group: 'raster', worker: true, controls: [
     { key: 'spacing', label: 'Spacing', type: 'range', min: 0.5, max: 10, step: 0.25, unit: 'mm', default: 2.5 },
     { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 45 },

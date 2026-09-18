@@ -8,6 +8,36 @@ type Edge = [Point, Point];
 export const colourPassId = (id: string) => `colour-pass-${id}`;
 const distance = (a: Triple, b: Triple) => a.reduce((sum, v, i) => sum + (v - b[i]!) ** 2, 0);
 const bounded = (v: unknown, fallback: number, min: number, max: number) => Number.isFinite(Number(v)) ? Math.max(min, Math.min(max, Number(v))) : fallback;
+const clamp = (value: number, minimum = 0, maximum = 1) => Math.max(minimum, Math.min(maximum, value));
+
+function mulberry32(seed: number): () => number {
+  let value = seed >>> 0;
+  return () => {
+    value += 0x6d2b79f5;
+    let t = value;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const regionSeed = (seed: number, id: string) => [...id].reduce((value, character) => Math.imul(value ^ character.charCodeAt(0), 16777619), seed | 0);
+
+function markPaths(point: Point, size: number, style: string): Point[][] {
+  const radius = Math.max(0.025, size / 2);
+  if (style === 'cross') {
+    const arm = radius * 0.8;
+    return [
+      [{ x: point.x - arm, y: point.y - arm }, { x: point.x + arm, y: point.y + arm }],
+      [{ x: point.x - arm, y: point.y + arm }, { x: point.x + arm, y: point.y - arm }],
+    ];
+  }
+  if (style === 'ring') return [Array.from({ length: 13 }, (_, index) => {
+    const angle = index / 12 * Math.PI * 2;
+    return { x: point.x + Math.cos(angle) * radius, y: point.y + Math.sin(angle) * radius };
+  })];
+  return [[{ x: point.x - 0.01, y: point.y }, { x: point.x + 0.01, y: point.y }]];
+}
 
 // CIELAB keeps perceptually similar highlights/shadows together more naturally than RGB.
 function lab(rgb: Triple): Triple {
@@ -150,9 +180,50 @@ export function generateColourSeparation(image: ImagePixels, canvas: CanvasSetti
       if (left >= 0) edges[left]!.push(edge); if (right >= 0) edges[right]!.push(edge);
     }
   }
+  const regionPixelBounds = regions.map(() => ({ minX: width, minY: height, maxX: 0, maxY: 0 }));
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const regionIndex = regionLabels[y * width + x]!;
+    if (regionIndex < 0) continue;
+    const regionBounds = regionPixelBounds[regionIndex]!;
+    regionBounds.minX = Math.min(regionBounds.minX, x);
+    regionBounds.minY = Math.min(regionBounds.minY, y);
+    regionBounds.maxX = Math.max(regionBounds.maxX, x + 1);
+    regionBounds.maxY = Math.max(regionBounds.maxY, y + 1);
+  }
+  const regionAt = (location: Point) => {
+    if (location.x < placement.x || location.x >= placement.x + placement.width || location.y < placement.y || location.y >= placement.y + placement.height) return -1;
+    const x = Math.floor((location.x - placement.x) / placement.width * width);
+    const y = Math.floor((location.y - placement.y) / placement.height * height);
+    return regionLabels[y * width + x] ?? -1;
+  };
+  const toneAt = (location: Point) => {
+    if (location.x < placement.x || location.x > placement.x + placement.width || location.y < placement.y || location.y > placement.y + placement.height) return 0;
+    const x = Math.max(0, Math.min(width - 1, Math.round((location.x - placement.x) / placement.width * (width - 1))));
+    const y = Math.max(0, Math.min(height - 1, Math.round((location.y - placement.y) / placement.height * (height - 1))));
+    const offset = (y * width + x) * 4;
+    const alpha = image.data[offset + 3]! / 255;
+    const luminance = (image.data[offset]! * 0.2126 + image.data[offset + 1]! * 0.7152 + image.data[offset + 2]! * 0.0722) * alpha + 255 * (1 - alpha);
+    return clamp((255 - luminance) / 127);
+  };
+  const pageRegionBounds = (index: number): Bounds => {
+    const pixels = regionPixelBounds[index]!;
+    return {
+      minX: Math.max(bounds.minX, placement.x + pixels.minX / width * placement.width),
+      minY: Math.max(bounds.minY, placement.y + pixels.minY / height * placement.height),
+      maxX: Math.min(bounds.maxX, placement.x + pixels.maxX / width * placement.width),
+      maxY: Math.min(bounds.maxY, placement.y + pixels.maxY / height * placement.height),
+    };
+  };
   const paths: PlotGeometry['paths'] = [];
   regions.forEach((region, i) => {
-    const treatment = { ...DEFAULT_COLOUR_TREATMENT, ...treatments?.colours[region.colourId], ...treatments?.regions[region.id] };
+    const colourTreatment = treatments?.colours[region.colourId];
+    const regionTreatment = treatments?.regions[region.id];
+    const treatment = {
+      ...DEFAULT_COLOUR_TREATMENT,
+      ...colourTreatment,
+      ...regionTreatment,
+      algorithmSettings: { ...colourTreatment?.algorithmSettings, ...regionTreatment?.algorithmSettings },
+    };
     if (!treatment.enabled) return;
     const passId = treatment.passId ?? colourPassId(region.colourId);
     const pen = pens.find(p => p.id === passes.find(pass => pass.id === passId)?.penId);
@@ -162,8 +233,135 @@ export function generateColourSeparation(image: ImagePixels, canvas: CanvasSetti
       if (segment) paths.push({ id: `colour-${paths.length}`, layerId: 'layer-1', passId, channel: region.id, preserveGaps: true, points: segment });
       if (paths.length > 500_000) throw new Error('Too many colour paths. Increase spacing or the minimum region size.');
     };
+    // Split marks at source-pixel boundaries so dots and dashes cannot leak into
+    // a neighbouring colour, a hole, or a disconnected piece.
+    const addMasked = (start: Point, end: Point) => {
+      const segment = clip(start, end, bounds);
+      if (!segment) return;
+      const [a, b] = segment;
+      const dx = b.x - a.x; const dy = b.y - a.y;
+      const stops = [0, 1];
+      if (Math.abs(dx) > 1e-10) {
+        const from = Math.max(1, Math.ceil((Math.min(a.x, b.x) - placement.x) / placement.width * width));
+        const to = Math.min(width - 1, Math.floor((Math.max(a.x, b.x) - placement.x) / placement.width * width));
+        for (let x = from; x <= to; x++) {
+          const t = (placement.x + x / width * placement.width - a.x) / dx;
+          if (t > 0 && t < 1) stops.push(t);
+        }
+      }
+      if (Math.abs(dy) > 1e-10) {
+        const from = Math.max(1, Math.ceil((Math.min(a.y, b.y) - placement.y) / placement.height * height));
+        const to = Math.min(height - 1, Math.floor((Math.max(a.y, b.y) - placement.y) / placement.height * height));
+        for (let y = from; y <= to; y++) {
+          const t = (placement.y + y / height * placement.height - a.y) / dy;
+          if (t > 0 && t < 1) stops.push(t);
+        }
+      }
+      stops.sort((left, right) => left - right);
+      for (let index = 0; index + 1 < stops.length; index++) {
+        const from = stops[index]!; const to = stops[index + 1]!;
+        if (to - from < 1e-9) continue;
+        const middle = (from + to) / 2;
+        if (regionAt({ x: a.x + dx * middle, y: a.y + dy * middle }) === i) add(
+          { x: a.x + dx * from, y: a.y + dy * from },
+          { x: a.x + dx * to, y: a.y + dy * to },
+        );
+      }
+    };
+    const addMark = (location: Point, size: number, style: string) => markPaths(location, size, style).forEach(mark => {
+      for (let index = 0; index + 1 < mark.length; index++) addMasked(mark[index]!, mark[index + 1]!);
+    });
     if (treatment.fill === 'outline' || treatment.outline) edges[i]!.forEach(([a, b]) => add(a, b));
     if (treatment.fill === 'none' || treatment.fill === 'outline') return;
+    const method = treatment.algorithmSettings;
+    if (treatment.fill === 'dither') {
+      const spacing = bounded(method.spacing, 1.5, 0.3, 8);
+      const markSize = bounded(method.markSize, 0.45, 0.1, 8);
+      const markStyle = String(method.markStyle ?? 'point');
+      const overlap = bounded(method.overlap, 0.25, 0, 1);
+      const random = mulberry32(regionSeed(bounded(method.seed, 482923, 1, 999999), region.id));
+      const bayer = [[0, 128, 32, 160], [192, 64, 224, 96], [48, 176, 16, 144], [240, 112, 208, 80]];
+      const regionBounds = pageRegionBounds(i);
+      const firstRow = Math.max(0, Math.ceil((regionBounds.minY - bounds.minY) / spacing));
+      const lastRow = Math.floor((regionBounds.maxY - bounds.minY) / spacing);
+      const firstColumn = Math.max(0, Math.ceil((regionBounds.minX - bounds.minX) / spacing));
+      const lastColumn = Math.floor((regionBounds.maxX - bounds.minX) / spacing);
+      for (let row = firstRow; row <= lastRow; row++) {
+        const y = bounds.minY + row * spacing;
+        for (let column = firstColumn; column <= lastColumn; column++) {
+          const x = bounds.minX + column * spacing;
+          const location = { x, y };
+          if (regionAt(location) === i) {
+            const tone = toneAt(location);
+            if (tone * 255 > bayer[row % 4]![column % 4]!) {
+              const marks = 1 + Math.floor(tone * overlap * 3);
+              for (let mark = 0; mark < marks; mark++) {
+                const jitter = mark === 0 ? 0 : markSize * overlap * 0.65;
+                addMark({ x: x + (random() - 0.5) * jitter, y: y + (random() - 0.5) * jitter }, markSize, markStyle);
+              }
+            }
+          }
+        }
+      }
+      return;
+    }
+    if (treatment.fill === 'stipple') {
+      const regionBounds = pageRegionBounds(i);
+      const regionArea = Math.max(0, regionBounds.maxX - regionBounds.minX) * Math.max(0, regionBounds.maxY - regionBounds.minY);
+      if (!regionArea) return;
+      const random = mulberry32(regionSeed(bounded(method.seed, 482923, 1, 999999), region.id));
+      const wholeCount = bounded(method.count, 6000, 100, 30000);
+      const drawableArea = (bounds.maxX - bounds.minX) * (bounds.maxY - bounds.minY);
+      const count = Math.max(1, Math.round(wholeCount * regionArea / drawableArea));
+      const markSize = bounded(method.markSize, 0.5, 0.1, 8);
+      const markStyle = String(method.markStyle ?? 'point');
+      const overlap = bounded(method.overlap, 0.35, 0, 1);
+      const tonePower = bounded(method.tonePower, 1, 0.35, 3);
+      for (let candidate = 0; candidate < count; candidate++) {
+        const location = { x: regionBounds.minX + random() * (regionBounds.maxX - regionBounds.minX), y: regionBounds.minY + random() * (regionBounds.maxY - regionBounds.minY) };
+        if (regionAt(location) !== i) continue;
+        const darkness = Math.pow(toneAt(location), tonePower);
+        if (random() >= darkness) continue;
+        const marks = 1 + Math.floor(darkness * overlap * 3);
+        for (let mark = 0; mark < marks; mark++) {
+          const jitter = mark === 0 ? 0 : markSize * overlap * 0.8;
+          addMark({ x: location.x + (random() - 0.5) * jitter, y: location.y + (random() - 0.5) * jitter }, markSize * (0.55 + darkness * 0.45), markStyle);
+        }
+      }
+      return;
+    }
+    if (treatment.fill === 'tonal-dashes') {
+      const regionBounds = pageRegionBounds(i);
+      const regionArea = Math.max(0, regionBounds.maxX - regionBounds.minX) * Math.max(0, regionBounds.maxY - regionBounds.minY);
+      if (!regionArea) return;
+      const spacing = bounded(method.spacing, 1.6, 0.6, 10);
+      const density = bounded(method.density, 1.15, 0.1, 3);
+      const maximum = bounded(method.dashLength, 3.5, 0.4, 16);
+      const minimum = Math.min(maximum, bounded(method.minDashLength, 0.35, 0.05, 8));
+      const baseAngle = bounded(method.angle, 0, 0, 180) * Math.PI / 180;
+      const angleVariation = bounded(method.angleVariation, 70, 0, 180) * Math.PI / 180;
+      const overlap = bounded(method.overlap, 0.55, 0, 1);
+      const tonePower = bounded(method.tonePower, 0.85, 0.35, 3);
+      const random = mulberry32(regionSeed(bounded(method.seed, 482923, 1, 999999), region.id));
+      const candidates = Math.min(120000, Math.ceil(regionArea / (spacing * spacing) * density));
+      for (let candidate = 0; candidate < candidates; candidate++) {
+        const location = { x: regionBounds.minX + random() * (regionBounds.maxX - regionBounds.minX), y: regionBounds.minY + random() * (regionBounds.maxY - regionBounds.minY) };
+        if (regionAt(location) !== i) continue;
+        const darkness = Math.pow(toneAt(location), tonePower);
+        if (random() >= darkness) continue;
+        const marks = random() < darkness * overlap ? 2 : 1;
+        for (let mark = 0; mark < marks; mark++) {
+          const jitter = mark === 0 ? 0 : spacing * overlap * 0.7;
+          const centre = { x: location.x + (random() - 0.5) * jitter, y: location.y + (random() - 0.5) * jitter };
+          const tone = Math.pow(toneAt(centre), tonePower);
+          const length = minimum + (maximum - minimum) * (0.2 + tone * 0.8) * (0.55 + random() * 0.75);
+          const angle = baseAngle + (random() - 0.5) * angleVariation;
+          const dx = Math.cos(angle) * length / 2; const dy = Math.sin(angle) * length / 2;
+          addMasked({ x: centre.x - dx, y: centre.y - dy }, { x: centre.x + dx, y: centre.y + dy });
+        }
+      }
+      return;
+    }
     const spacing = treatment.fill === 'solid' ? penWidth * 0.85 : bounded(treatment.spacing, 1.2, 0.1, 20);
     const angle = bounded(treatment.angle, 45, -360, 360);
     for (const degrees of treatment.fill === 'crosshatch' ? [angle, angle + 90] : [angle]) {

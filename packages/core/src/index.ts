@@ -27,11 +27,12 @@ export interface PlotGeometry {
 
 export interface ColourTreatment {
   enabled: boolean;
-  fill: 'hatch' | 'crosshatch' | 'solid' | 'outline' | 'none';
+  fill: 'hatch' | 'crosshatch' | 'dither' | 'stipple' | 'tonal-dashes' | 'solid' | 'outline' | 'none';
   spacing: number;
   angle: number;
   outline: boolean;
   passId?: string;
+  algorithmSettings?: Record<string, number | string | boolean>;
 }
 
 export interface ColourSeparationSettings {

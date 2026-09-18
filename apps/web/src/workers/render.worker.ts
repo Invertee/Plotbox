@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import type { CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds, type Bounds } from '@plotter/geometry';
-import { generateSpiroglyph, generateColourSeparation } from '@plotter/algorithms';
+import { generateSpiroglyph, generateColourSeparation, traceRasterContours } from '@plotter/algorithms';
 import { turtleDraw } from 'turtletoy';
 
 type Job = {
@@ -83,6 +83,44 @@ function preprocessImage(image: ImageData, options: PreprocessSettings): Float32
     }
   }
   return blurred;
+}
+
+function simplifyPath(points: Point[], tolerance: number): Point[] {
+  if (points.length <= 2 || tolerance <= 0) return points;
+  const squaredTolerance = tolerance * tolerance;
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+  const ranges: [number, number][] = [[0, points.length - 1]];
+  while (ranges.length) {
+    const [first, last] = ranges.pop()!;
+    const start = points[first]!;
+    const end = points[last]!;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    let furthest = first;
+    let maximumDistance = squaredTolerance;
+    for (let index = first + 1; index < last; index += 1) {
+      const point = points[index]!;
+      const progress = lengthSquared ? clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared) : 0;
+      const offsetX = point.x - (start.x + progress * dx);
+      const offsetY = point.y - (start.y + progress * dy);
+      const distance = offsetX * offsetX + offsetY * offsetY;
+      if (distance > maximumDistance) { maximumDistance = distance; furthest = index; }
+    }
+    if (furthest !== first) {
+      keep[furthest] = 1;
+      ranges.push([first, furthest], [furthest, last]);
+    }
+  }
+  return points.filter((_, index) => keep[index]);
+}
+
+function pathLength(points: Point[]): number {
+  let length = 0;
+  for (let index = 1; index < points.length; index += 1) length += Math.hypot(points[index]!.x - points[index - 1]!.x, points[index]!.y - points[index - 1]!.y);
+  return length;
 }
 
 function rasterGeometry(job: Job): PlotGeometry {
@@ -177,6 +215,38 @@ function rasterGeometry(job: Job): PlotGeometry {
         else if (current.length) { addPath(current); current = []; }
       }
       addPath(current);
+    }
+  } else if (job.algorithmId === 'raster.contours') {
+    progress(job.jobId, 0.18, 'Detecting and joining contours');
+    const contours = traceRasterContours(luminance, width, height, {
+      threshold: numberSetting(job.settings, 'edgeThreshold', 55),
+      minimumPoints: 2,
+    });
+    const minimumLength = Math.max(0, numberSetting(job.settings, 'minimumLength', 1));
+    const simplification = Math.max(0, numberSetting(job.settings, 'simplification', 0.15));
+    const addContour = (points: Point[]) => {
+      const simplified = simplifyPath(points, simplification);
+      if (simplified.length > 1 && pathLength(simplified) >= minimumLength) addPath(simplified, primary, 'contour');
+    };
+    for (let contourIndex = 0; contourIndex < contours.length; contourIndex += 1) {
+      const pagePoints = contours[contourIndex]!.map((point) => ({
+        x: placement.x + point.x / Math.max(1, width - 1) * placement.width,
+        y: placement.y + point.y / Math.max(1, height - 1) * placement.height,
+      }));
+      let visible: Point[] = [];
+      for (let pointIndex = 1; pointIndex < pagePoints.length; pointIndex += 1) {
+        const clipped = clipLine(pagePoints[pointIndex - 1]!, pagePoints[pointIndex]!, bounds);
+        if (!clipped) { addContour(visible); visible = []; continue; }
+        const [start, end] = clipped;
+        const previous = visible[visible.length - 1];
+        if (!previous || Math.hypot(previous.x - start.x, previous.y - start.y) > 0.001) {
+          addContour(visible);
+          visible = [start];
+        }
+        visible.push(end);
+      }
+      addContour(visible);
+      if (contourIndex % 250 === 0) progress(job.jobId, 0.45 + contourIndex / Math.max(1, contours.length) * 0.45, 'Tracing contour paths');
     }
   } else if (job.algorithmId === 'raster.dither') {
     const spacing = Math.max(0.15, numberSetting(job.settings, 'spacing', 1.5));

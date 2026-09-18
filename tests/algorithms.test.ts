@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { algorithmDefaults, generateAlgorithm, generateSpiroglyph, generateVectorLayers } from '@plotter/algorithms';
+import { algorithmDefaults, generateAlgorithm, generateSpiroglyph, generateVectorLayers, traceRasterContours } from '@plotter/algorithms';
 import type { PlotLayer } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds } from '@plotter/geometry';
 import { turtleDraw } from 'turtletoy';
@@ -72,6 +72,34 @@ describe('spiroglyph raster generation', () => {
     const dark = generateSpiroglyph(bounds, settings, () => 0).paths[0]!.points;
     const light = generateSpiroglyph(bounds, settings, () => 255).paths[0]!.points;
     expect(dark.some((point, index) => Math.hypot(point.x - light[index]!.x, point.y - light[index]!.y) > 1)).toBe(true);
+  });
+});
+
+describe('raster contour tracing', () => {
+  it('follows line direction instead of producing horizontal scan-line blocks', () => {
+    const width = 24;
+    const height = 24;
+    const pixels = new Float32Array(width * height).fill(255);
+    for (let index = 4; index < 20; index += 1) {
+      pixels[index * width + index] = 0;
+      pixels[index * width + index + 1] = 0;
+    }
+    const paths = traceRasterContours(pixels, width, height, { threshold: 40, minimumPoints: 3 });
+    expect(paths.length).toBeGreaterThan(0);
+    expect(paths.some((path) => {
+      const first = path[0]!;
+      const last = path[path.length - 1]!;
+      return Math.abs(last.x - first.x) > 5 && Math.abs(last.y - first.y) > 5;
+    })).toBe(true);
+  });
+
+  it('does not create contours in a flat image', () => {
+    expect(traceRasterContours(new Float32Array(100).fill(128), 10, 10)).toEqual([]);
+  });
+
+  it('registers contour controls separately from legacy edge drawing', () => {
+    expect(algorithmDefaults('raster.edge')).toEqual({ edgeThreshold: 70 });
+    expect(algorithmDefaults('raster.contours')).toMatchObject({ edgeThreshold: 55, minimumLength: 1, simplification: 0.15 });
   });
 });
 

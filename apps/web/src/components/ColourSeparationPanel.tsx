@@ -1,5 +1,11 @@
 import type { ColourTreatment, ProjectState } from '@plotter/core';
-import { colourPassId, DEFAULT_COLOUR_TREATMENT } from '@plotter/algorithms';
+import { ALGORITHMS, algorithmDefaults, colourPassId, DEFAULT_COLOUR_TREATMENT } from '@plotter/algorithms';
+
+const rasterTreatmentIds: Partial<Record<ColourTreatment['fill'], string>> = {
+  dither: 'raster.dither',
+  stipple: 'raster.stipple',
+  'tonal-dashes': 'raster.tonal-dashes',
+};
 
 export function ColourSeparationPanel({ state, updateState, selected, setSelected }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void; selected: string; setSelected: (id: string) => void }) {
   const result = state.geometry.generator === 'raster.colour-separation' ? state.geometry.colourSeparation : undefined;
@@ -9,13 +15,18 @@ export function ColourSeparationPanel({ state, updateState, selected, setSelecte
   const renamePass = (passId: string, name: string) => updateState({ passes: state.passes.map(pass => pass.id === passId ? { ...pass, name } : pass) });
   const treatmentFields = (value: ColourTreatment, change: (update: Partial<ColourTreatment>) => void, label: string) => {
     const selectedPass = state.passes.find(pass => pass.id === value.passId);
+    const treatmentId = rasterTreatmentIds[value.fill];
+    const definition = treatmentId ? ALGORITHMS.find(item => item.id === treatmentId) : undefined;
+    const methodSettings = treatmentId ? { ...algorithmDefaults(treatmentId), ...value.algorithmSettings } : {};
+    const changeMethodSetting = (key: string, next: number | string | boolean) => change({ algorithmSettings: { ...methodSettings, [key]: next } });
     return <div className="stack">
     <label className="check-field"><input type="checkbox" checked={value.enabled} onChange={e => change({ enabled: e.target.checked })} /> Plot {label}</label>
     <label>Pen pass<select value={value.passId} onChange={e => change({ passId: e.target.value })}>{state.passes.map(pass => <option key={pass.id} value={pass.id}>{pass.name}</option>)}</select></label>
     {selectedPass && <label>Pass name<input value={selectedPass.name} onChange={e => renamePass(selectedPass.id, e.target.value)} /></label>}
-    <label>Fill treatment<select value={value.fill} onChange={e => change({ fill: e.target.value as ColourTreatment['fill'] })}><option value="hatch">Hatching</option><option value="crosshatch">Crosshatching</option><option value="solid">Dense fill (uses pen width)</option><option value="outline">Outline only</option><option value="none">No fill</option></select></label>
+    <label>Fill treatment<select value={value.fill} onChange={e => change({ fill: e.target.value as ColourTreatment['fill'] })}><option value="hatch">Hatching</option><option value="crosshatch">Crosshatching</option><option value="dither">Dithered dots</option><option value="stipple">Stippling</option><option value="tonal-dashes">Tonal dashes</option><option value="solid">Dense fill (uses pen width)</option><option value="outline">Outline only</option><option value="none">No fill</option></select></label>
     {(value.fill === 'hatch' || value.fill === 'crosshatch') && <label>Spacing (mm)<input type="number" min={0.1} max={20} step={0.1} value={value.spacing} onChange={e => change({ spacing: Math.max(0.1, Number(e.target.value)) })} /></label>}
     {['hatch', 'crosshatch', 'solid'].includes(value.fill) && <label>Angle (°)<input type="number" min={0} max={180} value={value.angle} onChange={e => change({ angle: Number(e.target.value) })} /></label>}
+    {definition?.controls.map(control => control.type === 'boolean' ? <label className="check-field" key={control.key}><input type="checkbox" checked={Boolean(methodSettings[control.key])} onChange={e => changeMethodSetting(control.key, e.target.checked)} /> {control.label}</label> : control.type === 'select' ? <label key={control.key}>{control.label}<select value={String(methodSettings[control.key])} onChange={e => changeMethodSetting(control.key, e.target.value)}>{control.options?.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : <label className={control.type === 'range' ? 'range-field' : undefined} key={control.key}>{control.type === 'range' && <span><span>{control.label}</span><output>{Number(methodSettings[control.key])}{control.unit ?? ''}</output></span>}{control.type !== 'range' && control.label}{control.type === 'range' && <input type="range" min={control.min} max={control.max} step={control.step} value={Number(methodSettings[control.key])} onChange={e => changeMethodSetting(control.key, Number(e.target.value))} />}<input className={control.type === 'range' ? 'sr-only' : undefined} type="number" min={control.min} max={control.max} step={control.step} value={Number(methodSettings[control.key])} onChange={e => changeMethodSetting(control.key, Number(e.target.value))} /></label>)}
     {value.fill !== 'outline' && <label className="check-field"><input type="checkbox" checked={value.outline} onChange={e => change({ outline: e.target.checked })} /> Add outline</label>}
     </div>;
   };
@@ -37,7 +48,7 @@ export function ColourSeparationPanel({ state, updateState, selected, setSelecte
     })}</select></label>
     {region && <div className="pass-card">
       <p className="panel-copy">Position is measured from the image’s top-left corner. Only changed settings override the colour defaults.</p>
-      {treatmentFields({ ...DEFAULT_COLOUR_TREATMENT, passId: colourPassId(region.colourId), ...config.colours[region.colourId], ...config.regions[region.id] }, patch => updateState({ colourSeparation: { ...config, regions: { ...config.regions, [region.id]: { ...config.regions[region.id], ...patch } } } }), 'this piece')}
+      {treatmentFields({ ...DEFAULT_COLOUR_TREATMENT, passId: colourPassId(region.colourId), ...config.colours[region.colourId], ...config.regions[region.id], algorithmSettings: { ...config.colours[region.colourId]?.algorithmSettings, ...config.regions[region.id]?.algorithmSettings } }, patch => updateState({ colourSeparation: { ...config, regions: { ...config.regions, [region.id]: { ...config.regions[region.id], ...patch } } } }), 'this piece')}
       <button className="button quiet full" onClick={() => { const regions = { ...config.regions }; delete regions[region.id]; updateState({ colourSeparation: { ...config, regions } }); }}>Use colour defaults</button>
     </div>}
     <p className="panel-copy">Changing separation settings or replacing the image resets treatments and automatic colour pens. Dense fill uses lines spaced at 85% of the pen width. Small pieces may need a thinner pen. Outlines follow the image pixel edges.</p>

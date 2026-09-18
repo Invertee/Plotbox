@@ -137,4 +137,6 @@ if (existsSync(webDist)) {
 }
 
 const port = Number(process.env.PORT ?? 8787);
-await app.listen({ port, host: '127.0.0.1' });
+// Bind to all container interfaces: Home Assistant publishes the add-on port
+// separately, while local development can still reach it via localhost.
+await app.listen({ port, host: process.env.HOST ?? '0.0.0.0' });
