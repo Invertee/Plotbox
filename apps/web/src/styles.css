@@ -16,6 +16,7 @@
 
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; min-width: 320px; min-height: 100%; }
+html.editor-active, body.editor-active { height: 100%; overflow: hidden; overscroll-behavior: none; }
 button, input, select, textarea { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #4d8e68; outline-offset: 2px; }
@@ -141,7 +142,7 @@ textarea { resize: vertical; font: 11px/1.45 DM Mono, monospace; }
 .machine-footer { display: flex; align-items: center; gap: 6px; margin-top: 14px; min-width: 0; color: var(--muted); font: 8px DM Mono, monospace; }
 .machine-footer span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.editor-shell { height: 100vh; min-height: 620px; display: grid; grid-template-columns: 310px minmax(400px, 1fr) 58px; grid-template-rows: 62px 1fr; overflow: hidden; background: #d8d7d0; }
+.editor-shell { height: 100dvh; min-height: 0; display: grid; grid-template-columns: 310px minmax(400px, 1fr) 58px; grid-template-rows: 62px minmax(0, 1fr); overflow: hidden; background: #d8d7d0; }
 .editor-header { grid-column: 1 / -1; background: #f8f7f2; border-bottom: 1px solid #cbc9c0; display: flex; align-items: center; padding: 0 14px; gap: 12px; z-index: 3; }
 .editor-title { flex: 1; min-width: 0; }
 .editor-title input { border: 0; padding: 0; font-weight: 700; background: transparent; max-width: 450px; }
@@ -182,6 +183,10 @@ textarea { resize: vertical; font: 11px/1.45 DM Mono, monospace; }
 .map-results strong { font-size: 10px; line-height: 1.35; }
 .map-results small { margin-top: 3px; color: var(--muted); font-size: 8px; }
 .map-results em { color: var(--green); font-size: 8px; font-style: normal; }
+.map-data-options { display: grid; grid-template-columns: 1fr 96px; align-items: end; gap: 7px 9px; padding: 9px; border: 1px solid #d7d6ce; border-radius: 6px; background: #f8f8f3; }
+.map-data-options.osm-only { grid-template-columns: 1fr; }
+.map-data-options > label { margin: 0; }
+.map-data-options > small { grid-column: 1 / -1; color: var(--muted); font-size: 8px; line-height: 1.35; }
 .map-picker-shell { display: flex; flex-direction: column; gap: 7px; }
 .map-picker { width: 260px; max-width: 100%; height: 180px; position: relative; align-self: center; overflow: hidden; border: 1px solid #bfc2b8; border-radius: 7px; background: #d9ddd4; cursor: grab; touch-action: none; user-select: none; }
 .map-picker.dragging { cursor: grabbing; }

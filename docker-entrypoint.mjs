@@ -15,6 +15,7 @@ if (existsSync(optionsPath)) {
 const optionEnvironment = {
   nominatim_url: 'NOMINATIM_URL',
   overpass_url: 'OVERPASS_URL',
+  terrain_tile_url: 'TERRAIN_TILE_URL',
   plotbox_user_agent: 'PLOTBOX_USER_AGENT',
 };
 for (const [option, environment] of Object.entries(optionEnvironment)) {

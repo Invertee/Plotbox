@@ -97,6 +97,10 @@ export interface PlotLayer {
 export interface MapSettings {
   query: string;
   radiusKm: number;
+  dataSource?: 'openstreetmap' | 'terrain' | 'both';
+  /** Legacy setting retained so older saved projects can be migrated. */
+  includeTopography?: boolean;
+  contourInterval?: number;
   latitude?: number;
   longitude?: number;
   zoom?: number;
@@ -237,7 +241,7 @@ export function createDefaultState(mode: ProjectMode, canvas: CanvasSettings): P
     preprocess: { ...DEFAULT_PREPROCESS },
     rasterPlacement: { ...DEFAULT_RASTER_PLACEMENT },
     turtlePlacement: { ...DEFAULT_TURTLE_PLACEMENT },
-    mapSettings: { query: '', radiusKm: 1 },
+    mapSettings: { query: '', radiusKm: 1, dataSource: 'both', includeTopography: true, contourInterval: 10 },
     gcode: { origin: 'bottom-left', travelFeed: 5000, pathJoinTolerance: 0.15, parkX: 0, parkY: 0, pauseBetweenPasses: true, pauseCommand: 'M0', includeComments: true },
     viewport: { zoom: 1, x: 0, y: 0 },
   };

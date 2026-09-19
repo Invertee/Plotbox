@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createDefaultState, paperDimensions, type CanvasSettings, type ProjectMode } from '@plotter/core';
 import { createProject, deleteProject, getProject, listProjects, updateProject } from './database.js';
-import { importMap, searchPlaces } from './maps.js';
+import { importMap, mapDimensionsKm, searchPlaces, type MapDataSource } from './maps.js';
 
 function fluidNCBaseUrl(address: string): URL {
   const value = address.trim();
@@ -36,7 +36,8 @@ async function fluidNCFetch(url: URL, options: RequestInit, timeoutMs = FLUIDNC_
   finally { clearTimeout(timeout); }
 }
 
-const app = Fastify({ logger: true, bodyLimit: 30 * 1024 * 1024 });
+// Detailed continuous raster plots may contain several million vector points.
+const app = Fastify({ logger: true, bodyLimit: 128 * 1024 * 1024 });
 await app.register(cors, { origin: true });
 
 app.get('/api/health', async () => ({ ok: true }));
@@ -75,15 +76,19 @@ app.get<{ Querystring: { q?: string } }>('/api/maps/search', async (request, rep
   try { return await searchPlaces(query); } catch (error) { return reply.code(502).send({ error: error instanceof Error ? error.message : 'Place search failed' }); }
 });
 
-app.post<{ Body: { north?: number; south?: number; east?: number; west?: number; name?: string } }>('/api/maps/import', async (request, reply) => {
-  const { north, south, east, west, name = 'OpenStreetMap import' } = request.body ?? {};
+app.post<{ Body: { north?: number; south?: number; east?: number; west?: number; name?: string; dataSource?: MapDataSource; includeTopography?: boolean; contourInterval?: number } }>('/api/maps/import', async (request, reply) => {
+  const { north, south, east, west, name = 'Map import', contourInterval = 10 } = request.body ?? {};
+  const dataSource = request.body?.dataSource ?? (request.body?.includeTopography ? 'both' : 'openstreetmap');
   const coordinates = [north, south, east, west];
-  const valid = coordinates.every((value) => Number.isFinite(value))
+  const coordinateValid = coordinates.every((value) => Number.isFinite(value))
     && north! > south! && east! > west!
-    && Math.abs(north!) <= 85 && Math.abs(south!) <= 85 && Math.abs(east!) <= 180 && Math.abs(west!) <= 180
-    && north! - south! <= 0.15 && east! - west! <= 0.25;
-  if (!valid) return reply.code(400).send({ error: 'Select a valid map region no larger than about 15 km.' });
-  try { return await importMap({ north: north!, south: south!, east: east!, west: west!, name }); } catch (error) { return reply.code(502).send({ error: error instanceof Error ? error.message : 'Map import failed' }); }
+    && Math.abs(north!) <= 85 && Math.abs(south!) <= 85 && Math.abs(east!) <= 180 && Math.abs(west!) <= 180;
+  if (!coordinateValid) return reply.code(400).send({ error: 'Select a valid map region.' });
+  const dimensions = mapDimensionsKm({ north: north!, south: south!, east: east!, west: west! });
+  if (dimensions.areaKm2 > 1_000 || dimensions.widthKm > 60 || dimensions.heightKm > 60) return reply.code(400).send({ error: 'Select a region no larger than 1,000 km² (about 386 mi²) or 60 km across.' });
+  if (!['openstreetmap', 'terrain', 'both'].includes(dataSource)) return reply.code(400).send({ error: 'Choose OpenStreetMap, terrain, or both.' });
+  if (dataSource !== 'openstreetmap' && (!Number.isFinite(contourInterval) || contourInterval < 5 || contourInterval > 200)) return reply.code(400).send({ error: 'Contour interval must be between 5 and 200 metres.' });
+  try { return await importMap({ north: north!, south: south!, east: east!, west: west!, name, dataSource, contourInterval }); } catch (error) { return reply.code(502).send({ error: error instanceof Error ? error.message : 'Map import failed' }); }
 });
 
 app.post<{ Body: { address?: string; projectName?: string; filename?: string; content?: string } }>('/api/fluidnc/upload', async (request, reply) => {

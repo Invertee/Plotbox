@@ -31,6 +31,7 @@ export function MapSourcePanel({ state, updateState }: { state: ProjectState; up
   const [searching, setSearching] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
+  const dataSource = state.mapSettings.dataSource ?? (state.mapSettings.includeTopography ? 'both' : 'openstreetmap');
   const view: MapView = { latitude: state.mapSettings.latitude ?? 54.5973, longitude: state.mapSettings.longitude ?? -5.9301, zoom: state.mapSettings.zoom ?? 14 };
   const search = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -48,7 +49,7 @@ export function MapSourcePanel({ state, updateState }: { state: ProjectState; up
     // Locking a new area intentionally discards the previous map before the request starts.
     updateState({ layers: [], sourceName: undefined, sourceAttribution: undefined, geometry: { paths: [], generatedAt: new Date().toISOString(), generator: 'none' } });
     try {
-      const map = await api.importMap({ ...bounds, name: state.mapSettings.query.trim() || 'Selected map region' });
+      const map = await api.importMap({ ...bounds, name: state.mapSettings.query.trim() || 'Selected map region', dataSource, contourInterval: state.mapSettings.contourInterval });
       const layers = importedMapToLayers(map, state.canvas, state.passes.map((pass) => pass.id));
       if (!layers.length) throw new Error('No supported map features were found in this area. Zoom out or move the selection.');
       updateState({ layers, sourceName: map.name, sourceAttribution: map.attribution, algorithmId: 'vector.layers' });
@@ -58,6 +59,7 @@ export function MapSourcePanel({ state, updateState }: { state: ProjectState; up
   return <div className="stack">
     <form className="map-search" onSubmit={(event) => void search(event)}><label>Place or address<input value={state.mapSettings.query} placeholder="e.g. Belfast City Hall" onChange={(event) => updateState({ mapSettings: { ...state.mapSettings, query: event.target.value } })} /></label><button className="button primary" disabled={searching}><Search size={15} /> {searching ? 'Searching…' : 'Search'}</button></form>
     {results.length > 0 && <div className="map-results">{results.map((result) => <button type="button" key={result.id} onClick={() => selectResult(result)}><MapPin /><span><strong>{result.displayName}</strong><small>{result.type} · show on map</small></span></button>)}</div>}
+    <div className={`map-data-options ${dataSource === 'openstreetmap' ? 'osm-only' : ''}`}><label>Download<select value={dataSource} onChange={(event) => { const next = event.target.value as typeof dataSource; updateState({ mapSettings: { ...state.mapSettings, dataSource: next, includeTopography: next !== 'openstreetmap' } }); }}><option value="both">OSM + terrain</option><option value="terrain">Terrain only</option><option value="openstreetmap">OpenStreetMap only</option></select></label>{dataSource !== 'openstreetmap' && <label>Contour interval<select value={state.mapSettings.contourInterval ?? 10} onChange={(event) => updateState({ mapSettings: { ...state.mapSettings, contourInterval: Number(event.target.value) } })}><option value={5}>5 m</option><option value={10}>10 m</option><option value={20}>20 m</option><option value={25}>25 m</option><option value={50}>50 m</option><option value={100}>100 m</option><option value={200}>200 m</option></select></label>}<small>{dataSource === 'terrain' ? 'Only plot-ready elevation contours will be downloaded.' : dataSource === 'openstreetmap' ? 'Only OSM vectors. Large areas automatically omit buildings and minor roads.' : 'OSM and contours together. Large areas automatically omit buildings and minor roads.'}</small></div>
     <MapRegionPicker view={view} aspect={Math.max(0.1, (state.canvas.widthMm - state.canvas.marginMm * 2) / Math.max(1, state.canvas.heightMm - state.canvas.marginMm * 2))} busy={downloading} hasImport={Boolean(state.sourceName)} onChange={(next) => updateState({ mapSettings: { ...state.mapSettings, ...next } })} onDownload={(bounds) => void downloadRegion(bounds)} />
     {state.sourceName && <div className="source-summary"><strong>{state.sourceName}</strong><span>{state.layers.reduce((total, layer) => total + (layer.sourcePaths?.length ?? 0), 0).toLocaleString()} map features in {state.layers.length} layers</span></div>}
     {error && <div className="notice error">{error}</div>}

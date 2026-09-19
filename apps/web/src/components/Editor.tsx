@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Cable, Download, Eye, FileImage, Layers3, Maximize2, Play, Plus, RefreshCw, Save, Settings2, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { DEFAULT_PREPROCESS, DEFAULT_RASTER_PLACEMENT, DEFAULT_TURTLE_PLACEMENT, type PenProfile, type PlotGeometry, type PlotPass, type ProjectState } from '@plotter/core';
-import { ALGORITHMS, algorithmDefaults, generateAlgorithm, generateVectorLayers, ensureColourPasses } from '@plotter/algorithms';
+import { ALGORITHMS, algorithmDefaults, generateAlgorithm, generateVectorLayers, ensureColourPasses, ensureScribbleColourPasses } from '@plotter/algorithms';
 import type { GCodeDocument } from '@plotter/gcode';
 import { pathLength } from '@plotter/geometry';
 import { api } from '../api';
@@ -20,11 +20,10 @@ const PREVIEW_QUALITY: Record<PreviewQuality, { label: string; scale: number; ma
   ultra: { label: 'Ultra', scale: 4, maxPixels: 40_000_000, maxDimension: 12_000 },
 };
 
-async function imageDataFromUrl(url: string): Promise<ImageData> {
+async function imageDataFromUrl(url: string, maximum = 1000): Promise<ImageData> {
   const image = new Image();
   image.src = url;
   await image.decode();
-  const maximum = 1000;
   const scale = Math.min(1, maximum / Math.max(image.naturalWidth, image.naturalHeight));
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -49,6 +48,16 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const saveRevision = useRef(0);
 
   useEffect(() => {
+    const { body, documentElement } = document;
+    body.classList.add('editor-active');
+    documentElement.classList.add('editor-active');
+    return () => {
+      body.classList.remove('editor-active');
+      documentElement.classList.remove('editor-active');
+    };
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     api.getProject(projectId).then((loaded) => {
       if (!Object.keys(loaded.state.algorithmSettings).length) loaded.state.algorithmSettings = algorithmDefaults(loaded.state.algorithmId);
@@ -56,7 +65,8 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
       loaded.state.turtlePlacement = { ...DEFAULT_TURTLE_PLACEMENT, ...loaded.state.turtlePlacement };
       loaded.state.pens = loaded.state.pens.map((pen) => ({ ...pen, zUpFeed: pen.zUpFeed ?? pen.zFeed ?? 600, zDownFeed: pen.zDownFeed ?? pen.zFeed ?? 600 }));
       const savedMapSettings = loaded.state.mapSettings as Partial<ProjectState['mapSettings']> | undefined;
-      loaded.state.mapSettings = { query: savedMapSettings?.query ?? '', radiusKm: savedMapSettings?.radiusKm ?? 1, latitude: savedMapSettings?.latitude, longitude: savedMapSettings?.longitude, zoom: savedMapSettings?.zoom ?? 14 };
+      const dataSource = savedMapSettings?.dataSource ?? (savedMapSettings?.includeTopography ? 'both' : 'openstreetmap');
+      loaded.state.mapSettings = { query: savedMapSettings?.query ?? '', radiusKm: savedMapSettings?.radiusKm ?? 1, dataSource, includeTopography: dataSource !== 'openstreetmap', contourInterval: savedMapSettings?.contourInterval ?? 10, latitude: savedMapSettings?.latitude, longitude: savedMapSettings?.longitude, zoom: savedMapSettings?.zoom ?? 14 };
       setProject(loaded);
     }).catch((error: Error) => setRender({ active: false, value: 0, message: '', error: error.message })).finally(() => setLoading(false));
     return () => setProject(undefined);
@@ -90,8 +100,10 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const layersKey = JSON.stringify(project?.state.layers ?? []);
   const colourKey = JSON.stringify(project?.state.colourSeparation ?? {});
   const colourPensKey = algorithmId === 'raster.colour-separation' ? JSON.stringify({ passes: project?.state.passes, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
+  const scribblePenKey = algorithmId === 'raster.continuous-scribble' ? JSON.stringify({ pass: project?.state.passes[0]?.penId, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
   const projectMode = project?.mode;
-  const renderSignature = JSON.stringify({ projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, projectMode, redrawNonce, colourKey, colourPensKey });
+  const renderSignature = useMemo(() => JSON.stringify({ projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, projectMode, redrawNonce, colourKey, colourPensKey, scribblePenKey }), [projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, projectMode, redrawNonce, colourKey, colourPensKey, scribblePenKey]);
+  const drawingLength = useMemo(() => project?.state.geometry.paths.reduce((total, item) => total + pathLength(item), 0) ?? 0, [project?.state.geometry]);
   const latestRenderSignature = useRef(renderSignature);
 
   // Update before paint so a worker that finishes between a state commit and effect
@@ -123,10 +135,10 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         worker.onmessage = (event: MessageEvent<{ type: string; jobId: number; value?: number; message?: string; result?: PlotGeometry }>) => {
           if (event.data.jobId !== renderJob.current || !isCurrentRender()) return;
           if (event.data.type === 'progress') setRender({ active: true, value: event.data.value ?? 0, message: event.data.message ?? 'Rendering' });
-          if (event.data.type === 'complete' && event.data.result) { const result = event.data.result; if (result.colourSeparation) { updateState(current => ({ ...current, geometry: result, ...ensureColourPasses(result.colourSeparation!.palette, current.passes, current.pens) })); } else setGeometry(result); setRender({ active: false, value: 1, message: `${event.data.result.paths.length.toLocaleString()} paths` }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
+          if (event.data.type === 'complete' && event.data.result) { const result = event.data.result; if (algorithmId === 'raster.continuous-scribble') { updateState(current => ({ ...current, geometry: result, ...ensureScribbleColourPasses(result.colourSeparation?.palette ?? [], current.passes, current.pens) })); } else if (result.colourSeparation) { updateState(current => ({ ...current, geometry: result, ...ensureColourPasses(result.colourSeparation!.palette, current.passes, current.pens) })); } else setGeometry(result); setRender({ active: false, value: 1, message: `${event.data.result.paths.length.toLocaleString()} paths` }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
           if (event.data.type === 'error') { setRender({ active: false, value: 0, message: '', error: event.data.message }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
         };
-        const imageData = state.sourceImage ? await imageDataFromUrl(state.sourceImage) : undefined;
+        const imageData = state.sourceImage ? await imageDataFromUrl(state.sourceImage, algorithmId === 'raster.continuous-scribble' ? 2400 : 1000) : undefined;
         if (!isCurrentRender()) { worker.terminate(); return; }
         worker.postMessage({ jobId, algorithmId, canvas: state.canvas, settings: state.algorithmSettings, preprocess: state.preprocess, rasterPlacement: state.rasterPlacement, turtlePlacement: state.turtlePlacement, passIds: state.passes.map((pass) => pass.id), colourSeparation: state.colourSeparation, passes: state.passes, pens: state.pens, imageData });
         return;
@@ -144,7 +156,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const state = project.state;
   const algorithms = ALGORITHMS.filter((algorithm) => project.mode === 'raster' ? algorithm.group === 'raster' : algorithm.group !== 'raster');
   const definition = ALGORITHMS.find((item) => item.id === state.algorithmId);
-  const updateAlgorithm = (nextId: string) => updateState({ algorithmId: nextId, algorithmSettings: algorithmDefaults(nextId), layers: state.layers.map((layer) => ({ ...layer, algorithmId: nextId })) });
+  const updateAlgorithm = (nextId: string) => updateState({ algorithmId: nextId, algorithmSettings: algorithmDefaults(nextId), layers: state.layers.map((layer) => ({ ...layer, algorithmId: nextId })), ...(nextId === 'raster.continuous-scribble' ? {} : ensureScribbleColourPasses([], state.passes, state.pens)) });
   const resetColours = () => ({ colourSeparation: { colours: {}, regions: {} }, passes: state.passes.filter(p => !p.id.startsWith('colour-pass-')), pens: state.pens.filter(p => !p.id.startsWith('colour-pen-')) });
   const changeAlgorithmSettings = (algorithmSettings: ProjectState['algorithmSettings']) => updateState({ algorithmSettings, ...(state.algorithmId === 'raster.colour-separation' ? resetColours() : {}) });
   const importImage = (file?: File) => {
@@ -187,8 +199,12 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
       </Panel>}
       {(project.mode === 'raster' || project.mode === 'generative') && <Panel title={project.mode === 'raster' ? 'Vectorisation' : 'Generator'} open>
         <label>Algorithm<select value={state.algorithmId} onChange={(event) => updateAlgorithm(event.target.value)}>{algorithms.map((algorithm) => <option value={algorithm.id} key={algorithm.id}>{algorithm.name}</option>)}</select></label>
+        {state.algorithmId === 'raster.continuous-scribble' && <p className="panel-copy">One flowing line forms irregular, overlapping loops across the image, including highlights. Optional under-colour passes use solid colour-separated fills and are plotted before the main scribble; set their thicker pen widths and calibration under Pens &amp; passes. Lower Fine detail size preserves smaller features. Skip white / pale areas lifts the scribble pen across gaps.</p>}
+        {state.algorithmId === 'raster.spiroglyph' && <p className="panel-copy">Image tone controls wave width. Choose two or more interleaved spirals for a multi-arm design; each arm uses the matching pen pass below, cycling through available passes.</p>}
+        {state.algorithmId === 'raster.spiral-blocks' && <p className="panel-copy">Image tone controls dense radial blocks. Choose two or more interleaved spirals for a multi-arm design; each arm uses the matching pen pass below, cycling through available passes.</p>}
+        {state.algorithmId === 'raster.scanlines' && <p className="panel-copy">Choose smooth waves or perpendicular blocks along each line. Image tone controls their width; line angle, spacing, thresholds and smoothing shape the result while the minimum gap prevents neighboring lines from merging.</p>}
         {state.algorithmId === 'generative.turtle' && <><p className="panel-copy">Runs standard TurtleToy code with <code>Canvas</code>, <code>new Turtle()</code> and optional <code>walk(i)</code>. <a href="https://turtletoy.net/syntax" target="_blank" rel="noreferrer">TurtleToy API reference</a>.</p><button className="button quiet full" disabled={render.active} onClick={() => setRedrawNonce((value) => value + 1)}><RefreshCw size={15} className={render.active ? 'spin' : undefined} /> Redraw</button><div className="source-placement"><label>Fit TurtleToy canvas<select value={state.turtlePlacement.fit} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, fit: event.target.value as ProjectState['turtlePlacement']['fit'] } })}><option value="contain">Contain — preserve scale</option><option value="cover">Cover — crop to fill</option><option value="stretch">Stretch — fill exactly</option></select></label><RangeField label="Canvas scale" unit="%" value={state.turtlePlacement.scalePercent} min={10} max={300} step={5} onChange={(value) => updateState({ turtlePlacement: { ...state.turtlePlacement, scalePercent: value } })} /><div className="field-row compact"><label>Offset X (mm)<input type="number" step="1" value={state.turtlePlacement.offsetXmm} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, offsetXmm: Number(event.target.value) } })} /></label><label>Offset Y (mm)<input type="number" step="1" value={state.turtlePlacement.offsetYmm} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, offsetYmm: Number(event.target.value) } })} /></label></div><button className="button quiet full" onClick={() => updateState({ turtlePlacement: { ...DEFAULT_TURTLE_PLACEMENT } })}>Reset TurtleToy canvas</button></div></>}
-        {definition?.controls.map((control) => control.type === 'textarea' ? <label key={control.key}>{control.label}<textarea rows={10} spellCheck={false} value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })} /></label> : control.type === 'boolean' ? <label className="check-field" key={control.key}><input type="checkbox" checked={Boolean(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.checked })} /> {control.label}</label> : control.type === 'select' ? <label key={control.key}>{control.label}<select value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })}>{control.options?.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : <RangeField key={control.key} label={control.label} unit={control.unit} value={Number(state.algorithmSettings[control.key] ?? control.default)} min={control.min ?? 0} max={control.max ?? 100} step={control.step} numberOnly={control.type === 'number'} onChange={(value) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: value })} />)}
+        {definition?.controls.filter(control => (!control.key.startsWith('underlay') || Boolean(state.algorithmSettings.colourUnderlay)) && (!control.visibleWhen || (state.algorithmSettings[control.visibleWhen.key] ?? definition.controls.find(item => item.key === control.visibleWhen?.key)?.default) === control.visibleWhen.value)).map((control) => control.type === 'textarea' ? <label key={control.key}>{control.label}<textarea rows={10} spellCheck={false} value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })} /></label> : control.type === 'boolean' ? <label className="check-field" key={control.key}><input type="checkbox" checked={Boolean(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.checked })} /> {control.label}</label> : control.type === 'select' ? <label key={control.key}>{control.label}<select value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })}>{control.options?.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : <RangeField key={control.key} label={control.label} unit={control.unit} value={Number(state.algorithmSettings[control.key] ?? control.default)} min={control.min ?? 0} max={control.max ?? 100} step={control.step} numberOnly={control.type === 'number'} onChange={(value) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: value })} />)}
         <button className="button quiet full" onClick={() => changeAlgorithmSettings(algorithmDefaults(state.algorithmId))}><RefreshCw size={15} /> Reset {project.mode === 'raster' ? 'vectorisation' : 'generator'} settings</button>
       </Panel>}
       {state.algorithmId === 'raster.colour-separation' && <Panel title="Colours & pieces" open><ColourSeparationPanel state={state} updateState={updateState} selected={selectedRegion} setSelected={setSelectedRegion} /></Panel>}
@@ -209,7 +225,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
       <CanvasPreview state={state} updateState={updateState} selectedRegion={state.algorithmId === 'raster.colour-separation' && state.geometry.colourSeparation?.regions.some(r => r.id === selectedRegion) ? selectedRegion : undefined} />
       <div className={`render-status ${render.error ? 'failed' : ''}`}>
         {render.active && <div className="progress-track"><span style={{ width: `${Math.round(render.value * 100)}%` }} /></div>}
-        <span>{render.error ?? render.message}</span><span>{state.geometry.paths.length.toLocaleString()} paths · {(state.geometry.paths.reduce((total, item) => total + pathLength(item), 0) / 1000).toFixed(1)} m drawing</span>
+        <span>{render.error ?? render.message}</span><span>{state.geometry.paths.length.toLocaleString()} paths · {(drawingLength / 1000).toFixed(1)} m drawing</span>
       </div>
     </section>
     <aside className="right-strip"><div><Layers3 /><span>Layers</span></div><div><Eye /><span>Preview</span></div><button onClick={() => setGcodeOpen(true)}><Settings2 /><span>G-code</span></button></aside>
@@ -238,7 +254,7 @@ function PenPassEditor({ state, updateState }: { state: ProjectState; updateStat
     const pen = state.pens.find((item) => item.id === pass.penId);
     if (!pen) return null;
     return <div className="pass-card" key={pass.id}>
-      <div className="pass-head"><label className="check-field"><input type="checkbox" checked={pass.enabled} onChange={(event) => updatePass(pass.id, { enabled: event.target.checked })} /><strong>{pass.name}</strong></label>{state.passes.length > 1 && !pass.id.startsWith('colour-pass-') && <button className="icon-button small" onClick={() => updateState({ passes: state.passes.filter((item) => item.id !== pass.id), pens: state.pens.filter((item) => item.id !== pen.id) })}><Trash2 /></button>}</div>
+      <div className="pass-head"><label className="check-field"><input type="checkbox" checked={pass.enabled} onChange={(event) => updatePass(pass.id, { enabled: event.target.checked })} /><strong>{pass.name}</strong></label>{state.passes.length > 1 && !pass.id.startsWith('colour-pass-') && !pass.id.startsWith('scribble-colour-pass-') && <button className="icon-button small" onClick={() => updateState({ passes: state.passes.filter((item) => item.id !== pass.id), pens: state.pens.filter((item) => item.id !== pen.id) })}><Trash2 /></button>}</div>
       <label>Pass name<input value={pass.name} onChange={(event) => updatePass(pass.id, { name: event.target.value })} /></label>
       <div className="pen-name"><input type="color" value={pen.color} onChange={(event) => updatePen(pen.id, { color: event.target.value })} /><input value={pen.name} onChange={(event) => updatePen(pen.id, { name: event.target.value })} /></div>
       <div className="field-row compact"><label>Width<input type="number" step="0.1" value={pen.widthMm} onChange={(event) => updatePen(pen.id, { widthMm: Number(event.target.value) })} /></label><label>XY feed<input type="number" step="100" value={pen.xyFeed} onChange={(event) => updatePen(pen.id, { xyFeed: Number(event.target.value) })} /></label></div>
@@ -252,6 +268,24 @@ function PenPassEditor({ state, updateState }: { state: ProjectState; updateStat
 function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void; selectedRegion?: string }) {
   const { canvas, geometry, pens, passes, viewport } = state;
   const previewPaths = geometry.generator === state.algorithmId ? geometry.paths : [];
+  // Cache bounded chunks: rebuilding and stroking a million-point path on every
+  // resize/zoom can dominate generation time and stall the editor.
+  const previewChunks = useMemo(() => previewPaths.map(plotPath => {
+    const chunks: Path2D[] = [];
+    for (let start = 0; start < plotPath.points.length - 1; start += 4096) {
+      const chunk = new Path2D();
+      const first = plotPath.points[start]!;
+      chunk.moveTo(first.x, first.y);
+      const last = Math.min(plotPath.points.length - 1, start + 4096);
+      for (let index = start + 1; index <= last; index++) {
+        const point = plotPath.points[index]!;
+        chunk.lineTo(point.x, point.y);
+      }
+      if (plotPath.closed && last === plotPath.points.length - 1) chunk.lineTo(plotPath.points[0]!.x, plotPath.points[0]!.y);
+      chunks.push(chunk);
+    }
+    return { plotPath, chunks };
+  }), [geometry, state.algorithmId]);
   const drag = useRef<{ x: number; y: number; vx: number; vy: number } | undefined>(undefined);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const [quality, setQuality] = useState<PreviewQuality>(() => {
@@ -311,7 +345,7 @@ function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectS
       context.lineCap = 'round';
       context.lineJoin = 'round';
 
-      for (const plotPath of previewPaths) {
+      for (const { plotPath, chunks } of previewChunks) {
         if (!state.layers.find((layer) => layer.id === plotPath.layerId)?.visible) continue;
         const plotPass = passes.find((pass) => pass.id === plotPath.passId);
         if (!plotPass?.enabled || plotPath.points.length < 2) continue;
@@ -319,16 +353,9 @@ function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectS
         if (!pen) continue;
 
         context.globalAlpha = selectedRegion && plotPath.channel !== selectedRegion ? 0.12 : 1;
-        context.beginPath();
-        context.moveTo(plotPath.points[0]!.x, plotPath.points[0]!.y);
-        for (let index = 1; index < plotPath.points.length; index += 1) {
-          const point = plotPath.points[index]!;
-          context.lineTo(point.x, point.y);
-        }
-        if (plotPath.closed) context.closePath();
         context.strokeStyle = pen.color;
-        context.lineWidth = Math.max(0.18, pen.widthMm);
-        context.stroke();
+        context.lineWidth = Math.max(0.01, pen.widthMm);
+        for (const chunk of chunks) context.stroke(chunk);
       }
       context.restore();
     };
@@ -337,9 +364,9 @@ function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectS
     const observer = new ResizeObserver(draw);
     observer.observe(preview);
     return () => observer.disconnect();
-  }, [canvas.heightMm, canvas.marginMm, canvas.widthMm, pens, passes, previewPaths, quality, state.layers, viewport.zoom, selectedRegion]);
+  }, [canvas.heightMm, canvas.marginMm, canvas.widthMm, pens, passes, previewChunks, quality, state.layers, viewport.zoom, selectedRegion]);
 
-  return <div className="canvas-stage" onWheel={(event) => { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); zoom(event.deltaY < 0 ? 1.12 : 0.89, { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 }); }} onPointerMove={(event) => {
+  return <div className="canvas-stage" onWheelCapture={(event) => { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); zoom(event.deltaY < 0 ? 1.12 : 0.89, { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 }); }} onPointerMove={(event) => {
     if (!drag.current) return;
     setView({ ...viewport, x: drag.current.vx + event.clientX - drag.current.x, y: drag.current.vy + event.clientY - drag.current.y });
   }} onPointerUp={(event) => { drag.current = undefined; event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerLeave={() => { drag.current = undefined; }} onPointerDown={(event) => { drag.current = { x: event.clientX, y: event.clientY, vx: viewport.x, vy: viewport.y }; event.currentTarget.setPointerCapture(event.pointerId); }}>

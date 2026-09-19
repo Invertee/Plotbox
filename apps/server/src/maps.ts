@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
 import { getMapCache, setMapCache } from './database.js';
+import { importTerrainContours } from './terrain.js';
 
 const nominatimUrl = process.env.NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org';
 const overpassUrl = process.env.OVERPASS_URL ?? 'https://overpass-api.de/api/interpreter';
 const userAgent = process.env.PLOTBOX_USER_AGENT ?? 'Plotbox/0.2 (local pen-plotter application)';
 let lastNominatimRequest = 0;
+
+export type MapDataSource = 'openstreetmap' | 'terrain' | 'both';
+export type OsmDetail = 'detailed' | 'regional' | 'overview';
+type MapBounds = { north: number; south: number; east: number; west: number };
 
 type NominatimResult = { place_id: number; display_name: string; lat: string; lon: string; type: string };
 type OSMPoint = { lat: number; lon: number };
@@ -77,24 +82,62 @@ export function classifyOsmElements(elements: OSMElement[]) {
   return [...grouped.values()].sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category));
 }
 
-export async function importMap(input: { north: number; south: number; east: number; west: number; name: string }) {
-  const { south, west, north, east } = input;
-  const bbox = `${south},${west},${north},${east}`;
-  const query = `[out:json][timeout:40];(
-    way["highway"](${bbox});
-    way["railway"](${bbox});
+export function mapDimensionsKm(bounds: MapBounds) {
+  const heightKm = (bounds.north - bounds.south) * 111.32;
+  const centreLatitude = (bounds.north + bounds.south) / 2 * Math.PI / 180;
+  const widthKm = (bounds.east - bounds.west) * 111.32 * Math.cos(centreLatitude);
+  return { widthKm, heightKm, areaKm2: widthKm * heightKm };
+}
+
+export function osmDetailForBounds(bounds: MapBounds): OsmDetail {
+  const { areaKm2 } = mapDimensionsKm(bounds);
+  if (areaKm2 <= 25) return 'detailed';
+  if (areaKm2 <= 150) return 'regional';
+  return 'overview';
+}
+
+export function buildOverpassQuery(bbox: string, detail: OsmDetail) {
+  const roads = detail === 'detailed'
+    ? `way["highway"](${bbox});`
+    : detail === 'regional'
+      ? `way["highway"~"^(motorway|trunk|primary|secondary)$"](${bbox});`
+      : `way["highway"~"^(motorway|trunk|primary)$"](${bbox});`;
+  const localDetail = detail === 'detailed' ? `
     way["building"](${bbox});
-    way["natural"="water"](${bbox});
-    relation["natural"="water"](${bbox});
-    way["waterway"](${bbox});
     way["leisure"="park"](${bbox});
     relation["leisure"="park"](${bbox});
     way["landuse"~"^(grass|forest|meadow|recreation_ground|village_green)$"](${bbox});
-    relation["landuse"~"^(grass|forest|meadow|recreation_ground|village_green)$"](${bbox});
+    relation["landuse"~"^(grass|forest|meadow|recreation_ground|village_green)$"](${bbox});` : '';
+  return `[out:json][timeout:80];(
+    ${roads}
+    way["railway"](${bbox});${localDetail}
+    way["natural"="water"](${bbox});
+    relation["natural"="water"](${bbox});
+    way["waterway"](${bbox});
     way["boundary"="administrative"](${bbox});
   );out tags geom;`;
-  const body = new URLSearchParams({ data: query });
-  const text = await cachedFetch(`overpass:${query}`, () => fetch(overpassUrl, { method: 'POST', headers: { 'User-Agent': userAgent, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body, signal: AbortSignal.timeout(55_000) }));
-  const response = JSON.parse(text) as { elements?: OSMElement[] };
-  return { name: input.name, attribution: '© OpenStreetMap contributors · ODbL', bounds: { north, south, east, west }, layers: classifyOsmElements(response.elements ?? []) };
+}
+
+export async function importMap(input: MapBounds & { name: string; dataSource: MapDataSource; contourInterval?: number }) {
+  const { south, west, north, east } = input;
+  const includeOsm = input.dataSource !== 'terrain';
+  const includeTerrain = input.dataSource !== 'openstreetmap';
+  const bbox = `${south},${west},${north},${east}`;
+  const detail = osmDetailForBounds(input);
+  const query = buildOverpassQuery(bbox, detail);
+  const osmPromise = includeOsm
+    ? cachedFetch(`overpass:${query}`, () => fetch(overpassUrl, { method: 'POST', headers: { 'User-Agent': userAgent, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ data: query }), signal: AbortSignal.timeout(95_000) }))
+      .then((text) => classifyOsmElements((JSON.parse(text) as { elements?: OSMElement[] }).elements ?? []))
+    : Promise.resolve([]);
+  const terrainPromise = includeTerrain
+    ? importTerrainContours({ north, south, east, west }, input.contourInterval ?? 10)
+    : Promise.resolve([]);
+  const [osmLayers, terrainLayers] = await Promise.all([osmPromise, terrainPromise]);
+  const terrainAttribution = 'Terrain: Mapzen Terrain Tiles via AWS Open Data; source data includes ArcticDEM, Geoscience Australia, Open Data Austria, Canada Open Government data, Copernicus EU-DEM, NOAA ETOPO1, INEGI, LINZ, Kartverket, UK Environment Agency and USGS.';
+  const attribution = input.dataSource === 'terrain'
+    ? terrainAttribution
+    : input.dataSource === 'openstreetmap'
+      ? '© OpenStreetMap contributors · ODbL'
+      : `Map data © OpenStreetMap contributors · ODbL. ${terrainAttribution}`;
+  return { name: input.name, attribution, bounds: { north, south, east, west }, layers: [...terrainLayers, ...osmLayers] };
 }

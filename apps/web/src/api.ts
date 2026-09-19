@@ -21,7 +21,7 @@ export const api = {
   saveProject: (id: string, name: string, state: ProjectState) => request<Project>(`/api/projects/${id}`, { method: 'PUT', body: JSON.stringify({ name, state }) }),
   deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: 'DELETE' }),
   searchMaps: (query: string) => request<MapSearchResult[]>(`/api/maps/search?q=${encodeURIComponent(query)}`),
-  importMap: (input: { north: number; south: number; east: number; west: number; name: string }) => request<ImportedMap>('/api/maps/import', { method: 'POST', body: JSON.stringify(input) }),
+  importMap: (input: { north: number; south: number; east: number; west: number; name: string; dataSource: 'openstreetmap' | 'terrain' | 'both'; contourInterval?: number }) => request<ImportedMap>('/api/maps/import', { method: 'POST', body: JSON.stringify(input) }),
   uploadFluidNCFile: (input: { address: string; projectName: string; filename: string; content: string }) => request<{ path: string }>('/api/fluidnc/upload', { method: 'POST', body: JSON.stringify(input) }),
   runFluidNCFile: (input: { address: string; path: string }) => request<{ ok: true }>('/api/fluidnc/run', { method: 'POST', body: JSON.stringify(input) }),
 };

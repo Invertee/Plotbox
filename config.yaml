@@ -1,5 +1,5 @@
 name: Plotbox
-version: 0.3.6
+version: 0.3.9
 slug: plotbox
 description: Local-first pen-plotter artwork editor and G-code generator
 arch:
@@ -15,8 +15,10 @@ webui: http://[HOST]:[PORT:8787]
 options:
   nominatim_url: https://nominatim.openstreetmap.org
   overpass_url: https://overpass-api.de/api/interpreter
+  terrain_tile_url: https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png
   plotbox_user_agent: Plotbox/0.2 (Home Assistant add-on)
 schema:
   nominatim_url: url
   overpass_url: url
+  terrain_tile_url: str
   plotbox_user_agent: str

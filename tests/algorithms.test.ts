@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { algorithmDefaults, generateAlgorithm, generateSpiroglyph, generateVectorLayers, traceRasterContours } from '@plotter/algorithms';
+import { algorithmDefaults, generateAlgorithm, generateScanlines, generateSpiroglyph, generateSpiralBlocks, generateVectorLayers, traceRasterContours } from '@plotter/algorithms';
 import type { PlotLayer } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds } from '@plotter/geometry';
 import { turtleDraw } from 'turtletoy';
@@ -72,6 +72,88 @@ describe('spiroglyph raster generation', () => {
     const dark = generateSpiroglyph(bounds, settings, () => 0).paths[0]!.points;
     const light = generateSpiroglyph(bounds, settings, () => 255).paths[0]!.points;
     expect(dark.some((point, index) => Math.hypot(point.x - light[index]!.x, point.y - light[index]!.y) > 1)).toBe(true);
+  });
+
+  it('reserves the requested gap between neighboring wave turns', () => {
+    const settings = { lineSpacing: 2, frequency: 12, amplitude: 8, minimumGap: 0.4, smoothing: 0, sampleStep: 0.6 };
+    const dark = generateSpiroglyph(bounds, settings, () => 0).paths[0]!.points;
+    const baseline = generateSpiroglyph(bounds, settings, () => 255).paths[0]!.points;
+    expect(dark).toHaveLength(baseline.length);
+    expect(Math.max(...dark.map((point, index) => Math.hypot(point.x - baseline[index]!.x, point.y - baseline[index]!.y)))).toBeLessThanOrEqual(0.801);
+  });
+
+  it('creates interleaved spiroglyph arms on separate colour passes', () => {
+    const result = generateSpiroglyph(bounds, { spiralCount: 2, shape: 'circle', lineSpacing: 3, frequency: 12, amplitude: 0, sampleStep: 1 }, () => 255, ['black', 'red']);
+    expect(result.paths).toHaveLength(2);
+    expect(result.paths.map(item => item.passId)).toEqual(['black', 'red']);
+    expect(result.paths.map(item => item.channel)).toEqual(['spiral-1', 'spiral-2']);
+    expect(Math.hypot(
+      result.paths[0]!.points[0]!.x - result.paths[1]!.points[0]!.x,
+      result.paths[0]!.points[0]!.y - result.paths[1]!.points[0]!.y,
+    )).toBeCloseTo(3, 5);
+  });
+
+  it('creates block tones as one continuous plotter path', () => {
+    const settings = { lineSpacing: 3, blockSpacing: 0.8, blockWidth: 2.5, minimumGap: 0.5, smoothing: 0 };
+    const dark = generateSpiralBlocks(bounds, settings, () => 0, 'black');
+    const light = generateSpiralBlocks(bounds, settings, () => 255, 'black');
+    expect(dark.paths).toHaveLength(1);
+    expect(dark.paths[0]?.passId).toBe('black');
+    expect(dark.paths[0]!.points.length).toBeGreaterThan(light.paths[0]!.points.length * 2);
+    for (const point of dark.paths[0]!.points) {
+      expect(point.x).toBeGreaterThanOrEqual(bounds.minX);
+      expect(point.x).toBeLessThanOrEqual(bounds.maxX);
+      expect(point.y).toBeGreaterThanOrEqual(bounds.minY);
+      expect(point.y).toBeLessThanOrEqual(bounds.maxY);
+    }
+  });
+
+  it('creates interleaved spiral-block arms and cycles available colours', () => {
+    const result = generateSpiralBlocks(bounds, { spiralCount: 3, lineSpacing: 3, blockSpacing: 1, blockWidth: 1 }, () => 0, ['black', 'red']);
+    expect(result.paths).toHaveLength(3);
+    expect(result.paths.map(item => item.passId)).toEqual(['black', 'red', 'black']);
+    expect(result.paths.every(item => item.points.length > 100)).toBe(true);
+  });
+});
+
+describe('scanline raster generation', () => {
+  const bounds = { minX: 0, minY: 0, maxX: 30, maxY: 20 };
+
+  it('offers wave and block output controls', () => {
+    expect(algorithmDefaults('raster.scanlines')).toMatchObject({
+      style: 'waves', spacing: 2, angle: 0, maximumWidth: 1.2,
+      waveLength: 3.7, blockSpacing: 0.55, minimumGap: 0.35,
+    });
+  });
+
+  it('creates tone-controlled blocks along every scanline', () => {
+    const settings = { style: 'blocks', spacing: 3, blockSpacing: 1, maximumWidth: 2.5, minimumGap: 0.5, smoothing: 0 };
+    const dark = generateScanlines(bounds, settings, () => 0, 'black');
+    const light = generateScanlines(bounds, settings, () => 255, 'black');
+    expect(dark.paths.length).toBeGreaterThan(4);
+    expect(dark.paths).toHaveLength(light.paths.length);
+    expect(dark.paths[0]?.passId).toBe('black');
+    expect(dark.paths.flatMap(item => item.points).length).toBeGreaterThan(light.paths.flatMap(item => item.points).length * 2);
+    for (const point of dark.paths.flatMap(item => item.points)) {
+      expect(point.x).toBeGreaterThanOrEqual(bounds.minX);
+      expect(point.x).toBeLessThanOrEqual(bounds.maxX);
+      expect(point.y).toBeGreaterThanOrEqual(bounds.minY);
+      expect(point.y).toBeLessThanOrEqual(bounds.maxY);
+    }
+  });
+
+  it('supports angled lines and caps wave width to preserve the minimum gap', () => {
+    const vertical = generateScanlines(bounds, { style: 'waves', spacing: 3, angle: 90, maximumWidth: 0, sampleStep: 1 }, () => 255);
+    const first = vertical.paths.find(item => item.points.length > 5)!.points;
+    expect(Math.max(...first.map(point => point.y)) - Math.min(...first.map(point => point.y))).toBeGreaterThan(10);
+    expect(Math.max(...first.map(point => point.x)) - Math.min(...first.map(point => point.x))).toBeLessThan(0.001);
+
+    const settings = { style: 'waves', spacing: 2, maximumWidth: 8, minimumGap: 0.6, waveLength: 4, sampleStep: 0.5, smoothing: 0 };
+    const dark = generateScanlines(bounds, settings, () => 0).paths;
+    const light = generateScanlines(bounds, settings, () => 255).paths;
+    expect(dark).toHaveLength(light.length);
+    const displacement = dark.flatMap((item, row) => item.points.map((point, index) => Math.hypot(point.x - light[row]!.points[index]!.x, point.y - light[row]!.points[index]!.y)));
+    expect(Math.max(...displacement)).toBeLessThanOrEqual(0.701);
   });
 });
 

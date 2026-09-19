@@ -6,6 +6,7 @@ type ImagePixels = { width: number; height: number; data: Uint8ClampedArray };
 type Triple = [number, number, number];
 type Edge = [Point, Point];
 export const colourPassId = (id: string) => `colour-pass-${id}`;
+export const scribbleColourPassId = (id: string) => `scribble-colour-pass-${id}`;
 const distance = (a: Triple, b: Triple) => a.reduce((sum, v, i) => sum + (v - b[i]!) ** 2, 0);
 const bounded = (v: unknown, fallback: number, min: number, max: number) => Number.isFinite(Number(v)) ? Math.max(min, Math.min(max, Number(v))) : fallback;
 const clamp = (value: number, minimum = 0, maximum = 1) => Math.max(minimum, Math.min(maximum, value));
@@ -151,7 +152,13 @@ function clip(a: Point, b: Point, bounds: Bounds): Edge | undefined {
   return [{ x: a.x + lo * dx, y: a.y + lo * dy }, { x: a.x + hi * dx, y: a.y + hi * dy }];
 }
 
-export function generateColourSeparation(image: ImagePixels, canvas: CanvasSettings, placementSettings: RasterPlacementSettings, settings: Record<string, number | string | boolean>, treatments: ColourSeparationSettings | undefined, passes: PlotPass[], pens: PenProfile[]): PlotGeometry {
+type ColourGenerationOptions = {
+  generator?: string;
+  defaultTreatment?: Partial<ColourTreatment>;
+  passIdForColour?: (id: string) => string;
+};
+
+export function generateColourSeparation(image: ImagePixels, canvas: CanvasSettings, placementSettings: RasterPlacementSettings, settings: Record<string, number | string | boolean>, treatments: ColourSeparationSettings | undefined, passes: PlotPass[], pens: PenProfile[], options: ColourGenerationOptions = {}): PlotGeometry {
   const separated = separateColours(image, settings);
   const { width, height, regionLabels, palette, regions } = separated;
   const bounds = drawableBounds(canvas.widthMm, canvas.heightMm, canvas.marginMm);
@@ -220,12 +227,13 @@ export function generateColourSeparation(image: ImagePixels, canvas: CanvasSetti
     const regionTreatment = treatments?.regions[region.id];
     const treatment = {
       ...DEFAULT_COLOUR_TREATMENT,
+      ...options.defaultTreatment,
       ...colourTreatment,
       ...regionTreatment,
       algorithmSettings: { ...colourTreatment?.algorithmSettings, ...regionTreatment?.algorithmSettings },
     };
     if (!treatment.enabled) return;
-    const passId = treatment.passId ?? colourPassId(region.colourId);
+    const passId = treatment.passId ?? (options.passIdForColour ?? colourPassId)(region.colourId);
     const pen = pens.find(p => p.id === passes.find(pass => pass.id === passId)?.penId);
     const penWidth = bounded(pen?.widthMm, 0.3, 0.05, 10);
     const add = (a: Point, b: Point) => {
@@ -393,7 +401,22 @@ export function generateColourSeparation(image: ImagePixels, canvas: CanvasSetti
       }
     }
   });
-  return { generator: 'raster.colour-separation', generatedAt: new Date().toISOString(), paths, colourSeparation: { palette, regions } };
+  return { generator: options.generator ?? 'raster.colour-separation', generatedAt: new Date().toISOString(), paths, colourSeparation: { palette, regions } };
+}
+
+/** Build broad colour fields to plot before a continuous scribble. */
+export function generateScribbleColourUnderlay(image: ImagePixels, canvas: CanvasSettings, placementSettings: RasterPlacementSettings, settings: Record<string, number | string | boolean>, passes: PlotPass[], pens: PenProfile[]): PlotGeometry {
+  return generateColourSeparation(image, canvas, placementSettings, {
+    colourCount: settings.underlayColourCount ?? 6,
+    minRegionPixels: settings.underlayMinRegionPixels ?? 24,
+    skipPaper: settings.underlaySkipPaper ?? true,
+    paperCutoff: settings.underlayPaperCutoff ?? 90,
+    cleanEdges: true,
+  }, undefined, passes, pens, {
+    generator: 'raster.continuous-scribble',
+    defaultTreatment: { fill: 'solid', angle: bounded(settings.underlayAngle, 45, -360, 360), outline: false },
+    passIdForColour: scribbleColourPassId,
+  });
 }
 
 /** Add only missing automatic passes; keep existing pen calibration and user colours. */
@@ -407,4 +430,30 @@ export function ensureColourPasses(palette: ColourSeparationResult['palette'], p
     nextPasses.push({ id, name: `Colour ${Number(colour.id) + 1}`, penId, enabled: true });
   }
   return { passes: nextPasses, pens: nextPens };
+}
+
+/** Synchronise automatic under-colour pens and put them before the main ink pass. */
+export function ensureScribbleColourPasses(palette: ColourSeparationResult['palette'], passes: PlotPass[], pens: PenProfile[]) {
+  const wantedPassIds = new Set(palette.map(colour => scribbleColourPassId(colour.id)));
+  const wantedPenIds = new Set(palette.map(colour => `scribble-colour-pen-${colour.id}`));
+  const retainedPasses = passes.filter(pass => !pass.id.startsWith('scribble-colour-pass-') || wantedPassIds.has(pass.id));
+  const nextPens = pens.filter(pen => !pen.id.startsWith('scribble-colour-pen-') || wantedPenIds.has(pen.id));
+  const automatic: PlotPass[] = [];
+  for (const colour of palette) {
+    const id = scribbleColourPassId(colour.id);
+    const penId = `scribble-colour-pen-${colour.id}`;
+    const existing = retainedPasses.find(pass => pass.id === id);
+    if (!nextPens.some(pen => pen.id === penId)) nextPens.push({
+      ...(pens.find(pen => pen.id === retainedPasses.find(pass => !pass.id.startsWith('scribble-colour-pass-'))?.penId) ?? pens[0] ?? { zUp: 0, zDown: -10, xyFeed: 2500, zUpFeed: 600, zDownFeed: 600 }),
+      id: penId,
+      name: `Under-colour ${Number(colour.id) + 1}`,
+      color: colour.colour,
+      widthMm: 1,
+    });
+    automatic.push(existing ?? { id, name: `Under-colour ${Number(colour.id) + 1}`, penId, enabled: true });
+  }
+  const manual = retainedPasses.filter(pass => !pass.id.startsWith('scribble-colour-pass-'));
+  const mainIndex = Math.max(0, manual.findIndex(pass => pass.id === passes.find(candidate => !candidate.id.startsWith('scribble-colour-pass-'))?.id));
+  manual.splice(mainIndex, 0, ...automatic);
+  return { passes: manual, pens: nextPens };
 }

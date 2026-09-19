@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { separateColours, generateColourSeparation, ensureColourPasses, colourPassId } from '@plotter/algorithms';
+import { separateColours, generateColourSeparation, generateScribbleColourUnderlay, ensureColourPasses, ensureScribbleColourPasses, colourPassId, scribbleColourPassId } from '@plotter/algorithms';
 import { createDefaultState, DEFAULT_RASTER_PLACEMENT, type ColourSeparationSettings } from '@plotter/core';
 import { generateGCode, joinContinuousPaths } from '@plotter/gcode';
 
@@ -133,5 +133,22 @@ describe('colour separation', () => {
     const docs = generateGCode('Colours', result, usedPasses, first.pens, state.gcode, canvas.heightMm, true);
     expect(docs).toHaveLength(2);
     expect(new Set(docs.map(d => d.passId))).toEqual(new Set(result.colourSeparation!.palette.map(p => colourPassId(p.id))));
+  });
+
+  it('creates solid under-colour fills and orders their thick pens before the scribble', () => {
+    const image = pixels(['RRBB', 'RRBB']);
+    const state = createDefaultState('raster', canvas);
+    const result = generateScribbleColourUnderlay(image, canvas, DEFAULT_RASTER_PLACEMENT, { underlayColourCount: 2, underlayMinRegionPixels: 1 }, state.passes, state.pens);
+    expect(result.generator).toBe('raster.continuous-scribble');
+    expect(result.paths.length).toBeGreaterThan(0);
+    expect(new Set(result.paths.map(path => path.passId))).toEqual(new Set(result.colourSeparation!.palette.map(colour => scribbleColourPassId(colour.id))));
+    const synced = ensureScribbleColourPasses(result.colourSeparation!.palette, state.passes, state.pens);
+    expect(synced.passes.slice(0, 2).every(pass => pass.id.startsWith('scribble-colour-pass-'))).toBe(true);
+    expect(synced.passes[2]!.id).toBe('pass-1');
+    expect(synced.pens.filter(pen => pen.id.startsWith('scribble-colour-pen-')).every(pen => pen.widthMm === 1)).toBe(true);
+    const withScribble = { ...result, paths: [...result.paths, { id: 'scribble', layerId: 'layer-1', passId: 'pass-1', points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }] };
+    const documents = generateGCode('Under colour', withScribble, synced.passes, synced.pens, state.gcode, canvas.heightMm, true);
+    expect(documents.map(document => document.passId)).toEqual([...result.colourSeparation!.palette.map(colour => scribbleColourPassId(colour.id)), 'pass-1']);
+    expect(ensureScribbleColourPasses([], synced.passes, synced.pens)).toEqual({ passes: state.passes, pens: state.pens });
   });
 });

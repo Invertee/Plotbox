@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import type { CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds, type Bounds } from '@plotter/geometry';
-import { generateSpiroglyph, generateColourSeparation, traceRasterContours } from '@plotter/algorithms';
+import { generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateScribbleColourUnderlay, traceRasterContours, generateContinuousScribble } from '@plotter/algorithms';
 import { turtleDraw } from 'turtletoy';
 
 type Job = {
@@ -136,8 +136,9 @@ function rasterGeometry(job: Job): PlotGeometry {
   const drawWidth = bounds.maxX - bounds.minX;
   const drawHeight = bounds.maxY - bounds.minY;
   const placement = calculateImagePlacement(width, height, bounds, job.rasterPlacement);
-  const primary = job.passIds[0] ?? 'pass-1';
-  const secondary = job.passIds[1] ?? primary;
+  const drawingPassIds = job.passes.filter(pass => !pass.id.startsWith('scribble-colour-pass-')).map(pass => pass.id);
+  const primary = drawingPassIds[0] ?? job.passIds[0] ?? 'pass-1';
+  const secondary = drawingPassIds[1] ?? primary;
   const paths: PlotPath[] = [];
   let pathIndex = 0;
   const sample = (x: number, y: number) => {
@@ -179,9 +180,36 @@ function rasterGeometry(job: Job): PlotGeometry {
   };
 
   const threshold = job.preprocess.threshold;
-  if (job.algorithmId === 'raster.spiroglyph') {
+  if (job.algorithmId === 'raster.continuous-scribble') {
+    const imageBounds = {
+      minX: Math.max(bounds.minX, placement.x), minY: Math.max(bounds.minY, placement.y),
+      maxX: Math.min(bounds.maxX, placement.x + placement.width), maxY: Math.min(bounds.maxY, placement.y + placement.height),
+    };
+    // Subpixel sampling preserves small features without stair-stepping the loops.
+    const smoothSample = (x: number, y: number) => {
+      const px = clamp((x - placement.x) / placement.width * (width - 1), 0, width - 1);
+      const py = clamp((y - placement.y) / placement.height * (height - 1), 0, height - 1);
+      const ix = Math.floor(px); const iy = Math.floor(py);
+      const nx = Math.min(width - 1, ix + 1); const ny = Math.min(height - 1, iy + 1);
+      const top = luminance[iy * width + ix]! * (1 - px + ix) + luminance[iy * width + nx]! * (px - ix);
+      const bottom = luminance[ny * width + ix]! * (1 - px + ix) + luminance[ny * width + nx]! * (px - ix);
+      return top * (1 - py + iy) + bottom * (py - iy);
+    };
+    const pass = job.passes.find(item => item.id === primary);
+    const penWidth = job.pens.find(item => item.id === pass?.penId)?.widthMm ?? 0.3;
+    const underlay = job.settings.colourUnderlay === true
+      ? generateScribbleColourUnderlay(job.imageData, job.canvas, job.rasterPlacement, job.settings, job.passes, job.pens)
+      : undefined;
+    if (underlay) progress(job.jobId, 0.28, 'Building under-colour passes');
+    const scribble = generateContinuousScribble(imageBounds, { ...job.settings, penWidth }, smoothSample, primary,
+      value => progress(job.jobId, (underlay ? 0.3 : 0.1) + value * (underlay ? 0.65 : 0.85), 'Tracing continuous tonal loops'));
+    return underlay ? { ...scribble, paths: [...underlay.paths, ...scribble.paths], colourSeparation: underlay.colourSeparation } : scribble;
+  } else if (job.algorithmId === 'raster.spiroglyph') {
     progress(job.jobId, 0.2, 'Sampling spiral tones');
-    return generateSpiroglyph(bounds, job.settings, sample, primary);
+    return generateSpiroglyph(bounds, job.settings, sample, drawingPassIds);
+  } else if (job.algorithmId === 'raster.spiral-blocks') {
+    progress(job.jobId, 0.2, 'Building spiral blocks');
+    return generateSpiralBlocks(bounds, job.settings, sample, drawingPassIds);
   } else if (job.algorithmId === 'raster.hatch') {
     hatch(numberSetting(job.settings, 'angle', 45), numberSetting(job.settings, 'spacing', 2.5), threshold);
   } else if (job.algorithmId === 'raster.crosshatch') {
@@ -194,15 +222,8 @@ function rasterGeometry(job: Job): PlotGeometry {
     hatch(60, spacing, 145, secondary, 'mid');
     hatch(120, spacing, 80, primary, 'dark');
   } else if (job.algorithmId === 'raster.scanlines') {
-    const spacing = numberSetting(job.settings, 'spacing', 2);
-    for (let y = bounds.minY; y <= bounds.maxY; y += spacing) {
-      const points: Point[] = [];
-      for (let x = bounds.minX; x <= bounds.maxX; x += 0.7) {
-        const tone = sample(x, y);
-        points.push({ x, y: y + (1 - tone / 255) * spacing * 0.7 * Math.sin(x * 1.7) });
-      }
-      addPath(points);
-    }
+    progress(job.jobId, 0.2, job.settings.style === 'blocks' ? 'Building scanline blocks' : 'Building scanline waves');
+    return generateScanlines(bounds, job.settings, sample, primary);
   } else if (job.algorithmId === 'raster.edge') {
     const step = Math.max(0.6, Math.min(drawWidth / width, drawHeight / height) * 2);
     const edgeThreshold = numberSetting(job.settings, 'edgeThreshold', 70);

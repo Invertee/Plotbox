@@ -13,26 +13,31 @@ Plotbox is a local-first browser application for turning generated artwork and r
 - Raster contain, cover and stretch fitting with independent scale and millimetre offsets
 - Worker-based edge, contour-tracing, hatch, crosshatch, adaptive crosshatch, dither, stipple, tonal-dash and scanline vectorisation
 - Continuous spiroglyph image rendering with adjustable line spacing, wave frequency, smoothing, tone thresholds, amplitude, shape and placement
+- Continuous scribble image rendering: a drifting, irregular looping path over a tone-weighted point cloud, with loose highlight coverage and overlapping shadows. Loop density accounts for the selected pen width; smaller loops follow tonal boundaries without a visible tile grid. Covers the placed image within safe margins; accepts up to 2400-pixel source resolution. Fine detail size is in millimetres, so pen width and plot size determine the smallest visible features. Extremely dense jobs report a point-budget error instead of leaving an incomplete drawing. Preview paths are cached in bounded chunks, and fine pens display at their actual width.
+- Optional continuous-scribble under-colour passes: separates the source palette into solid, clipped colour fills for thicker pens, orders those passes before the fine scribble pass, and leaves pale paper blank when requested.
 - Seeded flow-field, Truchet and guilloché generators
 - Standard TurtleToy script execution through the `turtletoy` package in a disposable worker
 - SVG import with named-group decomposition, transform flattening and editable per-layer treatments
-- OpenStreetMap place search and bounded feature import with classified roads, railways, buildings, water, parks and boundaries
+- Map place search and bounded feature import with classified OpenStreetMap roads, railways, buildings, water, parks and boundaries
+- OpenStreetMap-only, terrain-only, or combined downloads, with plot-ready contours at selectable 5–200 m intervals and separate index-contour layers
+- Large-area map selection beyond 50 mi²; OpenStreetMap detail automatically scales from local streets and buildings to regional roads, railways, water, waterways and administrative boundaries
 - Per-layer outline, hatch, crosshatch and stipple treatments with independent pen-pass assignment
 - Shared path optimisation before G-code generation
 
 ## Map provider configuration
 
-Map imports are initiated only when the user submits a place search or chooses a result. Search responses and Overpass extracts are cached in SQLite. Plotbox identifies its requests, limits public Nominatim traffic to one request per second, restricts imports to a 0.1–5 km radius, and displays OpenStreetMap attribution.
+Map imports are initiated only when the user submits a place search or chooses a result. Search responses, Overpass extracts and requested elevation tiles are cached in SQLite. Plotbox identifies its requests, limits public Nominatim traffic to one request per second, bounds imports to 1,000 km²/60 km across, and displays attribution for the selected sources. Regions up to 25 km² retain full OSM detail; larger requests omit buildings, paths and minor roads, with overview-scale requests retaining major roads, railways, water, waterways and administrative boundaries. Terrain contours are generated locally from keyless [Mapzen Terrain Tiles on AWS Open Data](https://registry.opendata.aws/terrain-tiles/); the source is a global bare-earth elevation mosaic whose resolution varies by location.
 
 Provider endpoints can be changed without rebuilding the app:
 
 ```bash
 NOMINATIM_URL=https://your-nominatim.example
 OVERPASS_URL=https://your-overpass.example/api/interpreter
+TERRAIN_TILE_URL=https://your-terrain.example/terrarium/{z}/{x}/{y}.png
 PLOTBOX_USER_AGENT="Plotbox/0.2 (your contact URL or email)"
 ```
 
-Review the [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/) and the [Overpass API guidance](https://wiki.openstreetmap.org/wiki/Overpass_API) before distributing or operating Plotbox for multiple users. A self-hosted or commercial provider is recommended beyond light personal use.
+Review the [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/), [Overpass API guidance](https://wiki.openstreetmap.org/wiki/Overpass_API), and [Terrain Tiles source attribution](https://github.com/tilezen/joerd/blob/master/docs/attribution.md) before distributing or operating Plotbox for multiple users. A self-hosted or commercial provider is recommended beyond light personal use of OSM services.
 
 ## Run locally
 
