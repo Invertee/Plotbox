@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, Cable, CircleStop, Home, Radio, RefreshCw, Save, Target, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Cable, CircleStop, Home, Radio, RefreshCw, Save, Target, Unlock, X } from 'lucide-react';
 import { fluidNCWebSocketCandidates, loadFluidNCSettings, normalizeFluidNCUrl, parseFluidNCStatus, saveFluidNCSettings, type FluidNCPosition, type FluidNCSettings, type FluidNCStatus } from '../fluidnc';
 
 export function FluidNCSettingsDialog({ onClose }: { onClose: () => void }) {
@@ -42,6 +42,10 @@ export function FluidNCControlDialog({ onClose }: { onClose: () => void }) {
   const [connection, setConnection] = useState<ConnectionState>(settings ? 'connecting' : 'disconnected');
   const [status, setStatus] = useState<FluidNCStatus>({ state: 'Unknown' });
   const [message, setMessage] = useState(settings ? 'Opening WebSocket…' : 'Add a FluidNC instance from the projects page first.');
+  const [xyJogDistance, setXyJogDistance] = useState('1');
+  const [zJogDistance, setZJogDistance] = useState('1');
+  const [xyFeedRate, setXyFeedRate] = useState('1000');
+  const [zFeedRate, setZFeedRate] = useState('600');
 
   const connect = () => {
     if (!settings) return;
@@ -104,9 +108,11 @@ export function FluidNCControlDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     connect();
+    // FluidNC delivers each response over this WebSocket.  Ask for a fresh
+    // realtime status ten times a second so the panel feels live during jogs.
     const poll = window.setInterval(() => {
       if (socketRef.current?.readyState === WebSocket.OPEN) socketRef.current.send('?');
-    }, 500);
+    }, 100);
     return () => {
       reconnectRef.current += 1;
       window.clearInterval(poll);
@@ -133,14 +139,17 @@ export function FluidNCControlDialog({ onClose }: { onClose: () => void }) {
     setMessage('Emergency stop sent');
   };
 
-  const moveZ = (distance: number) => {
-    send(`G91\nG0 Z${distance} F600\nG90\n`);
-    setMessage(`${distance > 0 ? 'Raising' : 'Lowering'} Z by ${Math.abs(distance)} mm`);
+  const jog = (axis: 'X' | 'Y' | 'Z', direction: 1 | -1) => {
+    const selectedDistance = axis === 'Z' ? zJogDistance : xyJogDistance;
+    const distance = Number(selectedDistance) * direction;
+    const feedRate = axis === 'Z' ? zFeedRate : xyFeedRate;
+    send(`G91\nG0 ${axis}${distance} F${feedRate}\nG90\n`);
+    setMessage(`Moving ${axis} ${direction > 0 ? '+' : '−'}${selectedDistance} mm`);
   };
 
-  const zeroZ = () => {
-    send('G92 Z0\n');
-    setMessage('Current height set as Z zero');
+  const clearAlarm = () => {
+    send('$X\n');
+    setMessage('Alarm clear requested');
   };
 
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -148,9 +157,10 @@ export function FluidNCControlDialog({ onClose }: { onClose: () => void }) {
       <div className="modal-head"><div><p className="eyebrow">PLOTTER CONTROL</p><h2 id="machine-control-title">{settings?.name ?? 'FluidNC'}</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close"><X /></button></div>
       <div className={`connection-banner ${connection}`}><span className="connection-light" /><div><strong>{connection === 'connected' ? status.state : connection === 'connecting' ? 'Connecting' : 'Offline'}</strong><small>{message}</small></div>{settings && connection !== 'connected' && <button className="button quiet" onClick={connect}><RefreshCw size={14} /> Retry</button>}</div>
       <PositionPanel machine={status.machinePosition} work={status.workPosition} />
+      <div className="control-section manual-motion"><div className="control-section-title"><span>Manual motion</span><small>Jog from the current work position</small></div><div className="jog-controls"><div className="jog-pad" aria-label="XY jog controls"><button className="jog-button up" aria-label="Move Y positive" disabled={connection !== 'connected'} onClick={() => jog('Y', 1)}><ArrowUp size={18} /><span>Y+</span></button><button className="jog-button left" aria-label="Move X negative" disabled={connection !== 'connected'} onClick={() => jog('X', -1)}><ArrowLeft size={18} /><span>X−</span></button><span className="jog-origin">XY</span><button className="jog-button right" aria-label="Move X positive" disabled={connection !== 'connected'} onClick={() => jog('X', 1)}><ArrowRight size={18} /><span>X+</span></button><button className="jog-button down" aria-label="Move Y negative" disabled={connection !== 'connected'} onClick={() => jog('Y', -1)}><ArrowDown size={18} /><span>Y−</span></button></div><div className="z-jog"><span>Z axis</span><button className="jog-button" aria-label="Move Z positive" disabled={connection !== 'connected'} onClick={() => jog('Z', 1)}><ArrowUp size={18} /><span>Z+</span></button><button className="jog-button" aria-label="Move Z negative" disabled={connection !== 'connected'} onClick={() => jog('Z', -1)}><ArrowDown size={18} /><span>Z−</span></button></div></div><div className="jog-settings"><label>XY step<select value={xyJogDistance} onChange={(event) => setXyJogDistance(event.target.value)}><option value="0.1">0.1 mm</option><option value="1">1 mm</option><option value="10">10 mm</option><option value="100">100 mm</option></select></label><label>Z step<select value={zJogDistance} onChange={(event) => setZJogDistance(event.target.value)}><option value="0.1">0.1 mm</option><option value="1">1 mm</option><option value="10">10 mm</option></select></label><label>XY speed<select value={xyFeedRate} onChange={(event) => setXyFeedRate(event.target.value)}><option value="300">300 mm/min</option><option value="1000">1000 mm/min</option><option value="3000">3000 mm/min</option></select></label><label>Z speed<select value={zFeedRate} onChange={(event) => setZFeedRate(event.target.value)}><option value="300">300 mm/min</option><option value="600">600 mm/min</option><option value="1000">1000 mm/min</option></select></label></div></div>
       <div className="control-section"><div className="control-section-title"><span>Homing</span><small>Move each axis to its machine origin</small></div><div className="axis-actions">{(['X', 'Y', 'Z'] as const).map((axis) => <button className="axis-button" key={axis} disabled={connection !== 'connected'} onClick={() => send(`$H${axis}\n`)}><Home size={16} /><strong>{axis}</strong><span>Home</span></button>)}</div></div>
-      <div className="control-section"><div className="control-section-title"><span>Z height</span><small>Adjust the pen height or set the work zero</small></div><div className="z-axis-actions"><button className="z-axis-button" disabled={connection !== 'connected'} onClick={() => moveZ(10)}><ArrowUp size={16} /><strong>Raise 10 mm</strong></button><button className="z-axis-button" disabled={connection !== 'connected'} onClick={() => moveZ(-10)}><ArrowDown size={16} /><strong>Lower 10 mm</strong></button><button className="z-axis-button" disabled={connection !== 'connected'} onClick={zeroZ}><Target size={16} /><strong>Set Z zero</strong></button></div></div>
-      <div className="stop-panel"><div><strong>Emergency stop</strong><span>Immediately reset the controller and halt motion.</span></div><button className="stop-button" disabled={connection !== 'connected'} onClick={stop}><CircleStop size={19} /> Stop</button></div>
+      <div className="control-section"><div className="control-section-title"><span>Work coordinates</span><small>Set the current pen height as the work zero</small></div><div className="z-axis-actions"><button className="z-axis-button" disabled={connection !== 'connected'} onClick={() => { send('G92 Z0\n'); setMessage('Current height set as Z zero'); }}><Target size={16} /><strong>Set Z zero</strong></button></div></div>
+      <div className="stop-panel"><div><strong>Emergency stop</strong><span>Immediately reset the controller and halt motion.</span></div><div className="stop-actions"><button className="clear-alarm-button" disabled={connection !== 'connected'} onClick={clearAlarm}><Unlock size={16} /> Clear alarm</button><button className="stop-button" disabled={connection !== 'connected'} onClick={stop}><CircleStop size={19} /> Stop</button></div></div>
       <div className="machine-footer"><Radio size={13} /><span>{settings?.websocketUrl ?? 'No FluidNC instance configured'}</span></div>
     </section>
   </div>;

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Cable, Download, Eye, FileImage, Layers3, Maximize2, Play, Plus, RefreshCw, Save, Settings2, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Cable, ChevronDown, ChevronUp, Download, FileImage, Maximize2, Play, Plus, RefreshCw, Save, Terminal, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { DEFAULT_PREPROCESS, DEFAULT_RASTER_PLACEMENT, DEFAULT_TURTLE_PLACEMENT, type PenProfile, type PlotGeometry, type PlotPass, type ProjectState } from '@plotter/core';
 import { ALGORITHMS, algorithmDefaults, generateAlgorithm, generateVectorLayers, ensureColourPasses, ensureScribbleColourPasses } from '@plotter/algorithms';
 import type { GCodeDocument } from '@plotter/gcode';
@@ -228,8 +228,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         <span>{render.error ?? render.message}</span><span>{state.geometry.paths.length.toLocaleString()} paths · {(drawingLength / 1000).toFixed(1)} m drawing</span>
       </div>
     </section>
-    <aside className="right-strip"><div><Layers3 /><span>Layers</span></div><div><Eye /><span>Preview</span></div><button onClick={() => setGcodeOpen(true)}><Settings2 /><span>G-code</span></button></aside>
-    {gcodeOpen && <GCodeDrawer projectName={project.name} state={state} updateState={updateState} onClose={() => setGcodeOpen(false)} />}
+    {gcodeOpen && <GCodeDrawer projectName={project.name} state={state} updateState={updateState} onOpenControl={() => setControlOpen(true)} onClose={() => setGcodeOpen(false)} />}
     {controlOpen && <FluidNCControlDialog onClose={() => setControlOpen(false)} />}
   </div>;
 }
@@ -375,8 +374,9 @@ function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectS
   </div>;
 }
 
-function GCodeDrawer({ projectName, state, updateState, onClose }: { projectName: string; state: ProjectState; updateState: (update: Partial<ProjectState>) => void; onClose: () => void }) {
+function GCodeDrawer({ projectName, state, updateState, onOpenControl, onClose }: { projectName: string; state: ProjectState; updateState: (update: Partial<ProjectState>) => void; onOpenControl: () => void; onClose: () => void }) {
   const [split, setSplit] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(true);
   const [documents, setDocuments] = useState<GCodeDocument[]>([]);
   const [generation, setGeneration] = useState<RenderStatus>({ active: true, value: 0, message: 'Preparing G-code' });
   const [retry, setRetry] = useState(0);
@@ -456,7 +456,7 @@ function GCodeDrawer({ projectName, state, updateState, onClose }: { projectName
     }
   };
   return <div className="drawer-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><aside className="drawer">
-    <div className="modal-head"><div><p className="eyebrow">MACHINE OUTPUT</p><h2>G-code export</h2></div><button className="icon-button" onClick={onClose}><X /></button></div>
+    <div className="modal-head"><div><p className="eyebrow">MACHINE OUTPUT</p><h2>G-code export</h2></div><div className="drawer-head-actions"><button className="button quiet" onClick={onOpenControl}><Cable size={15} /> Plotter control</button><button className="icon-button" onClick={onClose} aria-label="Close G-code export"><X /></button></div></div>
     <div className="drawer-content">
       <label>Coordinate origin<select value={state.gcode.origin} onChange={(event) => updateState({ gcode: { ...state.gcode, origin: event.target.value as 'top-left' | 'bottom-left' } })}><option value="bottom-left">Bottom-left</option><option value="top-left">Top-left</option></select></label>
       <div className="field-row"><label>Travel feed<input type="number" value={state.gcode.travelFeed} onChange={(event) => updateState({ gcode: { ...state.gcode, travelFeed: Number(event.target.value) } })} /></label><label>Join gap (mm)<input type="number" min="0" step="0.01" value={state.gcode.pathJoinTolerance ?? 0.15} onChange={(event) => updateState({ gcode: { ...state.gcode, pathJoinTolerance: Math.max(0, Number(event.target.value)) } })} /></label></div>
@@ -488,6 +488,9 @@ function GCodeDrawer({ projectName, state, updateState, onClose }: { projectName
         </div>;
       })}
     </div>
-    <pre className="gcode-preview">{documents[0]?.content.slice(0, 6000) || (generation.error ? `; ${generation.error}` : generation.active ? '; Building preview…' : '; Generation was cancelled')}</pre>
+    <section className="gcode-console">
+      <button className="gcode-console-toggle" type="button" aria-expanded={consoleOpen} aria-controls="gcode-console-output" onClick={() => setConsoleOpen((open) => !open)}><span><Terminal size={14} /> Console</span>{consoleOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}</button>
+      {consoleOpen && <pre id="gcode-console-output" className="gcode-preview">{documents[0]?.content.slice(0, 6000) || (generation.error ? `; ${generation.error}` : generation.active ? '; Building preview…' : '; Generation was cancelled')}</pre>}
+    </section>
   </aside></div>;
 }
