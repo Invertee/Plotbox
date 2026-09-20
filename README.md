@@ -6,7 +6,8 @@ Plotbox is a local-first browser application for turning generated artwork and r
 - SQLite project persistence and debounced autosave
 - Zoomable/pannable SVG preview with pen-colour and physical line-width rendering
 - Viewport zoom that scales and pans the entire sheet while keeping plot geometry unchanged
-- Editable pens and passes, including Z up/down and feed rates
+- Editable pen and paint passes, including Z up/down, feed rates, brush width and paint-well calibration
+- Paint G-code with FluidNC XY position capture, configurable dip depth/dwell, distance-based reloading and optional variable-Z brush pressure
 - Combined or per-pass G-code with configurable origin, park position and pen-change pause
 - A built-in physical test pattern
 - Raster preprocessing: brightness, contrast, gamma, blur, threshold and inversion
@@ -15,6 +16,7 @@ Plotbox is a local-first browser application for turning generated artwork and r
 - Continuous spiroglyph image rendering with adjustable line spacing, wave frequency, smoothing, tone thresholds, amplitude, shape and placement
 - Continuous scribble image rendering: a drifting, irregular looping path over a tone-weighted point cloud, with loose highlight coverage and overlapping shadows. Loop density accounts for the selected pen width; smaller loops follow tonal boundaries without a visible tile grid. Covers the placed image within safe margins; accepts up to 2400-pixel source resolution. Fine detail size is in millimetres, so pen width and plot size determine the smallest visible features. Extremely dense jobs report a point-budget error instead of leaving an incomplete drawing. Preview paths are cached in bounded chunks, and fine pens display at their actual width.
 - Optional continuous-scribble under-colour passes: separates the source palette into solid, clipped colour fills for thicker pens, orders those passes before the fine scribble pass, and leaves pale paper blank when requested.
+- Paint-aware pressure scribble and scanline image modes map source tone to a calibrated brush-contact Z range.
 - Seeded flow-field, Truchet and guilloché generators
 - Standard TurtleToy script execution through the `turtletoy` package in a disposable worker
 - SVG import with named-group decomposition, transform flattening and editable per-layer treatments

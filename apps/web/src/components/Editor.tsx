@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Cable, ChevronDown, ChevronUp, Download, FileImage, Maximize2, Play, Plus, RefreshCw, Save, Terminal, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Cable, ChevronDown, ChevronUp, Download, FileImage, LocateFixed, Maximize2, Play, Plus, RefreshCw, Save, Terminal, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { DEFAULT_PREPROCESS, DEFAULT_RASTER_PLACEMENT, DEFAULT_TURTLE_PLACEMENT, type PenProfile, type PlotGeometry, type PlotPass, type ProjectState } from '@plotter/core';
 import { ALGORITHMS, algorithmDefaults, generateAlgorithm, generateVectorLayers, ensureColourPasses, ensureScribbleColourPasses } from '@plotter/algorithms';
 import type { GCodeDocument } from '@plotter/gcode';
@@ -9,7 +9,7 @@ import { useEditorStore } from '../store';
 import { MapSourcePanel, SvgSourcePanel, VectorLayerEditor } from './VectorModePanels';
 import { FluidNCControlDialog } from './FluidNC';
 import { ColourSeparationPanel } from './ColourSeparationPanel';
-import { loadFluidNCSettings } from '../fluidnc';
+import { loadFluidNCSettings, type FluidNCPosition } from '../fluidnc';
 
 type RenderStatus = { active: boolean; value: number; message: string; error?: string };
 type PreviewQuality = 'standard' | 'high' | 'ultra';
@@ -41,6 +41,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const [render, setRender] = useState<RenderStatus>({ active: false, value: 0, message: '' });
   const [gcodeOpen, setGcodeOpen] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
+  const [paintCapture, setPaintCapture] = useState<{ penId: string; passName: string }>();
   const [selectedRegion, setSelectedRegion] = useState('');
   const [redrawNonce, setRedrawNonce] = useState(0);
   const renderJob = useRef(0);
@@ -63,7 +64,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
       if (!Object.keys(loaded.state.algorithmSettings).length) loaded.state.algorithmSettings = algorithmDefaults(loaded.state.algorithmId);
       loaded.state.rasterPlacement = { ...DEFAULT_RASTER_PLACEMENT, ...loaded.state.rasterPlacement };
       loaded.state.turtlePlacement = { ...DEFAULT_TURTLE_PLACEMENT, ...loaded.state.turtlePlacement };
-      loaded.state.pens = loaded.state.pens.map((pen) => ({ ...pen, zUpFeed: pen.zUpFeed ?? pen.zFeed ?? 600, zDownFeed: pen.zDownFeed ?? pen.zFeed ?? 600 }));
+      loaded.state.pens = loaded.state.pens.map((pen) => ({ ...pen, mediaType: pen.mediaType ?? 'pen', zUpFeed: pen.zUpFeed ?? pen.zFeed ?? 600, zDownFeed: pen.zDownFeed ?? pen.zFeed ?? 600 }));
       const savedMapSettings = loaded.state.mapSettings as Partial<ProjectState['mapSettings']> | undefined;
       const dataSource = savedMapSettings?.dataSource ?? (savedMapSettings?.includeTopography ? 'both' : 'openstreetmap');
       loaded.state.mapSettings = { query: savedMapSettings?.query ?? '', radiusKm: savedMapSettings?.radiusKm ?? 1, dataSource, includeTopography: dataSource !== 'openstreetmap', contourInterval: savedMapSettings?.contourInterval ?? 10, latitude: savedMapSettings?.latitude, longitude: savedMapSettings?.longitude, zoom: savedMapSettings?.zoom ?? 14 };
@@ -100,7 +101,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const layersKey = JSON.stringify(project?.state.layers ?? []);
   const colourKey = JSON.stringify(project?.state.colourSeparation ?? {});
   const colourPensKey = algorithmId === 'raster.colour-separation' ? JSON.stringify({ passes: project?.state.passes, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
-  const scribblePenKey = algorithmId === 'raster.continuous-scribble' ? JSON.stringify({ pass: project?.state.passes[0]?.penId, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
+  const scribblePenKey = algorithmId === 'raster.continuous-scribble' || algorithmId === 'raster.paint-scribble' ? JSON.stringify({ pass: project?.state.passes[0]?.penId, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
   const projectMode = project?.mode;
   const renderSignature = useMemo(() => JSON.stringify({ projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, projectMode, redrawNonce, colourKey, colourPensKey, scribblePenKey }), [projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, projectMode, redrawNonce, colourKey, colourPensKey, scribblePenKey]);
   const drawingLength = useMemo(() => project?.state.geometry.paths.reduce((total, item) => total + pathLength(item), 0) ?? 0, [project?.state.geometry]);
@@ -138,7 +139,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
           if (event.data.type === 'complete' && event.data.result) { const result = event.data.result; if (algorithmId === 'raster.continuous-scribble') { updateState(current => ({ ...current, geometry: result, ...ensureScribbleColourPasses(result.colourSeparation?.palette ?? [], current.passes, current.pens) })); } else if (result.colourSeparation) { updateState(current => ({ ...current, geometry: result, ...ensureColourPasses(result.colourSeparation!.palette, current.passes, current.pens) })); } else setGeometry(result); setRender({ active: false, value: 1, message: `${event.data.result.paths.length.toLocaleString()} paths` }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
           if (event.data.type === 'error') { setRender({ active: false, value: 0, message: '', error: event.data.message }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
         };
-        const imageData = state.sourceImage ? await imageDataFromUrl(state.sourceImage, algorithmId === 'raster.continuous-scribble' ? 2400 : 1000) : undefined;
+        const imageData = state.sourceImage ? await imageDataFromUrl(state.sourceImage, algorithmId === 'raster.continuous-scribble' || algorithmId === 'raster.paint-scribble' ? 2400 : 1000) : undefined;
         if (!isCurrentRender()) { worker.terminate(); return; }
         worker.postMessage({ jobId, algorithmId, canvas: state.canvas, settings: state.algorithmSettings, preprocess: state.preprocess, rasterPlacement: state.rasterPlacement, turtlePlacement: state.turtlePlacement, passIds: state.passes.map((pass) => pass.id), colourSeparation: state.colourSeparation, passes: state.passes, pens: state.pens, imageData });
         return;
@@ -170,7 +171,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
       <button className="icon-button" onClick={onBack} title="Back to projects"><ArrowLeft /></button>
       <div className="editor-title"><input value={project.name} onChange={(event) => updateName(event.target.value)} /><span>{project.mode} · {state.canvas.widthMm} × {state.canvas.heightMm} mm</span></div>
       <div className={`save-state ${saveState}`}><Save size={14} /> {saveState === 'saved' ? 'Saved locally' : saveState === 'saving' ? 'Saving…' : 'Save failed'}</div>
-      <button className="button quiet" onClick={() => setControlOpen(true)}><Cable size={16} /> Control</button>
+      <button className="button quiet" onClick={() => { setPaintCapture(undefined); setControlOpen(true); }}><Cable size={16} /> Control</button>
       <button className="button secondary" onClick={() => setGcodeOpen(true)}><Download size={16} /> Export G-code</button>
     </header>
     <aside className="left-panel scroll-panel">
@@ -203,6 +204,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         {state.algorithmId === 'raster.spiroglyph' && <p className="panel-copy">Image tone controls wave width. Choose two or more interleaved spirals for a multi-arm design; each arm uses the matching pen pass below, cycling through available passes.</p>}
         {state.algorithmId === 'raster.spiral-blocks' && <p className="panel-copy">Image tone controls dense radial blocks. Choose two or more interleaved spirals for a multi-arm design; each arm uses the matching pen pass below, cycling through available passes.</p>}
         {state.algorithmId === 'raster.scanlines' && <p className="panel-copy">Choose smooth waves or perpendicular blocks along each line. Image tone controls their width; line angle, spacing, thresholds and smoothing shape the result while the minimum gap prevents neighboring lines from merging.</p>}
+        {(state.algorithmId === 'raster.paint-scribble' || state.algorithmId === 'raster.paint-scanlines') && <p className="panel-copy">This paint-aware variant stores image tone as brush pressure. Assign the pass to Paint below and enable variable Z to map highlights and shadows across the configured contact range.</p>}
         {state.algorithmId === 'generative.turtle' && <><p className="panel-copy">Runs standard TurtleToy code with <code>Canvas</code>, <code>new Turtle()</code> and optional <code>walk(i)</code>. <a href="https://turtletoy.net/syntax" target="_blank" rel="noreferrer">TurtleToy API reference</a>.</p><button className="button quiet full" disabled={render.active} onClick={() => setRedrawNonce((value) => value + 1)}><RefreshCw size={15} className={render.active ? 'spin' : undefined} /> Redraw</button><div className="source-placement"><label>Fit TurtleToy canvas<select value={state.turtlePlacement.fit} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, fit: event.target.value as ProjectState['turtlePlacement']['fit'] } })}><option value="contain">Contain — preserve scale</option><option value="cover">Cover — crop to fill</option><option value="stretch">Stretch — fill exactly</option></select></label><RangeField label="Canvas scale" unit="%" value={state.turtlePlacement.scalePercent} min={10} max={300} step={5} onChange={(value) => updateState({ turtlePlacement: { ...state.turtlePlacement, scalePercent: value } })} /><div className="field-row compact"><label>Offset X (mm)<input type="number" step="1" value={state.turtlePlacement.offsetXmm} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, offsetXmm: Number(event.target.value) } })} /></label><label>Offset Y (mm)<input type="number" step="1" value={state.turtlePlacement.offsetYmm} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, offsetYmm: Number(event.target.value) } })} /></label></div><button className="button quiet full" onClick={() => updateState({ turtlePlacement: { ...DEFAULT_TURTLE_PLACEMENT } })}>Reset TurtleToy canvas</button></div></>}
         {definition?.controls.filter(control => (!control.key.startsWith('underlay') || Boolean(state.algorithmSettings.colourUnderlay)) && (!control.visibleWhen || (state.algorithmSettings[control.visibleWhen.key] ?? definition.controls.find(item => item.key === control.visibleWhen?.key)?.default) === control.visibleWhen.value)).map((control) => control.type === 'textarea' ? <label key={control.key}>{control.label}<textarea rows={10} spellCheck={false} value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })} /></label> : control.type === 'boolean' ? <label className="check-field" key={control.key}><input type="checkbox" checked={Boolean(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.checked })} /> {control.label}</label> : control.type === 'select' ? <label key={control.key}>{control.label}<select value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })}>{control.options?.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : <RangeField key={control.key} label={control.label} unit={control.unit} value={Number(state.algorithmSettings[control.key] ?? control.default)} min={control.min ?? 0} max={control.max ?? 100} step={control.step} numberOnly={control.type === 'number'} onChange={(value) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: value })} />)}
         <button className="button quiet full" onClick={() => changeAlgorithmSettings(algorithmDefaults(state.algorithmId))}><RefreshCw size={15} /> Reset {project.mode === 'raster' ? 'vectorisation' : 'generator'} settings</button>
@@ -217,7 +219,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         {state.layers.map((layer) => <div className="layer-row" key={layer.id}><label className="check-field"><input type="checkbox" checked={layer.visible} onChange={(event) => updateState({ layers: state.layers.map((item) => item.id === layer.id ? { ...item, visible: event.target.checked } : item) })} /><span><strong>{layer.name}</strong><small>{definition?.name ?? layer.algorithmId}</small></span></label><span>{state.geometry.paths.filter((path) => path.layerId === layer.id).length.toLocaleString()}</span></div>)}
       </Panel>}
       <Panel title="Pens & passes">
-        <PenPassEditor state={state} updateState={updateState} />
+        <PenPassEditor state={state} updateState={updateState} onCapturePaintWell={(penId, passName) => { setPaintCapture({ penId, passName }); setControlOpen(true); }} />
       </Panel>
       <Panel title="Post processing"><p className="panel-copy">Geometry is clipped to the safe area. G-code output uses nearest-neighbour path ordering and automatically chooses the shorter path direction.</p></Panel>
     </aside>
@@ -228,8 +230,8 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         <span>{render.error ?? render.message}</span><span>{state.geometry.paths.length.toLocaleString()} paths · {(drawingLength / 1000).toFixed(1)} m drawing</span>
       </div>
     </section>
-    {gcodeOpen && <GCodeDrawer projectName={project.name} state={state} updateState={updateState} onOpenControl={() => setControlOpen(true)} onClose={() => setGcodeOpen(false)} />}
-    {controlOpen && <FluidNCControlDialog onClose={() => setControlOpen(false)} />}
+    {gcodeOpen && <GCodeDrawer projectName={project.name} state={state} updateState={updateState} onOpenControl={() => { setPaintCapture(undefined); setControlOpen(true); }} onClose={() => setGcodeOpen(false)} />}
+    {controlOpen && <FluidNCControlDialog capture={paintCapture ? { label: `${paintCapture.passName} paint well`, onCapture: (position: FluidNCPosition) => { updateState((current) => ({ ...current, pens: current.pens.map((pen) => pen.id === paintCapture.penId ? { ...pen, paintWellX: position.x, paintWellY: position.y } : pen) })); setPaintCapture(undefined); setControlOpen(false); } } : undefined} onClose={() => { setPaintCapture(undefined); setControlOpen(false); }} />}
   </div>;
 }
 
@@ -241,13 +243,13 @@ function RangeField({ label, value, min, max, step = 1, unit, onChange, numberOn
   return <label className="range-field"><span><span>{label}</span><output>{value}{unit ?? ''}</output></span>{!numberOnly && <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />}<input className={numberOnly ? '' : 'sr-only'} type="number" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} /></label>;
 }
 
-function PenPassEditor({ state, updateState }: { state: ProjectState; updateState: (update: Partial<ProjectState> | ((state: ProjectState) => ProjectState)) => void }) {
+function PenPassEditor({ state, updateState, onCapturePaintWell }: { state: ProjectState; updateState: (update: Partial<ProjectState> | ((state: ProjectState) => ProjectState)) => void; onCapturePaintWell: (penId: string, passName: string) => void }) {
   const updatePen = (id: string, update: Partial<PenProfile>) => updateState({ pens: state.pens.map((pen) => pen.id === id ? { ...pen, ...update } : pen) });
   const updatePass = (id: string, update: Partial<PlotPass>) => updateState({ passes: state.passes.map((pass) => pass.id === id ? { ...pass, ...update } : pass) });
   const addPass = () => {
     const index = state.passes.length + 1;
     const penId = `pen-${crypto.randomUUID()}`;
-    updateState({ pens: [...state.pens, { id: penId, name: `Pen ${index}`, color: '#d84a35', widthMm: 0.3, zUp: 0, zDown: -10, xyFeed: 2500, zUpFeed: 600, zDownFeed: 600 }], passes: [...state.passes, { id: `pass-${crypto.randomUUID()}`, name: `Pass ${index}`, penId, enabled: true }] });
+    updateState({ pens: [...state.pens, { id: penId, name: `Pen ${index}`, color: '#d84a35', widthMm: 0.3, zUp: 0, zDown: -10, xyFeed: 2500, zUpFeed: 600, zDownFeed: 600, mediaType: 'pen' }], passes: [...state.passes, { id: `pass-${crypto.randomUUID()}`, name: `Pass ${index}`, penId, enabled: true }] });
   };
   return <div className="pass-list">{state.passes.map((pass, index) => {
     const pen = state.pens.find((item) => item.id === pass.penId);
@@ -255,10 +257,19 @@ function PenPassEditor({ state, updateState }: { state: ProjectState; updateStat
     return <div className="pass-card" key={pass.id}>
       <div className="pass-head"><label className="check-field"><input type="checkbox" checked={pass.enabled} onChange={(event) => updatePass(pass.id, { enabled: event.target.checked })} /><strong>{pass.name}</strong></label>{state.passes.length > 1 && !pass.id.startsWith('colour-pass-') && !pass.id.startsWith('scribble-colour-pass-') && <button className="icon-button small" onClick={() => updateState({ passes: state.passes.filter((item) => item.id !== pass.id), pens: state.pens.filter((item) => item.id !== pen.id) })}><Trash2 /></button>}</div>
       <label>Pass name<input value={pass.name} onChange={(event) => updatePass(pass.id, { name: event.target.value })} /></label>
+      <label>Media type<select value={pen.mediaType ?? 'pen'} onChange={(event) => { const mediaType = event.target.value as PenProfile['mediaType']; updatePen(pen.id, mediaType === 'paint' ? { mediaType, paintReloadDistanceMm: pen.paintReloadDistanceMm ?? 150, paintDipDwellSeconds: pen.paintDipDwellSeconds ?? 0.5, paintUsePressure: pen.paintUsePressure ?? true, paintMaxPressureZ: pen.paintMaxPressureZ ?? pen.zDown - 1 } : { mediaType }); }}><option value="pen">Pen</option><option value="paint">Paint / brush</option></select></label>
       <div className="pen-name"><input type="color" value={pen.color} onChange={(event) => updatePen(pen.id, { color: event.target.value })} /><input value={pen.name} onChange={(event) => updatePen(pen.id, { name: event.target.value })} /></div>
-      <div className="field-row compact"><label>Width<input type="number" step="0.1" value={pen.widthMm} onChange={(event) => updatePen(pen.id, { widthMm: Number(event.target.value) })} /></label><label>XY feed<input type="number" step="100" value={pen.xyFeed} onChange={(event) => updatePen(pen.id, { xyFeed: Number(event.target.value) })} /></label></div>
-      <div className="field-row compact"><label>Z up<input type="number" step="0.5" value={pen.zUp} onChange={(event) => updatePen(pen.id, { zUp: Number(event.target.value) })} /></label><label>Z down<input type="number" step="0.5" value={pen.zDown} onChange={(event) => updatePen(pen.id, { zDown: Number(event.target.value) })} /></label></div>
+      <div className="field-row compact"><label>{pen.mediaType === 'paint' ? 'Brush width' : 'Width'}<input type="number" min="0.01" step="0.1" value={pen.widthMm} onChange={(event) => updatePen(pen.id, { widthMm: Number(event.target.value) })} /></label><label>XY feed<input type="number" step="100" value={pen.xyFeed} onChange={(event) => updatePen(pen.id, { xyFeed: Number(event.target.value) })} /></label></div>
+      <div className="field-row compact"><label>Z up<input type="number" step="0.5" value={pen.zUp} onChange={(event) => updatePen(pen.id, { zUp: Number(event.target.value) })} /></label><label>{pen.mediaType === 'paint' ? 'Light contact Z' : 'Z down'}<input type="number" step="0.5" value={pen.zDown} onChange={(event) => updatePen(pen.id, { zDown: Number(event.target.value) })} /></label></div>
       <div className="field-row compact"><label>Z up feed<input type="number" min="1" step="50" value={pen.zUpFeed ?? pen.zFeed ?? 600} onChange={(event) => updatePen(pen.id, { zUpFeed: Number(event.target.value) })} /></label><label>Z down feed<input type="number" min="1" step="50" value={pen.zDownFeed ?? pen.zFeed ?? 600} onChange={(event) => updatePen(pen.id, { zDownFeed: Number(event.target.value) })} /></label></div>
+      {pen.mediaType === 'paint' && <div className="paint-settings">
+        <div className="paint-settings-head"><div><strong>Paint well</strong><small>Work coordinates used to reload this pass</small></div><button className="button quiet compact-button" type="button" onClick={() => onCapturePaintWell(pen.id, pass.name)}><LocateFixed size={14} /> Capture XY</button></div>
+        <div className="field-row compact"><label>Well X<input type="number" step="0.1" value={pen.paintWellX ?? ''} placeholder="Capture" onChange={(event) => updatePen(pen.id, { paintWellX: event.target.value === '' ? undefined : Number(event.target.value) })} /></label><label>Well Y<input type="number" step="0.1" value={pen.paintWellY ?? ''} placeholder="Capture" onChange={(event) => updatePen(pen.id, { paintWellY: event.target.value === '' ? undefined : Number(event.target.value) })} /></label></div>
+        <div className="field-row compact"><label>Dip Z<input type="number" step="0.1" value={pen.paintWellZ ?? ''} placeholder="Required" onChange={(event) => updatePen(pen.id, { paintWellZ: event.target.value === '' ? undefined : Number(event.target.value) })} /></label><label>Dip dwell (s)<input type="number" min="0" step="0.1" value={pen.paintDipDwellSeconds ?? 0.5} onChange={(event) => updatePen(pen.id, { paintDipDwellSeconds: Math.max(0, Number(event.target.value)) })} /></label></div>
+        <label>Reload every (mm)<input type="number" min="0" step="10" value={pen.paintReloadDistanceMm ?? 150} onChange={(event) => updatePen(pen.id, { paintReloadDistanceMm: Math.max(0, Number(event.target.value)) })} /><small>Set to 0 to dip only once at the start of the pass.</small></label>
+        <label className="check-field"><input type="checkbox" checked={pen.paintUsePressure ?? true} onChange={(event) => updatePen(pen.id, { paintUsePressure: event.target.checked })} /> Variable Z pressure from paint-aware algorithms</label>
+        {(pen.paintUsePressure ?? true) && <label>Full pressure Z<input type="number" step="0.1" value={pen.paintMaxPressureZ ?? pen.zDown - 1} onChange={(event) => updatePen(pen.id, { paintMaxPressureZ: Number(event.target.value) })} /></label>}
+      </div>}
       <small>{state.geometry.paths.filter((path) => path.passId === pass.id).length.toLocaleString()} paths</small>
     </div>;
   })}<button className="button quiet full" onClick={addPass}><Plus size={15} /> Add pass</button></div>;

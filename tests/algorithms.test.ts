@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { algorithmDefaults, generateAlgorithm, generateScanlines, generateSpiroglyph, generateSpiralBlocks, generateVectorLayers, traceRasterContours } from '@plotter/algorithms';
+import { addPaintPressure, algorithmDefaults, generateAlgorithm, generateScanlines, generateSpiroglyph, generateSpiralBlocks, generateVectorLayers, traceRasterContours } from '@plotter/algorithms';
 import type { PlotLayer } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds } from '@plotter/geometry';
 import { turtleDraw } from 'turtletoy';
@@ -154,6 +154,20 @@ describe('scanline raster generation', () => {
     expect(dark).toHaveLength(light.length);
     const displacement = dark.flatMap((item, row) => item.points.map((point, index) => Math.hypot(point.x - light[row]!.points[index]!.x, point.y - light[row]!.points[index]!.y)));
     expect(Math.max(...displacement)).toBeLessThanOrEqual(0.701);
+  });
+});
+
+describe('paint pressure generation', () => {
+  it('maps image tone into the configured normalised pressure range', () => {
+    const source = {
+      generator: 'source', generatedAt: '',
+      paths: [{ id: 'line', layerId: 'layer-1', passId: 'pass-1', points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] }],
+    };
+    const painted = addPaintPressure(source, (x) => x === 0 ? 255 : 0, { minimumPressure: 0.2, maximumPressure: 0.9 }, 'raster.paint-scanlines');
+    expect(painted.generator).toBe('raster.paint-scanlines');
+    expect(painted.paths[0]!.points[0]!.pressure).toBeCloseTo(0.2);
+    expect(painted.paths[0]!.points[1]!.pressure).toBeCloseTo(0.9);
+    expect(algorithmDefaults('raster.paint-scribble')).toMatchObject({ minimumPressure: 0.1, maximumPressure: 1 });
   });
 });
 

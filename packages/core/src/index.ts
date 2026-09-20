@@ -5,6 +5,8 @@ export type PaperPreset = 'A4' | 'A3' | 'A2' | 'custom';
 export interface Point {
   x: number;
   y: number;
+  /** Normalised tool pressure (0–1). Paint-capable G-code maps this to Z. */
+  pressure?: number;
 }
 
 export interface PlotPath {
@@ -67,6 +69,21 @@ export interface PenProfile {
   zDownFeed?: number;
   /** Legacy shared Z feed rate, retained for older saved projects. */
   zFeed?: number;
+  /** Defaults to pen for older projects. */
+  mediaType?: 'pen' | 'paint';
+  /** Paint-container position in the machine's work coordinates. */
+  paintWellX?: number;
+  paintWellY?: number;
+  /** Z used to dip the brush into the paint container. */
+  paintWellZ?: number;
+  /** Optional dwell after dipping, in seconds. */
+  paintDipDwellSeconds?: number;
+  /** Maximum painted distance between dips. Zero disables distance reloads. */
+  paintReloadDistanceMm?: number;
+  /** Enable per-point pressure produced by paint-aware image algorithms. */
+  paintUsePressure?: boolean;
+  /** Z at full pressure; zDown remains the light-contact height. */
+  paintMaxPressureZ?: number;
 }
 
 export interface PlotPass {
@@ -221,6 +238,7 @@ const defaultPen = (id: string, name: string, color: string): PenProfile => ({
   xyFeed: 2500,
   zUpFeed: 600,
   zDownFeed: 600,
+  mediaType: 'pen',
 });
 
 export function createDefaultState(mode: ProjectMode, canvas: CanvasSettings): ProjectState {

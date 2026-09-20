@@ -43,6 +43,38 @@ describe('G-code output', () => {
     expect(document?.content).toContain('G1 Z-10 F250');
   });
 
+  it('reloads paint from its captured well and maps pressure to Z', () => {
+    const paint: PenProfile = {
+      ...pens[0]!, name: 'Indigo brush', mediaType: 'paint',
+      paintWellX: 220, paintWellY: 18, paintWellZ: -14,
+      paintDipDwellSeconds: 0.5, paintReloadDistanceMm: 5,
+      paintUsePressure: true, paintMaxPressureZ: -12,
+    };
+    const paintGeometry: PlotGeometry = { ...geometry, paths: [{
+      id: 'paint', layerId: 'l', passId: 'p1', points: [
+        { x: 10, y: 10, pressure: 0 },
+        { x: 14, y: 10, pressure: 0.5 },
+        { x: 20, y: 10, pressure: 1 },
+      ],
+    }] };
+
+    const [document] = generateGCode('Paint', paintGeometry, [passes[0]!], [paint], settings, 297);
+
+    expect(document?.content.match(/; Reload Indigo brush/g)).toHaveLength(2);
+    expect(document?.content).toContain('G0 X220 Y18 F5000');
+    expect(document?.content).toContain('G1 Z-14 F600');
+    expect(document?.content).toContain('G4 P0.5');
+    expect(document?.content).toContain('G1 Z-10 F600');
+    expect(document?.content).toContain('Z-11');
+    expect(document?.content).toContain('Z-12');
+  });
+
+  it('rejects an uncalibrated paint pass before producing unsafe motion', () => {
+    const paint: PenProfile = { ...pens[0]!, mediaType: 'paint' };
+    expect(() => generateGCode('Paint', { ...geometry, paths: [geometry.paths[0]!] }, [passes[0]!], [paint], settings, 297))
+      .toThrow('needs a captured paint well X/Y position and dip Z height');
+  });
+
   it('joins aligned paths separated by a tiny gap, avoiding an unnecessary pen lift', () => {
     const paths = [
       { id: 'a', layerId: 'l', passId: 'p1', points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] },

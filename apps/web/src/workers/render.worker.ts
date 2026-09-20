@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import type { CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds, type Bounds } from '@plotter/geometry';
-import { generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateScribbleColourUnderlay, traceRasterContours, generateContinuousScribble } from '@plotter/algorithms';
+import { addPaintPressure, generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateScribbleColourUnderlay, traceRasterContours, generateContinuousScribble } from '@plotter/algorithms';
 import { turtleDraw } from 'turtletoy';
 
 type Job = {
@@ -180,7 +180,7 @@ function rasterGeometry(job: Job): PlotGeometry {
   };
 
   const threshold = job.preprocess.threshold;
-  if (job.algorithmId === 'raster.continuous-scribble') {
+  if (job.algorithmId === 'raster.continuous-scribble' || job.algorithmId === 'raster.paint-scribble') {
     const imageBounds = {
       minX: Math.max(bounds.minX, placement.x), minY: Math.max(bounds.minY, placement.y),
       maxX: Math.min(bounds.maxX, placement.x + placement.width), maxY: Math.min(bounds.maxY, placement.y + placement.height),
@@ -197,13 +197,16 @@ function rasterGeometry(job: Job): PlotGeometry {
     };
     const pass = job.passes.find(item => item.id === primary);
     const penWidth = job.pens.find(item => item.id === pass?.penId)?.widthMm ?? 0.3;
-    const underlay = job.settings.colourUnderlay === true
+    const underlay = job.algorithmId === 'raster.continuous-scribble' && job.settings.colourUnderlay === true
       ? generateScribbleColourUnderlay(job.imageData, job.canvas, job.rasterPlacement, job.settings, job.passes, job.pens)
       : undefined;
     if (underlay) progress(job.jobId, 0.28, 'Building under-colour passes');
     const scribble = generateContinuousScribble(imageBounds, { ...job.settings, penWidth }, smoothSample, primary,
       value => progress(job.jobId, (underlay ? 0.3 : 0.1) + value * (underlay ? 0.65 : 0.85), 'Tracing continuous tonal loops'));
-    return underlay ? { ...scribble, paths: [...underlay.paths, ...scribble.paths], colourSeparation: underlay.colourSeparation } : scribble;
+    const combined = underlay ? { ...scribble, paths: [...underlay.paths, ...scribble.paths], colourSeparation: underlay.colourSeparation } : scribble;
+    return job.algorithmId === 'raster.paint-scribble'
+      ? addPaintPressure(combined, smoothSample, job.settings, job.algorithmId)
+      : combined;
   } else if (job.algorithmId === 'raster.spiroglyph') {
     progress(job.jobId, 0.2, 'Sampling spiral tones');
     return generateSpiroglyph(bounds, job.settings, sample, drawingPassIds);
@@ -221,9 +224,12 @@ function rasterGeometry(job: Job): PlotGeometry {
     hatch(0, spacing, 210);
     hatch(60, spacing, 145, secondary, 'mid');
     hatch(120, spacing, 80, primary, 'dark');
-  } else if (job.algorithmId === 'raster.scanlines') {
+  } else if (job.algorithmId === 'raster.scanlines' || job.algorithmId === 'raster.paint-scanlines') {
     progress(job.jobId, 0.2, job.settings.style === 'blocks' ? 'Building scanline blocks' : 'Building scanline waves');
-    return generateScanlines(bounds, job.settings, sample, primary);
+    const scanlines = generateScanlines(bounds, job.settings, sample, primary);
+    return job.algorithmId === 'raster.paint-scanlines'
+      ? addPaintPressure(scanlines, sample, job.settings, job.algorithmId)
+      : scanlines;
   } else if (job.algorithmId === 'raster.edge') {
     const step = Math.max(0.6, Math.min(drawWidth / width, drawHeight / height) * 2);
     const edgeThreshold = numberSetting(job.settings, 'edgeThreshold', 70);

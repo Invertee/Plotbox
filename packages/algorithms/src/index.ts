@@ -42,6 +42,19 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'curveStep', label: 'Curve step', type: 'range', min: 0.05, max: 0.5, step: 0.01, unit: 'mm', default: 0.18 },
     { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 999999, step: 1, default: 482923 },
   ] },
+  { id: 'raster.paint-scribble', name: 'Paint · pressure scribble', group: 'raster', worker: true, controls: [
+    { key: 'skipWhite', label: 'Skip white / pale areas', type: 'boolean', default: true },
+    { key: 'detailSize', label: 'Fine detail size', type: 'range', min: 0.25, max: 3, step: 0.05, unit: 'mm', default: 1.2 },
+    { key: 'highlightSize', label: 'Highlight loop size', type: 'range', min: 1, max: 10, step: 0.1, unit: 'mm', default: 4.5 },
+    { key: 'shadowDensity', label: 'Shadow density', type: 'range', min: 0.5, max: 4, step: 0.1, default: 1.2 },
+    { key: 'tonePower', label: 'Tone response', type: 'range', min: 0.35, max: 3, step: 0.05, default: 1 },
+    { key: 'detailSensitivity', label: 'Detail contrast threshold', type: 'range', min: 0.03, max: 0.5, step: 0.01, default: 0.15 },
+    { key: 'curveStep', label: 'Curve step', type: 'range', min: 0.05, max: 0.5, step: 0.01, unit: 'mm', default: 0.22 },
+    { key: 'minimumPressure', label: 'Highlight pressure', type: 'range', min: 0, max: 1, step: 0.05, default: 0.1 },
+    { key: 'maximumPressure', label: 'Shadow pressure', type: 'range', min: 0, max: 1, step: 0.05, default: 1 },
+    { key: 'pressurePower', label: 'Pressure response', type: 'range', min: 0.3, max: 3, step: 0.05, default: 1 },
+    { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 999999, step: 1, default: 482923 },
+  ] },
   { id: 'raster.colour-separation', name: 'Colour separation', group: 'raster', worker: true, controls: [
     { key: 'colourCount', label: 'Palette colours', type: 'range', min: 2, max: 16, step: 1, default: 8 },
     { key: 'minRegionPixels', label: 'Minimum region (pixels)', type: 'number', min: 1, max: 10000, step: 1, default: 12 },
@@ -109,6 +122,25 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'shadowThreshold', label: 'Shadow threshold', type: 'range', min: 0, max: 220, step: 1, default: 35 },
     { key: 'highlightThreshold', label: 'Highlight threshold', type: 'range', min: 35, max: 255, step: 1, default: 225 },
     { key: 'tonePower', label: 'Tone response', type: 'range', min: 0.3, max: 3, step: 0.05, default: 0.9 },
+  ] },
+  { id: 'raster.paint-scanlines', name: 'Paint · pressure scanlines', group: 'raster', worker: true, controls: [
+    { key: 'style', label: 'Tone style', type: 'select', options: [{ value: 'waves', label: 'Waves' }, { value: 'blocks', label: 'Blocks' }], default: 'waves' },
+    { key: 'spacing', label: 'Line spacing', type: 'range', min: 0.5, max: 12, step: 0.25, unit: 'mm', default: 3 },
+    { key: 'angle', label: 'Line angle', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 0 },
+    { key: 'maximumWidth', label: 'Maximum tone width', type: 'range', min: 0, max: 10, step: 0.05, unit: 'mm', default: 2 },
+    { key: 'minimumWidth', label: 'Minimum wave width', type: 'range', min: 0, max: 5, step: 0.05, unit: 'mm', default: 0, visibleWhen: { key: 'style', value: 'waves' } },
+    { key: 'waveLength', label: 'Wave length', type: 'range', min: 0.5, max: 25, step: 0.1, unit: 'mm', default: 5 },
+    { key: 'phase', label: 'Wave phase', type: 'range', min: 0, max: 360, step: 1, unit: '°', default: 0 },
+    { key: 'blockSpacing', label: 'Block spacing', type: 'range', min: 0.15, max: 5, step: 0.05, unit: 'mm', default: 0.8 },
+    { key: 'minimumGap', label: 'Minimum line gap', type: 'range', min: 0, max: 5, step: 0.05, unit: 'mm', default: 0.5 },
+    { key: 'sampleStep', label: 'Curve resolution', type: 'range', min: 0.1, max: 2.5, step: 0.05, unit: 'mm', default: 0.55 },
+    { key: 'smoothing', label: 'Tone smoothing', type: 'range', min: 0, max: 8, step: 0.1, unit: 'mm', default: 0.8 },
+    { key: 'shadowThreshold', label: 'Shadow threshold', type: 'range', min: 0, max: 220, step: 1, default: 35 },
+    { key: 'highlightThreshold', label: 'Highlight threshold', type: 'range', min: 35, max: 255, step: 1, default: 225 },
+    { key: 'tonePower', label: 'Tone response', type: 'range', min: 0.3, max: 3, step: 0.05, default: 0.9 },
+    { key: 'minimumPressure', label: 'Highlight pressure', type: 'range', min: 0, max: 1, step: 0.05, default: 0.1 },
+    { key: 'maximumPressure', label: 'Shadow pressure', type: 'range', min: 0, max: 1, step: 0.05, default: 1 },
+    { key: 'pressurePower', label: 'Pressure response', type: 'range', min: 0.3, max: 3, step: 0.05, default: 1 },
   ] },
   { id: 'raster.spiroglyph', name: 'Spiroglyph', group: 'raster', worker: true, controls: [
     { key: 'spiralCount', label: 'Interleaved spirals', type: 'select', options: [{ value: '1', label: 'Single' }, { value: '2', label: 'Double' }, { value: '3', label: 'Three' }, { value: '4', label: 'Four' }, { value: '5', label: 'Five' }, { value: '6', label: 'Six' }], default: '1' },
@@ -209,6 +241,30 @@ function mulberry32(seed: number): () => number {
 const numberSetting = (settings: Record<string, number | string | boolean>, key: string, fallback: number) => Number(settings[key] ?? fallback);
 const path = (id: string, points: Point[], passId: string, channel?: string, closed = false): PlotPath => ({ id, points, passId, layerId: 'layer-1', channel, closed });
 const geometry = (generator: string, paths: PlotPath[]): PlotGeometry => ({ generator, paths, generatedAt: new Date().toISOString() });
+
+/** Attach normalised, tone-driven brush pressure without changing XY geometry. */
+export function addPaintPressure(
+  source: PlotGeometry,
+  sample: (x: number, y: number) => number,
+  settings: Record<string, number | string | boolean>,
+  generator: string,
+): PlotGeometry {
+  const minimum = Math.max(0, Math.min(1, numberSetting(settings, 'minimumPressure', 0.1)));
+  const maximum = Math.max(minimum, Math.min(1, numberSetting(settings, 'maximumPressure', 1)));
+  const power = Math.max(0.05, numberSetting(settings, 'pressurePower', 1));
+  return {
+    ...source,
+    generator,
+    paths: source.paths.map((item) => ({
+      ...item,
+      points: item.points.map((point) => {
+        const luminance = Math.max(0, Math.min(255, sample(point.x, point.y)));
+        const tone = Math.pow(1 - luminance / 255, power);
+        return { ...point, pressure: minimum + (maximum - minimum) * tone };
+      }),
+    })),
+  };
+}
 
 export type SpiroglyphSample = (x: number, y: number) => number;
 

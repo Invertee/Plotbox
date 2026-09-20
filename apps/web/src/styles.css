@@ -266,6 +266,14 @@ input[type=range] { height: 4px; padding: 0; accent-color: var(--green); }
 .pen-name { display: grid; grid-template-columns: 33px 1fr; gap: 6px; }
 .pen-name input[type=color] { padding: 3px; height: 32px; }
 .pass-card small { color: var(--muted); font-size: 9px; }
+.paint-settings { margin-top: 10px; padding: 10px; border: 1px solid #d8d5c8; border-radius: 6px; background: #f4f0e5; }
+.paint-settings-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.paint-settings-head strong, .paint-settings-head small { display: block; }
+.compact-button { width: auto; min-height: 30px; padding: 6px 8px; font-size: 10px; white-space: nowrap; }
+.capture-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 16px; padding: 13px; border: 1px solid #b9c9b4; border-radius: 7px; background: #eef5eb; }
+.capture-panel strong, .capture-panel span { display: block; }
+.capture-panel span { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.capture-panel small { grid-column: 1 / -1; color: var(--muted); }
 .workspace { min-width: 0; min-height: 0; display: grid; grid-template-rows: 1fr 30px; position: relative; }
 .canvas-stage { min-height: 0; display: grid; place-items: center; padding: 35px; overflow: hidden; cursor: grab; position: relative; background-color: #d8d7d0; background-image: radial-gradient(#bcbdb7 1px, transparent 1px); background-size: 18px 18px; touch-action: none; }
 .canvas-stage:active { cursor: grabbing; }

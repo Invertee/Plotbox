@@ -33,7 +33,7 @@ export function calculateImagePlacement(imageWidth: number, imageHeight: number,
 }
 
 export function clampPoint(point: Point, bounds: Bounds): Point {
-  return { x: Math.max(bounds.minX, Math.min(bounds.maxX, point.x)), y: Math.max(bounds.minY, Math.min(bounds.maxY, point.y)) };
+  return { ...point, x: Math.max(bounds.minX, Math.min(bounds.maxX, point.x)), y: Math.max(bounds.minY, Math.min(bounds.maxY, point.y)) };
 }
 
 export function clipGeometry(geometry: PlotGeometry, bounds: Bounds): PlotGeometry {

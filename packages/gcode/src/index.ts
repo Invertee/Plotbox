@@ -8,6 +8,9 @@ const n = (value: number) => Number(value.toFixed(3)).toString();
 
 const DEFAULT_PATH_JOIN_TOLERANCE = 0.15;
 const MAX_JOIN_ANGLE = Math.cos(Math.PI / 3);
+const DISTANCE_EPSILON = 0.000001;
+
+type ScheduledPaintPath = { path: PlotPath; reloadBefore: boolean };
 
 function finitePathSegments(path: PlotPath): PlotPath[] {
   const segments: PlotPath[] = [];
@@ -89,6 +92,95 @@ export function joinContinuousPaths(paths: PlotPath[], tolerance = DEFAULT_PATH_
   return joined;
 }
 
+function interpolatePoint(start: Point, end: Point, ratio: number): Point {
+  const pressure = start.pressure === undefined && end.pressure === undefined
+    ? undefined
+    : (start.pressure ?? end.pressure ?? 0) + ((end.pressure ?? start.pressure ?? 0) - (start.pressure ?? end.pressure ?? 0)) * ratio;
+  return { x: start.x + (end.x - start.x) * ratio, y: start.y + (end.y - start.y) * ratio, ...(pressure === undefined ? {} : { pressure }) };
+}
+
+/**
+ * Split ordered paint paths at the configured paint capacity while carrying the
+ * used distance across pen-up gaps. Each marked segment starts with a well dip.
+ */
+function schedulePaintPaths(paths: PlotPath[], reloadDistance: number): ScheduledPaintPath[] {
+  const maximum = Number.isFinite(reloadDistance) && reloadDistance > 0 ? reloadDistance : Number.POSITIVE_INFINITY;
+  const scheduled: ScheduledPaintPath[] = [];
+  let distanceSinceReload = maximum;
+  let segmentIndex = 0;
+
+  for (const path of paths) {
+    const source = path.closed && path.points.length > 1 ? [...path.points, path.points[0]!] : path.points;
+    if (source.length < 2) continue;
+    let reloadBefore = distanceSinceReload >= maximum - DISTANCE_EPSILON;
+    if (reloadBefore) distanceSinceReload = 0;
+    let current: Point[] = [source[0]!];
+
+    const flush = () => {
+      if (current.length < 2) return;
+      scheduled.push({ path: { ...path, id: `${path.id}-paint-${segmentIndex++}`, points: current, closed: false }, reloadBefore });
+      current = [current[current.length - 1]!];
+      reloadBefore = false;
+    };
+
+    for (let pointIndex = 1; pointIndex < source.length; pointIndex += 1) {
+      let start = current[current.length - 1]!;
+      const end = source[pointIndex]!;
+      let edgeLength = Math.hypot(end.x - start.x, end.y - start.y);
+      if (edgeLength <= DISTANCE_EPSILON) continue;
+
+      while (edgeLength > DISTANCE_EPSILON) {
+        const capacity = maximum - distanceSinceReload;
+        if (capacity <= DISTANCE_EPSILON) {
+          flush();
+          reloadBefore = true;
+          distanceSinceReload = 0;
+          continue;
+        }
+        if (edgeLength <= capacity + DISTANCE_EPSILON) {
+          current.push(end);
+          distanceSinceReload += edgeLength;
+          break;
+        }
+        const split = interpolatePoint(start, end, capacity / edgeLength);
+        current.push(split);
+        distanceSinceReload += capacity;
+        flush();
+        reloadBefore = true;
+        distanceSinceReload = 0;
+        start = split;
+        edgeLength = Math.hypot(end.x - start.x, end.y - start.y);
+      }
+    }
+    flush();
+  }
+  return scheduled;
+}
+
+function paintZ(pen: PenProfile, point: Point): number {
+  if (pen.paintUsePressure === false || point.pressure === undefined || !Number.isFinite(point.pressure)) return pen.zDown;
+  const pressure = Math.max(0, Math.min(1, point.pressure));
+  const maximum = pen.paintMaxPressureZ ?? pen.zDown;
+  return pen.zDown + (maximum - pen.zDown) * pressure;
+}
+
+function paintDipGCode(pen: PenProfile, settings: GCodeSettings, zUpFeed: number, zDownFeed: number): string[] {
+  const coordinates = [pen.paintWellX, pen.paintWellY, pen.paintWellZ];
+  if (coordinates.some((value) => value === undefined || !Number.isFinite(value))) {
+    throw new Error(`${pen.name} needs a captured paint well X/Y position and dip Z height before export.`);
+  }
+  const lines = [
+    ...(settings.includeComments ? [`; Reload ${pen.name}`] : []),
+    `G0 Z${n(pen.zUp)} F${n(zUpFeed)}`,
+    `G0 X${n(pen.paintWellX!)} Y${n(pen.paintWellY!)} F${n(settings.travelFeed)}`,
+    `G1 Z${n(pen.paintWellZ!)} F${n(zDownFeed)}`,
+  ];
+  const dwell = Math.max(0, pen.paintDipDwellSeconds ?? 0);
+  if (dwell > 0) lines.push(`G4 P${n(dwell)}`);
+  lines.push(`G0 Z${n(pen.zUp)} F${n(zUpFeed)}`);
+  return lines;
+}
+
 function passGCode(pass: PlotPass, pen: PenProfile, geometry: PlotGeometry, settings: GCodeSettings, pageHeight: number, completedBefore: number, totalPaths: number, onProgress?: GCodeProgress): string[] {
   const lines: string[] = [];
   const zUpFeed = pen.zUpFeed ?? pen.zFeed ?? 600;
@@ -100,20 +192,27 @@ function passGCode(pass: PlotPass, pen: PenProfile, geometry: PlotGeometry, sett
     onProgress?.(0.08 + 0.62 * ((completedBefore + completed) / Math.max(1, totalPaths)), `Optimising ${Math.min(totalPaths, completedBefore + completed).toLocaleString()} of ${totalPaths.toLocaleString()} paths`);
   });
   const paths = joinContinuousPaths(ordered, settings.pathJoinTolerance ?? DEFAULT_PATH_JOIN_TOLERANCE);
-  for (let pathIndex = 0; pathIndex < paths.length; pathIndex += 1) {
-    const path = paths[pathIndex]!;
+  const isPaint = pen.mediaType === 'paint';
+  const scheduled = isPaint
+    ? schedulePaintPaths(paths, Math.max(0, pen.paintReloadDistanceMm ?? 0))
+    : paths.map((path) => ({ path, reloadBefore: false }));
+  for (let pathIndex = 0; pathIndex < scheduled.length; pathIndex += 1) {
+    const { path, reloadBefore } = scheduled[pathIndex]!;
+    if (isPaint && reloadBefore) appendLines(lines, paintDipGCode(pen, settings, zUpFeed, zDownFeed));
     const first = path.points[0]!;
     const y = settings.origin === 'bottom-left' ? pageHeight - first.y : first.y;
     lines.push(`G0 X${n(first.x)} Y${n(y)} F${n(settings.travelFeed)}`);
-    lines.push(`G1 Z${n(pen.zDown)} F${n(zDownFeed)}`);
+    lines.push(`G1 Z${n(isPaint ? paintZ(pen, first) : pen.zDown)} F${n(zDownFeed)}`);
     for (const point of path.points.slice(1)) {
       const pointY = settings.origin === 'bottom-left' ? pageHeight - point.y : point.y;
-      lines.push(`G1 X${n(point.x)} Y${n(pointY)} F${n(pen.xyFeed)}`);
+      const z = isPaint && pen.paintUsePressure !== false && point.pressure !== undefined ? ` Z${n(paintZ(pen, point))}` : '';
+      lines.push(`G1 X${n(point.x)} Y${n(pointY)}${z} F${n(pen.xyFeed)}`);
     }
     if (path.closed) lines.push(`G1 X${n(first.x)} Y${n(y)} F${n(pen.xyFeed)}`);
     lines.push(`G0 Z${n(pen.zUp)} F${n(zUpFeed)}`);
-    if (onProgress && (pathIndex % 512 === 0 || pathIndex === paths.length - 1)) {
-      onProgress(0.7 + 0.27 * ((completedBefore + pathIndex + 1) / Math.max(1, totalPaths)), `Writing ${Math.min(totalPaths, completedBefore + pathIndex + 1).toLocaleString()} of ${totalPaths.toLocaleString()} paths`);
+    if (onProgress && (pathIndex % 512 === 0 || pathIndex === scheduled.length - 1)) {
+      const passProgress = (pathIndex + 1) / Math.max(1, scheduled.length);
+      onProgress(0.7 + 0.27 * ((completedBefore + passProgress * passPaths.length) / Math.max(1, totalPaths)), `Writing ${Math.min(totalPaths, Math.round(completedBefore + passProgress * passPaths.length)).toLocaleString()} of ${totalPaths.toLocaleString()} paths`);
     }
   }
   lines.push(`G0 Z${n(pen.zUp)} F${n(zUpFeed)}`);
