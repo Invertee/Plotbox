@@ -182,7 +182,7 @@ function toPlotLayers(rawLayers: RawLayer[], passIds: string[]): PlotLayer[] {
   });
 }
 
-export function parseSvgLayers(svgText: string, canvas: CanvasSettings, passIds: string[]): PlotLayer[] {
+export function parseSvgLayers(svgText: string, canvas: CanvasSettings, passIds: string[], preserveViewport = false): PlotLayer[] {
   const parsed = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   const parserError = parsed.querySelector('parsererror');
   if (parserError) throw new Error('The selected file is not valid SVG.');
@@ -192,6 +192,7 @@ export function parseSvgLayers(svgText: string, canvas: CanvasSettings, passIds:
   const root = document.importNode(sourceRoot, true) as unknown as SVGSVGElement;
   root.setAttribute('width', '1000');
   root.setAttribute('height', '1000');
+  if (preserveViewport) root.setAttribute('preserveAspectRatio', 'none');
   root.style.position = 'fixed';
   root.style.left = '-10000px';
   root.style.top = '-10000px';
@@ -216,7 +217,7 @@ export function parseSvgLayers(svgText: string, canvas: CanvasSettings, passIds:
       grouped.set(name, layer);
     });
     if (!grouped.size) throw new Error('No supported paths or shapes were found in this SVG.');
-    return toPlotLayers(fitRawLayers([...grouped.values()], canvas), passIds);
+    return toPlotLayers(fitRawLayers([...grouped.values()], canvas, preserveViewport ? { minX: 0, minY: 0, maxX: 1000, maxY: 1000 } : undefined), passIds);
   } finally {
     root.remove();
   }
@@ -242,4 +243,14 @@ export function importedMapToLayers(map: ImportedMap, canvas: CanvasSettings, pa
     maxY: -map.bounds.south,
   } : undefined;
   return toPlotLayers(fitRawLayers(rawLayers, canvas, selectedBounds), passIds);
+}
+
+/** Convert a Glyphbox SVG into normalized, plot-ready paths. The normalized
+ * snapshot can safely be stored with a project independently of the library. */
+export function glyphSvgToPaths(svgText: string, preserveViewport = false): SourcePath[] {
+  const canvas: CanvasSettings = { preset: 'custom', orientation: 'portrait', widthMm: 100, heightMm: 100, marginMm: 0 };
+  return parseSvgLayers(svgText, canvas, ['glyph'], preserveViewport).flatMap((layer) => (layer.sourcePaths ?? []).map((path) => ({
+    ...path,
+    points: path.points.map((point) => ({ x: point.x / 100, y: point.y / 100 })),
+  })));
 }

@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createDefaultState, paperDimensions, type CanvasSettings, type ProjectMode } from '@plotter/core';
+import { createDefaultState, paperDimensions, type CanvasSettings, type PaperColour, type ProjectMode } from '@plotter/core';
 import { createProject, deleteProject, getProject, listProjects, updateProject } from './database.js';
 import { importMap, mapDimensionsKm, searchPlaces, type MapDataSource } from './maps.js';
 
@@ -50,12 +50,14 @@ app.get<{ Params: { id: string } }>('/api/projects/:id', async (request, reply) 
 app.post<{ Body: { name?: string; mode?: ProjectMode; canvas?: Partial<CanvasSettings> } }>('/api/projects', async (request, reply) => {
   const name = request.body?.name?.trim();
   const mode = request.body?.mode;
-  if (!name || !mode || !['generative', 'raster', 'svg', 'map'].includes(mode)) return reply.code(400).send({ error: 'A name and valid mode are required' });
+  if (!name || !mode || !['generative', 'raster', 'svg', 'map', 'isometric', 'linocut'].includes(mode)) return reply.code(400).send({ error: 'A name and valid mode are required' });
   const preset = request.body.canvas?.preset ?? 'A4';
   const orientation = request.body.canvas?.orientation ?? 'portrait';
   const custom: [number, number] = [request.body.canvas?.widthMm ?? 210, request.body.canvas?.heightMm ?? 297];
   const [widthMm, heightMm] = paperDimensions(preset, orientation, custom);
-  const canvas: CanvasSettings = { preset, orientation, widthMm, heightMm, marginMm: Math.max(0, request.body.canvas?.marginMm ?? 10) };
+  const requestedPaperColour = request.body.canvas?.paperColour;
+  const paperColour: PaperColour = requestedPaperColour && ['white', 'black', 'grey', 'blue'].includes(requestedPaperColour) ? requestedPaperColour : 'white';
+  const canvas: CanvasSettings = { preset, orientation, widthMm, heightMm, marginMm: Math.max(0, request.body.canvas?.marginMm ?? 10), paperColour };
   const id = crypto.randomUUID();
   return reply.code(201).send(createProject({ id, name, mode, state: createDefaultState(mode, canvas) }));
 });

@@ -29,6 +29,42 @@ describe('generative algorithms', () => {
     const result = generateAlgorithm('generative.truchet', canvas, { seed: 1, tileSize: 20, density: 1 }, ['black', 'blue']);
     expect(new Set(result.paths.map((path) => path.passId))).toEqual(new Set(['black', 'blue']));
   });
+
+  it('creates plotter-native parallel bands and can cycle every colour pass', () => {
+    const squareCanvas = { ...canvas, widthMm: 50, heightMm: 50, marginMm: 5 };
+    const result = generateAlgorithm('generative.truchet', squareCanvas, {
+      seed: 4, tileSize: 10, density: 1, lineCount: 3, lineSpacing: 1, colourMode: 'lines',
+    }, ['red', 'green', 'blue']);
+
+    expect(result.paths).toHaveLength(4 * 4 * 2 * 3);
+    expect(new Set(result.paths.map((item) => item.passId))).toEqual(new Set(['red', 'green', 'blue']));
+    expect(new Set(result.paths.map((item) => item.channel))).toEqual(new Set([
+      'curve-1-line-1', 'curve-2-line-1', 'curve-1-line-2',
+      'curve-2-line-2', 'curve-1-line-3', 'curve-2-line-3',
+    ]));
+  });
+
+  it('supports mirrored layouts and a repeatable variation control', () => {
+    const squareCanvas = { ...canvas, widthMm: 50, heightMm: 50, marginMm: 5 };
+    const mirrored = generateAlgorithm('generative.truchet', squareCanvas, {
+      seed: 7, tileSize: 10, density: 1, mirror: 'horizontal', variation: 1,
+    }, ['black']);
+    const pathShape = (points: { x: number; y: number }[]) => points
+      .map(point => `${point.x.toFixed(4)},${point.y.toFixed(4)}`)
+      .sort()
+      .join('|');
+    const shapes = new Set(mirrored.paths.map(item => pathShape(item.points)));
+    for (const item of mirrored.paths) {
+      expect(shapes.has(pathShape(item.points.map(point => ({ x: 50 - point.x, y: point.y }))))).toBe(true);
+    }
+
+    const regularA = generateAlgorithm('generative.truchet', squareCanvas, { seed: 1, tileSize: 10, density: 1, variation: 0 }, ['black']);
+    const regularB = generateAlgorithm('generative.truchet', squareCanvas, { seed: 999, tileSize: 10, density: 1, variation: 0 }, ['black']);
+    expect(regularA.paths.map(item => item.points)).toEqual(regularB.paths.map(item => item.points));
+    expect(algorithmDefaults('generative.truchet')).toMatchObject({
+      lineCount: 1, lineSpacing: 1.2, colourMode: 'curves', mirror: 'none', variation: 1,
+    });
+  });
 });
 
 describe('raster placement', () => {
@@ -154,6 +190,15 @@ describe('scanline raster generation', () => {
     expect(dark).toHaveLength(light.length);
     const displacement = dark.flatMap((item, row) => item.points.map((point, index) => Math.hypot(point.x - light[row]!.points[index]!.x, point.y - light[row]!.points[index]!.y)));
     expect(Math.max(...displacement)).toBeLessThanOrEqual(0.701);
+  });
+
+  it('can lift over blank areas instead of drawing a baseline through them', () => {
+    const settings = { style: 'waves', spacing: 3, maximumWidth: 2, sampleStep: 1, smoothing: 0, skipWhiteAreas: true };
+    const imageWithBlankCentre = (x: number) => x >= 10 && x <= 20 ? 255 : 0;
+    const result = generateScanlines(bounds, settings, imageWithBlankCentre);
+
+    expect(result.paths.length).toBeGreaterThan(10);
+    expect(result.paths.every(item => item.points.every(point => point.x < 10 || point.x > 20))).toBe(true);
   });
 });
 

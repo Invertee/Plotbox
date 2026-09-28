@@ -86,6 +86,7 @@ describe('colour separation', () => {
     const separated = separateColours(image, settings);
     const colourId = separated.palette[0]!.id;
     const treatments = [
+      { fill: 'scanlines' as const, algorithmSettings: { style: 'waves', spacing: 1.2, angle: 25, maximumWidth: 0.8, minimumGap: 0.2, sampleStep: 0.4, smoothing: 0, shadowThreshold: 35, highlightThreshold: 225, tonePower: 1 } },
       { fill: 'dither' as const, algorithmSettings: { spacing: 0.8, markSize: 1.2, markStyle: 'ring', overlap: 0.4, seed: 17 } },
       { fill: 'stipple' as const, algorithmSettings: { count: 1200, markSize: 1.2, markStyle: 'cross', overlap: 0.4, tonePower: 1, seed: 17 } },
       { fill: 'tonal-dashes' as const, algorithmSettings: { spacing: 0.8, density: 2, dashLength: 5, minDashLength: 1, angle: 30, angleVariation: 40, overlap: 0.5, tonePower: 1, seed: 17 } },

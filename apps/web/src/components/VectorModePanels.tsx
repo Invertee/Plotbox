@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, FileCode2, MapPin, Search, Trash2 } from 'lucide-react';
-import { VECTOR_ALGORITHMS, algorithmDefaults } from '@plotter/algorithms';
-import type { PlotLayer, ProjectState } from '@plotter/core';
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp, FileCode2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
+import { MAP_ANNOTATION_FONT_OPTIONS, VECTOR_ALGORITHMS, algorithmDefaults } from '@plotter/algorithms';
+import { makeId, type MapAnnotation, type PlotLayer, type ProjectState } from '@plotter/core';
 import { api } from '../api';
-import { importedMapToLayers, parseSvgLayers, type MapSearchResult } from '../vectorSources';
+import { glyphSvgToPaths, importedMapToLayers, parseSvgLayers, type MapSearchResult } from '../vectorSources';
+import { loadGlyphLibrary } from './Glyphbox';
 import { MapRegionPicker, type MapBounds, type MapView } from './MapRegionPicker';
 
 type UpdateState = (update: Partial<ProjectState> | ((state: ProjectState) => ProjectState)) => void;
@@ -47,12 +48,12 @@ export function MapSourcePanel({ state, updateState }: { state: ProjectState; up
   const downloadRegion = async (bounds: MapBounds) => {
     setDownloading(true); setError('');
     // Locking a new area intentionally discards the previous map before the request starts.
-    updateState({ layers: [], sourceName: undefined, sourceAttribution: undefined, geometry: { paths: [], generatedAt: new Date().toISOString(), generator: 'none' } });
+    updateState({ layers: [], sourceName: undefined, sourceAttribution: undefined, mapSettings: { ...state.mapSettings, bounds: undefined }, geometry: { paths: [], generatedAt: new Date().toISOString(), generator: 'none' } });
     try {
       const map = await api.importMap({ ...bounds, name: state.mapSettings.query.trim() || 'Selected map region', dataSource, contourInterval: state.mapSettings.contourInterval });
       const layers = importedMapToLayers(map, state.canvas, state.passes.map((pass) => pass.id));
       if (!layers.length) throw new Error('No supported map features were found in this area. Zoom out or move the selection.');
-      updateState({ layers, sourceName: map.name, sourceAttribution: map.attribution, algorithmId: 'vector.layers' });
+      updateState({ layers, sourceName: map.name, sourceAttribution: map.attribution, mapSettings: { ...state.mapSettings, bounds }, algorithmId: 'vector.layers' });
     } catch (value) { setError(value instanceof Error ? value.message : String(value)); }
     finally { setDownloading(false); }
   };
@@ -64,6 +65,86 @@ export function MapSourcePanel({ state, updateState }: { state: ProjectState; up
     {state.sourceName && <div className="source-summary"><strong>{state.sourceName}</strong><span>{state.layers.reduce((total, layer) => total + (layer.sourcePaths?.length ?? 0), 0).toLocaleString()} map features in {state.layers.length} layers</span></div>}
     {error && <div className="notice error">{error}</div>}
     <p className="attribution">{state.sourceAttribution ?? 'Map data © OpenStreetMap contributors · ODbL'}</p>
+  </div>;
+}
+
+export function MapTitlePanel({ state, updateState }: { state: ProjectState; updateState: UpdateState }) {
+  const title = state.mapTitle ?? { enabled: false, text: '', position: 'top' as const, font: MAP_ANNOTATION_FONT_OPTIONS[0].id, titleSizeMm: 8, showCoordinates: false, subtitleSizeMm: 3, passId: state.passes[0]?.id ?? '' };
+  const updateTitle = (update: Partial<typeof title>) => updateState({ mapTitle: { ...title, ...update } });
+  return <div className="stack">
+    <label className="check-field"><input type="checkbox" checked={title.enabled} onChange={(event) => updateTitle({ enabled: event.target.checked })} /> Show map title</label>
+    {title.enabled && <>
+      <label>Title<input value={title.text} placeholder="e.g. Chamonix" onChange={(event) => updateTitle({ text: event.target.value })} /></label>
+      <div className="field-row compact"><label>Position<select value={title.position} onChange={(event) => updateTitle({ position: event.target.value as 'top' | 'bottom' })}><option value="top">Top</option><option value="bottom">Bottom</option></select></label><label>Font<select value={title.font} onChange={(event) => updateTitle({ font: event.target.value })}>{MAP_ANNOTATION_FONT_OPTIONS.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label></div>
+      <LayerRange label="Title size" value={title.titleSizeMm} min={3} max={20} step={0.5} unit="mm" onChange={(value) => updateTitle({ titleSizeMm: value })} />
+      <label className="check-field"><input type="checkbox" checked={title.showCoordinates} onChange={(event) => updateTitle({ showCoordinates: event.target.checked })} /> Add map coordinates</label>
+      {title.showCoordinates && <><LayerRange label="Coordinate size" value={title.subtitleSizeMm} min={1.5} max={10} step={0.5} unit="mm" onChange={(value) => updateTitle({ subtitleSizeMm: value })} />{!state.mapSettings.bounds && <small>Coordinates will appear after a map region is downloaded.</small>}</>}
+      <label>Pen pass<select value={title.passId} onChange={(event) => updateTitle({ passId: event.target.value })}>{state.passes.map((pass) => <option value={pass.id} key={pass.id}>{pass.name} · {state.pens.find((pen) => pen.id === pass.penId)?.name}</option>)}</select></label>
+      <small>Map detail is cleared behind the title block so the plotted text remains legible.</small>
+    </>}
+  </div>;
+}
+
+export function MapAnnotationPanel({ state, updateState }: { state: ProjectState; updateState: UpdateState }) {
+  const annotations = state.mapAnnotations ?? [];
+  const [glyphError, setGlyphError] = useState('');
+  const mapGlyphs = useMemo(() => loadGlyphLibrary().assets.filter((asset) => asset.kind === 'map'), []);
+  const defaultGlyph = mapGlyphs.find((asset) => asset.id === 'starter-map-pin') ?? mapGlyphs[0];
+  const updateAnnotation = (id: string, update: Partial<MapAnnotation>) => updateState({ mapAnnotations: annotations.map((annotation) => annotation.id === id ? { ...annotation, ...update } : annotation) });
+  const glyphUpdate = (glyphId: string): Partial<MapAnnotation> | undefined => {
+    const glyph = mapGlyphs.find((asset) => asset.id === glyphId);
+    if (!glyph) return undefined;
+    try {
+      const glyphPaths = glyphSvgToPaths(glyph.svg);
+      if (!glyphPaths.length) throw new Error(`${glyph.name} does not contain supported plot paths.`);
+      setGlyphError('');
+      return { markerType: 'glyphbox', glyphId: glyph.id, glyphName: glyph.name, glyphPaths };
+    } catch (value) {
+      setGlyphError(value instanceof Error ? value.message : String(value));
+      return undefined;
+    }
+  };
+  const addAnnotation = () => {
+    if (!defaultGlyph) return;
+    const glyph = glyphUpdate(defaultGlyph.id);
+    if (!glyph) return;
+    updateState({ mapAnnotations: [...annotations, {
+    id: makeId('annotation'),
+    ...glyph,
+    markerType: glyph.markerType ?? 'glyphbox',
+    label: 'New location',
+    xPercent: 50,
+    yPercent: 50,
+    markerSizeMm: 10,
+    labelSizeMm: 4,
+    font: MAP_ANNOTATION_FONT_OPTIONS[0].id,
+    background: false,
+    backgroundPaddingMm: 1.5,
+    backgroundRadiusMm: 2,
+    passId: state.passes[0]?.id ?? '',
+    visible: true,
+  }] });
+  };
+  return <div className="map-annotations">
+    <p className="panel-copy">Positions are measured across the safe area, so markers stay aligned when the paper size changes.</p>
+    <button className="button primary full" type="button" disabled={!defaultGlyph} onClick={addAnnotation}><Plus size={15} /> Add marker</button>
+    {!mapGlyphs.length && <div className="notice error">Add a map glyph to Glyphbox from the main menu before creating an annotation.</div>}
+    {glyphError && <div className="notice error">{glyphError}</div>}
+    {annotations.map((annotation, index) => <details className="annotation-card" key={annotation.id} open={index === annotations.length - 1}>
+      <summary><label className="check-field" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={annotation.visible} onChange={(event) => updateAnnotation(annotation.id, { visible: event.target.checked })} /><MapPin /><span><strong>{annotation.label || 'Unlabelled marker'}</strong><small>{annotation.xPercent}% across · {annotation.yPercent}% down</small></span></label><button className="icon-button small" type="button" title="Remove annotation" onClick={(event) => { event.preventDefault(); updateState({ mapAnnotations: annotations.filter((item) => item.id !== annotation.id) }); }}><Trash2 /></button></summary>
+      <div className="annotation-settings">
+        <label>Label<input value={annotation.label} placeholder="Location name" onChange={(event) => updateAnnotation(annotation.id, { label: event.target.value })} /></label>
+        <label>Marker<select value={annotation.glyphId ?? ''} onChange={(event) => { const glyph = glyphUpdate(event.target.value); if (glyph) updateAnnotation(annotation.id, glyph); }}>{annotation.glyphId && !mapGlyphs.some((glyph) => glyph.id === annotation.glyphId) && <option value={annotation.glyphId}>{annotation.glyphName ?? 'Saved Glyphbox marker'} (saved)</option>}{mapGlyphs.map((glyph) => <option value={glyph.id} key={glyph.id}>{glyph.name}</option>)}</select></label>
+        <div className="field-row compact"><label>X position (%)<input type="number" min="0" max="100" step="1" value={annotation.xPercent} onChange={(event) => updateAnnotation(annotation.id, { xPercent: Number(event.target.value) })} /></label><label>Y position (%)<input type="number" min="0" max="100" step="1" value={annotation.yPercent} onChange={(event) => updateAnnotation(annotation.id, { yPercent: Number(event.target.value) })} /></label></div>
+        <LayerRange label="Marker size" value={annotation.markerSizeMm} min={2} max={30} step={0.5} unit="mm" onChange={(value) => updateAnnotation(annotation.id, { markerSizeMm: value })} />
+        <LayerRange label="Label size" value={annotation.labelSizeMm} min={1.5} max={15} step={0.5} unit="mm" onChange={(value) => updateAnnotation(annotation.id, { labelSizeMm: value })} />
+        <label>Font<select value={annotation.font} onChange={(event) => updateAnnotation(annotation.id, { font: event.target.value })}>{MAP_ANNOTATION_FONT_OPTIONS.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
+        <label className="check-field"><input type="checkbox" checked={annotation.background ?? false} onChange={(event) => updateAnnotation(annotation.id, { background: event.target.checked })} /> Rounded paper background</label>
+        {annotation.background && <><LayerRange label="Background padding" value={annotation.backgroundPaddingMm ?? 1.5} min={0.5} max={8} step={0.5} unit="mm" onChange={(value) => updateAnnotation(annotation.id, { backgroundPaddingMm: value })} /><LayerRange label="Corner radius" value={annotation.backgroundRadiusMm ?? 2} min={0} max={10} step={0.5} unit="mm" onChange={(value) => updateAnnotation(annotation.id, { backgroundRadiusMm: value })} /><small>The map is cleared beneath the box; its outline uses the annotation pen.</small></>}
+        <label>Pen pass<select value={annotation.passId} onChange={(event) => updateAnnotation(annotation.id, { passId: event.target.value })}>{state.passes.map((pass) => <option value={pass.id} key={pass.id}>{pass.name} · {state.pens.find((pen) => pen.id === pass.penId)?.name}</option>)}</select></label>
+      </div>
+    </details>)}
+    {!annotations.length && <p className="empty-annotation">No markers yet.</p>}
   </div>;
 }
 
@@ -87,7 +168,7 @@ export function VectorLayerEditor({ state, updateState }: { state: ProjectState;
         <div className="vector-layer-settings">
           <label>Treatment<select value={definition.id} onChange={(event) => updateLayer(layer.id, { algorithmId: event.target.value, algorithmSettings: algorithmDefaults(event.target.value) })}>{VECTOR_ALGORITHMS.map((algorithm) => <option value={algorithm.id} key={algorithm.id}>{algorithm.name}</option>)}</select></label>
           {definition.controls.map((control) => control.type === 'number' ? <label key={control.key}>{control.label}<input type="number" min={control.min} max={control.max} step={control.step} value={Number(settings[control.key])} onChange={(event) => updateLayer(layer.id, { algorithmSettings: { ...settings, [control.key]: Number(event.target.value) } })} /></label> : control.type === 'select' ? <label key={control.key}>{control.label}<select value={String(settings[control.key])} onChange={(event) => updateLayer(layer.id, { algorithmSettings: { ...settings, [control.key]: event.target.value } })}>{control.options?.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : <LayerRange key={control.key} label={control.label} value={Number(settings[control.key])} min={control.min ?? 0} max={control.max ?? 100} step={control.step ?? 1} unit={control.unit} onChange={(value) => updateLayer(layer.id, { algorithmSettings: { ...settings, [control.key]: value } })} />)}
-          <label>Pen pass<select value={layer.passId} onChange={(event) => updateLayer(layer.id, { passId: event.target.value })}>{state.passes.map((pass) => <option value={pass.id} key={pass.id}>{pass.name} · {state.pens.find((pen) => pen.id === pass.penId)?.name}</option>)}</select></label>
+          <label>Tool pass<select value={layer.passId} onChange={(event) => updateLayer(layer.id, { passId: event.target.value })}>{state.passes.map((pass) => <option value={pass.id} key={pass.id}>{pass.name} · {state.pens.find((pen) => pen.id === pass.penId)?.name}</option>)}</select></label>
           {definition.id === 'vector.crosshatch' && <label>Second hatch pass<select value={layer.secondaryPassId ?? layer.passId} onChange={(event) => updateLayer(layer.id, { secondaryPassId: event.target.value })}>{state.passes.map((pass) => <option value={pass.id} key={pass.id}>{pass.name} · {state.pens.find((pen) => pen.id === pass.penId)?.name}</option>)}</select></label>}
         </div>
       </details>;

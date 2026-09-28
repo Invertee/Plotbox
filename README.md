@@ -1,12 +1,12 @@
 # Plotbox
 
-Plotbox is a local-first browser application for turning generated artwork and raster images into pen-plotter-ready G-code. Its canonical artwork format is vector geometry measured in millimetres; the preview and G-code exporter consume that same geometry.
+Plotbox is a local-first browser application for turning generated artwork, raster images and linocut vectors into machine-ready G-code. Its canonical artwork format is vector geometry measured in millimetres; the preview and G-code exporter consume that same geometry.
 
 - Local project list with A4, A3, A2 and custom paper sizes, portrait/landscape orientation and a 10 mm default safe margin
 - SQLite project persistence and debounced autosave
 - Zoomable/pannable SVG preview with pen-colour and physical line-width rendering
 - Viewport zoom that scales and pans the entire sheet while keeping plot geometry unchanged
-- Editable pen and paint passes, including Z up/down, feed rates, brush width and paint-well calibration
+- Editable pen, paint and linocut passes, including Z up/down, feed rates, brush width, paint-well calibration and fixed-blade direction indexing
 - Paint G-code with FluidNC XY position capture, configurable dip depth/dwell, distance-based reloading and optional variable-Z brush pressure
 - Combined or per-pass G-code with configurable origin, park position and pen-change pause
 - A built-in physical test pattern
@@ -20,11 +20,17 @@ Plotbox is a local-first browser application for turning generated artwork and r
 - Seeded flow-field, Truchet and guilloché generators
 - Standard TurtleToy script execution through the `turtletoy` package in a disposable worker
 - SVG import with named-group decomposition, transform flattening and editable per-layer treatments
+- Linocut projects import SVG cuts and group them into configurable straight-blade direction steps. The tool lifts and parks before each group, then emits a mandatory pause and angle instruction for manual blade rotation; opposite travel directions share one blade axis.
 - Map place search and bounded feature import with classified OpenStreetMap roads, railways, buildings, water, parks and boundaries
 - OpenStreetMap-only, terrain-only, or combined downloads, with plot-ready contours at selectable 5–200 m intervals and separate index-contour layers
 - Large-area map selection beyond 50 mi²; OpenStreetMap detail automatically scales from local streets and buildings to regional roads, railways, water, waterways and administrative boundaries
 - Per-layer outline, hatch, crosshatch and stipple treatments with independent pen-pass assignment
 - Shared path optimisation before G-code generation
+- Glyphbox Cityscape collection: 18 residential, commercial and industrial buildings (1–11 storeys), 15 connected road tiles with signs, arrows, signals and zebra crossings, five tree-lined road shapes, plus 10 plot-ready trees, parks, gardens and green spaces. A consistent six-colour SVG style shares its exact vertices with the plotted artwork.
+- Isometric artwork colours map to editable pen passes, with outline or hatched surface treatments. Pale surfaces reserve the paper; foreground shapes and windows clip underlying pen paths. Select **Use whole Cityscape collection** to use all its buildings and roads together. Existing projects retain their snapshots until **Reload glyphs** is selected; uploaded glyphs survive the library upgrade.
+- Rebuilt parks share the buildings' stonework and fine outlines, with leafy trees, raised planters, slatted benches, a pergola, reflecting pool, timber playground, community garden and café kiosk. **Green spaces per city block** mixes zero, one or two green lots into building blocks rather than reserving whole districts for parks. **Tree-lined avenues** uses five connected leafy road shapes along continuous streets; canopies stay upright when rotated. Buildings have paved aprons and pedestrians. **Coasts & lakes** adds 12 tiles: open water, beaches, bay corners, quays, reed banks, fishing docks, cargo ships, fishing boats, sailing yachts, sharks and whales.
+- Choose **Coastal town** or **Lakeside city** in the isometric scene generator for connected water regions and matching shores; roads stop at the waterfront. Water extent and automatic boats/marine life are adjustable.
+- Use **Edit tiles** above the canvas to drag tiles between grid cells, swap occupied cells, or choose a tile from the placement menu and click to place/replace it. Select a tile to duplicate, delete or rotate ground tiles. Arrow keys move a selection; R rotates; Delete removes; Ctrl/Cmd+Z undoes (Shift redoes). Alt-drag pans and the wheel zooms. Manual layouts autosave with the project and are used for the plot preview and G-code. **Return to generated layout** reapplies the generator; **Reload glyphs** updates the artwork while retaining tile positions.
 
 ## Map provider configuration
 

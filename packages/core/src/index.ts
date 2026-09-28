@@ -1,10 +1,24 @@
-export type ProjectMode = 'generative' | 'raster' | 'svg' | 'map';
+export type ProjectMode = 'generative' | 'raster' | 'svg' | 'map' | 'isometric' | 'linocut';
 export type Orientation = 'portrait' | 'landscape';
 export type PaperPreset = 'A4' | 'A3' | 'A2' | 'custom';
+export type PaperColour = 'white' | 'black' | 'grey' | 'blue';
+
+export const BLADE_ANGLE_STEPS = [5, 10, 15, 20, 30, 45, 60, 90] as const;
+
+export const PAPER_COLOURS: Record<PaperColour, string> = {
+  white: '#fffdf8',
+  black: '#1c1d1f',
+  grey: '#aeb2b5',
+  blue: '#8eb6d9',
+};
 
 export interface Point {
   x: number;
   y: number;
+  /** Normalized vertical offset for upright furniture on isometric road tiles. */
+  elevation?: number;
+  /** Screen-facing foliage offset; stays round when its ground tile rotates. */
+  billboardX?: number;
   /** Normalised tool pressure (0–1). Paint-capable G-code maps this to Z. */
   pressure?: number;
 }
@@ -29,7 +43,7 @@ export interface PlotGeometry {
 
 export interface ColourTreatment {
   enabled: boolean;
-  fill: 'hatch' | 'crosshatch' | 'dither' | 'stipple' | 'tonal-dashes' | 'solid' | 'outline' | 'none';
+  fill: 'hatch' | 'crosshatch' | 'scanlines' | 'dither' | 'stipple' | 'tonal-dashes' | 'solid' | 'outline' | 'none';
   spacing: number;
   angle: number;
   outline: boolean;
@@ -53,6 +67,8 @@ export interface CanvasSettings {
   widthMm: number;
   heightMm: number;
   marginMm: number;
+  /** Optional so projects saved before paper colours were introduced remain compatible. */
+  paperColour?: PaperColour;
 }
 
 export interface PenProfile {
@@ -70,7 +86,13 @@ export interface PenProfile {
   /** Legacy shared Z feed rate, retained for older saved projects. */
   zFeed?: number;
   /** Defaults to pen for older projects. */
-  mediaType?: 'pen' | 'paint';
+  mediaType?: 'pen' | 'paint' | 'blade';
+  /**
+   * Angular spacing between manual straight-blade positions. Blade paths are
+   * split and grouped from 0° up to 180°; smaller steps follow curves more
+   * closely but require more manual re-indexing pauses.
+   */
+  bladeAngleStep?: number;
   /** Paint-container position in the machine's work coordinates. */
   paintWellX?: number;
   paintWellY?: number;
@@ -97,6 +119,80 @@ export interface SourcePath {
   id: string;
   points: Point[];
   closed: boolean;
+  /** Optional original paint, retained by coloured glyph snapshots. */
+  stroke?: string;
+  fill?: string;
+  /** An opaque paper cutout: masks artwork behind it without a pen pass. */
+  paper?: boolean;
+}
+
+export type IsometricRole = 'building' | 'terrain' | 'road-straight' | 'road-corner' | 'road-tee' | 'road-cross' | 'road-end';
+export type IsometricTerrain = 'park' | 'water' | 'shore' | 'feature';
+export interface IsometricTile {
+  id: string;
+  glyphId: string;
+  u: number;
+  v: number;
+  rotation: number;
+  roadMask?: number;
+}
+export interface IsometricGlyph {
+  id: string;
+  name: string;
+  categoryId?: string;
+  categoryName?: string;
+  role: IsometricRole;
+  terrain?: IsometricTerrain;
+  /** Land-facing edges, clockwise from +u. */
+  shoreMask?: number;
+  treeLined?: boolean;
+  paths: SourcePath[];
+}
+export interface IsometricSettings {
+  algorithm: 'city' | 'ordered';
+  fit: 'square' | 'edges';
+  cells: number;
+  angle: number;
+  sourceAngle: number;
+  buildingScale: number;
+  blockSize: number;
+  roadLayout: 'blocks' | 'avenues';
+  clusterDepth: number;
+  density: number;
+  districtSize: number;
+  showGrid: boolean;
+  buildingCategories: string[];
+  roadCategories: string[];
+  buildingPassId: string;
+  roadPassId: string;
+  gridPassId: string;
+  useGlyphColours: boolean;
+  colourPasses: Record<string, string>;
+  fillMode: 'outline' | 'hatch';
+  fillSpacing: number;
+  landscape: 'city' | 'coast' | 'lake';
+  waterCoverage: number;
+  waterFeatures: boolean;
+  greenSpacesPerBlock: number;
+  treeLinedStreets: boolean;
+  /** Undefined follows the generator; an array is a saved, editable layout. */
+  tiles?: IsometricTile[];
+}
+export const DEFAULT_ISOMETRIC: IsometricSettings = {
+  algorithm: 'city', fit: 'square', cells: 12, angle: 30, sourceAngle: 30,
+  buildingScale: 0.72, blockSize: 4, roadLayout: 'blocks', clusterDepth: 2,
+  density: 85, districtSize: 2, showGrid: false,
+  buildingCategories: [], roadCategories: [], buildingPassId: 'pass-1', roadPassId: 'pass-1', gridPassId: 'pass-2',
+  useGlyphColours: true, colourPasses: {}, fillMode: 'hatch', fillSpacing: 0.65,
+  landscape: 'city', waterCoverage: 40, waterFeatures: true,
+  greenSpacesPerBlock: 2, treeLinedStreets: true,
+};
+
+export function isometricLayers(): PlotLayer[] {
+  return ['grid', 'terrain', 'roads', 'buildings'].map(name => ({
+    id: `iso-${name}`, name: name[0]!.toUpperCase() + name.slice(1), visible: true,
+    algorithmId: 'isometric.city', passId: name === 'grid' ? 'pass-2' : 'pass-1',
+  }));
 }
 
 export interface PlotLayer {
@@ -121,6 +217,45 @@ export interface MapSettings {
   latitude?: number;
   longitude?: number;
   zoom?: number;
+  /** Geographic footprint of the downloaded map; older projects may store its centre as a zero-area fallback. */
+  bounds?: { north: number; south: number; east: number; west: number };
+}
+
+export interface MapTitleSettings {
+  enabled: boolean;
+  text: string;
+  position: 'top' | 'bottom';
+  font: string;
+  titleSizeMm: number;
+  showCoordinates: boolean;
+  subtitleSizeMm: number;
+  passId: string;
+}
+
+/** A paper-space marker rendered on top of an imported map. Positions are
+ * percentages of the drawable area so annotations survive paper resizing. */
+export interface MapAnnotation {
+  id: string;
+  /** Glyphbox asset identity and a normalized plot-ready snapshot. */
+  glyphId?: string;
+  glyphName?: string;
+  glyphPaths?: SourcePath[];
+  /** Legacy built-in marker identifier retained for saved-project migration. */
+  markerType: string;
+  label: string;
+  xPercent: number;
+  yPercent: number;
+  markerSizeMm: number;
+  labelSizeMm: number;
+  font: string;
+  /** Reserve a paper-coloured rounded box behind the marker and label. */
+  background?: boolean;
+  /** Space between the annotation artwork and its background border. */
+  backgroundPaddingMm?: number;
+  /** Corner radius of the background border. */
+  backgroundRadiusMm?: number;
+  passId: string;
+  visible: boolean;
 }
 
 export interface PreprocessSettings {
@@ -183,6 +318,9 @@ export interface GCodeSettings {
 }
 
 export interface ProjectState {
+  isometric?: IsometricSettings;
+  /** Project-owned paths keep drawings reproducible if Glyphbox changes. */
+  isometricGlyphs?: IsometricGlyph[];
   canvas: CanvasSettings;
   pens: PenProfile[];
   passes: PlotPass[];
@@ -198,6 +336,10 @@ export interface ProjectState {
   sourceName?: string;
   sourceAttribution?: string;
   mapSettings: MapSettings;
+  /** Optional so maps saved before annotations were introduced still load. */
+  mapAnnotations?: MapAnnotation[];
+  /** Optional so maps saved before title blocks were introduced still load. */
+  mapTitle?: MapTitleSettings;
   gcode: GCodeSettings;
   viewport: { zoom: number; x: number; y: number };
 }
@@ -242,24 +384,31 @@ const defaultPen = (id: string, name: string, color: string): PenProfile => ({
 });
 
 export function createDefaultState(mode: ProjectMode, canvas: CanvasSettings): ProjectState {
-  const pens = [defaultPen('pen-black', 'Black fineliner', '#15171a'), defaultPen('pen-blue', 'Blue fineliner', '#2762d7')];
-  const passes: PlotPass[] = [
-    { id: 'pass-1', name: 'Pass 1', penId: pens[0]!.id, enabled: true },
-    { id: 'pass-2', name: 'Pass 2', penId: pens[1]!.id, enabled: true },
-  ];
-  const initialAlgorithm = mode === 'raster' ? 'raster.hatch' : mode === 'svg' || mode === 'map' ? 'vector.layers' : 'generative.test-pattern';
+  const pens = mode === 'linocut'
+    ? [{ ...defaultPen('blade-straight', 'Straight lino blade', '#9b3125'), widthMm: 1, zDown: -1, xyFeed: 500, zDownFeed: 150, mediaType: 'blade' as const, bladeAngleStep: 15 }]
+    : [defaultPen('pen-black', 'Black fineliner', '#15171a'), defaultPen('pen-blue', 'Blue fineliner', '#2762d7')];
+  const passes: PlotPass[] = mode === 'linocut'
+    ? [{ id: 'pass-1', name: 'Cut pass 1', penId: pens[0]!.id, enabled: true }]
+    : [
+      { id: 'pass-1', name: 'Pass 1', penId: pens[0]!.id, enabled: true },
+      { id: 'pass-2', name: 'Pass 2', penId: pens[1]!.id, enabled: true },
+    ];
+  const initialAlgorithm = mode === 'isometric' ? 'isometric.city' : mode === 'raster' ? 'raster.hatch' : mode === 'svg' || mode === 'map' || mode === 'linocut' ? 'vector.layers' : 'generative.test-pattern';
   return {
     canvas,
     pens,
     passes,
-    layers: [{ id: 'layer-1', name: 'Artwork', visible: true, algorithmId: mode === 'svg' || mode === 'map' ? 'vector.outline' : initialAlgorithm, passId: passes[0]!.id }],
+    layers: mode === 'isometric' ? isometricLayers() : [{ id: 'layer-1', name: 'Artwork', visible: true, algorithmId: mode === 'svg' || mode === 'map' || mode === 'linocut' ? 'vector.outline' : initialAlgorithm, passId: passes[0]!.id }],
     geometry: { paths: [], generatedAt: new Date(0).toISOString(), generator: 'none' },
     algorithmId: initialAlgorithm,
     algorithmSettings: {},
+    ...(mode === 'isometric' ? { isometric: { ...DEFAULT_ISOMETRIC }, isometricGlyphs: [] } : {}),
     preprocess: { ...DEFAULT_PREPROCESS },
     rasterPlacement: { ...DEFAULT_RASTER_PLACEMENT },
     turtlePlacement: { ...DEFAULT_TURTLE_PLACEMENT },
     mapSettings: { query: '', radiusKm: 1, dataSource: 'both', includeTopography: true, contourInterval: 10 },
+    mapAnnotations: [],
+    mapTitle: { enabled: false, text: '', position: 'top', font: 'single-line', titleSizeMm: 8, showCoordinates: false, subtitleSizeMm: 3, passId: passes[0]!.id },
     gcode: { origin: 'bottom-left', travelFeed: 5000, pathJoinTolerance: 0.15, parkX: 0, parkY: 0, pauseBetweenPasses: true, pauseCommand: 'M0', includeComments: true },
     viewport: { zoom: 1, x: 0, y: 0 },
   };

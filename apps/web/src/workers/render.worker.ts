@@ -1,10 +1,12 @@
 /// <reference lib="webworker" />
-import type { CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
+import type { IsometricSettings, IsometricGlyph, CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds, type Bounds } from '@plotter/geometry';
-import { addPaintPressure, generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateScribbleColourUnderlay, traceRasterContours, generateContinuousScribble } from '@plotter/algorithms';
+import { generateIsometric, addPaintPressure, generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateColourTonalAreaFill, generateScribbleColourUnderlay, generateTonalAreaFill, traceRasterContours, generateContinuousScribble } from '@plotter/algorithms';
 import { turtleDraw } from 'turtletoy';
 
 type Job = {
+  isometric?: IsometricSettings;
+  isometricGlyphs?: IsometricGlyph[];
   jobId: number;
   algorithmId: string;
   canvas: CanvasSettings;
@@ -275,6 +277,36 @@ function rasterGeometry(job: Job): PlotGeometry {
       addContour(visible);
       if (contourIndex % 250 === 0) progress(job.jobId, 0.45 + contourIndex / Math.max(1, contours.length) * 0.45, 'Tracing contour paths');
     }
+  } else if (job.algorithmId === 'raster.tonal-area-fill') {
+    const pass = job.passes.find(item => item.id === primary);
+    const penWidth = job.pens.find(item => item.id === pass?.penId)?.widthMm ?? 0.3;
+    return generateTonalAreaFill(luminance, width, height, {
+      bounds,
+      placement,
+      passId: primary,
+      penWidth,
+      levels: numberSetting(job.settings, 'levels', 3),
+      highlightThreshold: numberSetting(job.settings, 'highlightThreshold', 225),
+      shadowThreshold: numberSetting(job.settings, 'shadowThreshold', 70),
+      spacing: numberSetting(job.settings, 'spacing', 0.55),
+      angle: numberSetting(job.settings, 'angle', 45),
+      angleStep: numberSetting(job.settings, 'angleStep', 60),
+      closeRadius: numberSetting(job.settings, 'closeRadius', 1),
+      minimumRegionPixels: numberSetting(job.settings, 'minimumRegionPixels', 6),
+      minimumStroke: numberSetting(job.settings, 'minimumStroke', 0.2),
+      includeContours: job.settings.includeContours !== false,
+      edgeThreshold: numberSetting(job.settings, 'edgeThreshold', 55),
+      minimumContourLength: numberSetting(job.settings, 'minimumContourLength', 0.5),
+      contourSimplification: numberSetting(job.settings, 'contourSimplification', 0.12),
+      onProgress: (value, message) => progress(job.jobId, value, message),
+    });
+  } else if (job.algorithmId === 'raster.colour-tonal-area-fill') {
+    return generateColourTonalAreaFill(job.imageData, luminance, {
+      bounds,
+      placement,
+      settings: job.settings,
+      onProgress: (value, message) => progress(job.jobId, value, message),
+    });
   } else if (job.algorithmId === 'raster.dither') {
     const spacing = Math.max(0.15, numberSetting(job.settings, 'spacing', 1.5));
     const markSize = numberSetting(job.settings, 'markSize', 0.45);
@@ -441,7 +473,7 @@ scope.onmessage = (event: MessageEvent<Job>) => {
   const job = event.data;
   try {
     progress(job.jobId, 0.01, 'Starting render');
-    const result = job.algorithmId === 'generative.turtle' ? turtleGeometry(job) : rasterGeometry(job);
+    const result = job.algorithmId.startsWith('isometric.') ? generateIsometric(job.canvas, job.isometric ?? {}, job.isometricGlyphs ?? [], job.passIds) : job.algorithmId === 'generative.turtle' ? turtleGeometry(job) : rasterGeometry(job);
     scope.postMessage({ type: 'complete', jobId: job.jobId, result });
   } catch (error) {
     scope.postMessage({ type: 'error', jobId: job.jobId, message: error instanceof Error ? error.message : String(error) });

@@ -1,4 +1,4 @@
-import type { GCodeSettings, PenProfile, PlotGeometry, PlotPass, PlotPath, Point } from '@plotter/core';
+import { BLADE_ANGLE_STEPS, type GCodeSettings, type PenProfile, type PlotGeometry, type PlotPass, type PlotPath, type Point } from '@plotter/core';
 import { optimisePathOrder } from '@plotter/geometry';
 
 export interface GCodeDocument { filename: string; passId?: string; content: string }
@@ -11,6 +11,7 @@ const MAX_JOIN_ANGLE = Math.cos(Math.PI / 3);
 const DISTANCE_EPSILON = 0.000001;
 
 type ScheduledPaintPath = { path: PlotPath; reloadBefore: boolean };
+type BladeDirectionGroup = { angle: number; paths: PlotPath[] };
 
 function finitePathSegments(path: PlotPath): PlotPath[] {
   const segments: PlotPath[] = [];
@@ -90,6 +91,62 @@ export function joinContinuousPaths(paths: PlotPath[], tolerance = DEFAULT_PATH_
     } else joined.push({ ...path, points: [...path.points] });
   }
   return joined;
+}
+
+function bladeDirectionAngle(start: Point, end: Point, origin: GCodeSettings['origin']): number {
+  const dx = end.x - start.x;
+  const dy = (end.y - start.y) * (origin === 'bottom-left' ? -1 : 1);
+  let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  // A fixed straight edge is an axis: travelling in the reverse direction does
+  // not require a different physical blade position.
+  angle = ((angle % 180) + 180) % 180;
+  return angle;
+}
+
+function groupStraightBladePaths(paths: PlotPath[], angleStep: number, origin: GCodeSettings['origin']): BladeDirectionGroup[] {
+  const requestedStep = Number.isFinite(angleStep) ? angleStep : 15;
+  const step = BLADE_ANGLE_STEPS.reduce((closest, candidate) => Math.abs(candidate - requestedStep) < Math.abs(closest - requestedStep) ? candidate : closest, BLADE_ANGLE_STEPS[0]);
+  const groups = new Map<string, BladeDirectionGroup>();
+  let segmentId = 0;
+
+  for (const path of paths) {
+    const source = path.closed && path.points.length > 1 ? [...path.points, path.points[0]!] : path.points;
+    let activeKey = '';
+    let activeAngle = 0;
+    let activePathAngle = 0;
+    let activePoints: Point[] = [];
+    const flush = () => {
+      if (activePoints.length < 2) return;
+      const group = groups.get(activeKey) ?? { angle: activeAngle, paths: [] };
+      group.paths.push({ ...path, id: `${path.id}-blade-${segmentId++}`, points: activePoints, closed: false, preserveGaps: true });
+      groups.set(activeKey, group);
+      activePoints = [];
+    };
+
+    for (let index = 1; index < source.length; index += 1) {
+      const start = source[index - 1]!;
+      const end = source[index]!;
+      if (Math.hypot(end.x - start.x, end.y - start.y) <= DISTANCE_EPSILON) continue;
+      const pathAngle = bladeDirectionAngle(start, end, origin);
+      let angle = Math.round(pathAngle / step) * step;
+      if (angle >= 180) angle -= 180;
+      const key = angle.toFixed(6);
+      const angleDifference = Math.min(Math.abs(pathAngle - activePathAngle), 180 - Math.abs(pathAngle - activePathAngle));
+      // A fixed edge may run backwards, but must never steer while embedded in
+      // the lino. Split changing tangents even when they use one indexed angle.
+      if (activePoints.length && (key !== activeKey || angleDifference > 0.5)) flush();
+      if (!activePoints.length) {
+        activeKey = key;
+        activeAngle = angle;
+        activePathAngle = pathAngle;
+        activePoints = [start];
+      }
+      activePoints.push(end);
+    }
+    flush();
+  }
+
+  return [...groups.values()].sort((a, b) => a.angle - b.angle);
 }
 
 function interpolatePoint(start: Point, end: Point, ratio: number): Point {
@@ -181,7 +238,52 @@ function paintDipGCode(pen: PenProfile, settings: GCodeSettings, zUpFeed: number
   return lines;
 }
 
+function straightBladePassGCode(pass: PlotPass, blade: PenProfile, geometry: PlotGeometry, settings: GCodeSettings, pageHeight: number, completedBefore: number, totalPaths: number, onProgress?: GCodeProgress): string[] {
+  const lines: string[] = [];
+  const zUpFeed = blade.zUpFeed ?? blade.zFeed ?? 600;
+  const zDownFeed = blade.zDownFeed ?? blade.zFeed ?? 150;
+  const passPaths = geometry.paths.filter((path) => path.passId === pass.id && path.points.length > 1);
+  const groups = groupStraightBladePaths(passPaths, blade.bladeAngleStep ?? 15, settings.origin);
+  const indexedPathCount = groups.reduce((count, group) => count + group.paths.length, 0);
+  let completedIndexedPaths = 0;
+
+  if (settings.includeComments) lines.push(`; ${pass.name} — ${blade.name}`, '; Blade angles are measured counter-clockwise from machine +X');
+  lines.push(`G0 Z${n(blade.zUp)} F${n(zUpFeed)}`);
+
+  for (const group of groups) {
+    // Always stop at the configured park position before asking for hands-on
+    // blade indexing. This pause is a safety requirement, not a pen-pass option.
+    lines.push(`G0 Z${n(blade.zUp)} F${n(zUpFeed)}`);
+    lines.push(`G0 X${n(settings.parkX)} Y${n(settings.parkY)} F${n(settings.travelFeed)}`);
+    if (settings.includeComments) lines.push(`; Rotate straight blade to ${n(group.angle)} degrees from +X`);
+    lines.push(settings.pauseCommand || 'M0');
+
+    const ordered = optimisePathOrder(group.paths, { x: settings.parkX, y: settings.parkY });
+    for (const path of ordered) {
+      const first = path.points[0]!;
+      const firstY = settings.origin === 'bottom-left' ? pageHeight - first.y : first.y;
+      lines.push(`G0 X${n(first.x)} Y${n(firstY)} F${n(settings.travelFeed)}`);
+      lines.push(`G1 Z${n(blade.zDown)} F${n(zDownFeed)}`);
+      for (const point of path.points.slice(1)) {
+        const pointY = settings.origin === 'bottom-left' ? pageHeight - point.y : point.y;
+        lines.push(`G1 X${n(point.x)} Y${n(pointY)} F${n(blade.xyFeed)}`);
+      }
+      lines.push(`G0 Z${n(blade.zUp)} F${n(zUpFeed)}`);
+      completedIndexedPaths += 1;
+      if (onProgress && (completedIndexedPaths % 512 === 0 || completedIndexedPaths === indexedPathCount)) {
+        const passProgress = completedIndexedPaths / Math.max(1, indexedPathCount);
+        onProgress(0.08 + 0.89 * ((completedBefore + passProgress * passPaths.length) / Math.max(1, totalPaths)), `Writing blade direction ${n(group.angle)}°`);
+      }
+    }
+  }
+
+  lines.push(`G0 Z${n(blade.zUp)} F${n(zUpFeed)}`);
+  lines.push(`G0 X${n(settings.parkX)} Y${n(settings.parkY)} F${n(settings.travelFeed)}`);
+  return lines;
+}
+
 function passGCode(pass: PlotPass, pen: PenProfile, geometry: PlotGeometry, settings: GCodeSettings, pageHeight: number, completedBefore: number, totalPaths: number, onProgress?: GCodeProgress): string[] {
+  if (pen.mediaType === 'blade') return straightBladePassGCode(pass, pen, geometry, settings, pageHeight, completedBefore, totalPaths, onProgress);
   const lines: string[] = [];
   const zUpFeed = pen.zUpFeed ?? pen.zFeed ?? 600;
   const zDownFeed = pen.zDownFeed ?? pen.zFeed ?? 600;
@@ -253,7 +355,7 @@ export function generateGCode(projectName: string, geometry: PlotGeometry, passe
     appendLines(body, passGCode(pass, pen, safeGeometry, settings, pageHeight, completedBefore, totalPaths, onProgress));
     completedBefore += pathCounts[index] ?? 0;
     if (settings.pauseBetweenPasses && index < active.length - 1) {
-      if (settings.includeComments) body.push('; Change pen');
+      if (settings.includeComments) body.push(pen.mediaType === 'blade' ? '; Change or reset cutting tool' : '; Change pen');
       body.push(settings.pauseCommand || 'M0');
     }
   });

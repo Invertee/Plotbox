@@ -203,15 +203,15 @@ export function generateColourSeparation(image: ImagePixels, canvas: CanvasSetti
     const y = Math.floor((location.y - placement.y) / placement.height * height);
     return regionLabels[y * width + x] ?? -1;
   };
-  const toneAt = (location: Point) => {
-    if (location.x < placement.x || location.x > placement.x + placement.width || location.y < placement.y || location.y > placement.y + placement.height) return 0;
+  const luminanceAt = (location: Point) => {
+    if (location.x < placement.x || location.x > placement.x + placement.width || location.y < placement.y || location.y > placement.y + placement.height) return 255;
     const x = Math.max(0, Math.min(width - 1, Math.round((location.x - placement.x) / placement.width * (width - 1))));
     const y = Math.max(0, Math.min(height - 1, Math.round((location.y - placement.y) / placement.height * (height - 1))));
     const offset = (y * width + x) * 4;
     const alpha = image.data[offset + 3]! / 255;
-    const luminance = (image.data[offset]! * 0.2126 + image.data[offset + 1]! * 0.7152 + image.data[offset + 2]! * 0.0722) * alpha + 255 * (1 - alpha);
-    return clamp((255 - luminance) / 127);
+    return (image.data[offset]! * 0.2126 + image.data[offset + 1]! * 0.7152 + image.data[offset + 2]! * 0.0722) * alpha + 255 * (1 - alpha);
   };
+  const toneAt = (location: Point) => clamp((255 - luminanceAt(location)) / 127);
   const pageRegionBounds = (index: number): Bounds => {
     const pixels = regionPixelBounds[index]!;
     return {
@@ -282,6 +282,78 @@ export function generateColourSeparation(image: ImagePixels, canvas: CanvasSetti
     if (treatment.fill === 'outline' || treatment.outline) edges[i]!.forEach(([a, b]) => add(a, b));
     if (treatment.fill === 'none' || treatment.fill === 'outline') return;
     const method = treatment.algorithmSettings;
+    if (treatment.fill === 'scanlines') {
+      const style = String(method.style ?? 'waves');
+      const spacing = bounded(method.spacing, 2, 0.5, 8);
+      const minimumGap = bounded(method.minimumGap, 0.35, 0, 3);
+      const maximumWidth = Math.min(bounded(method.maximumWidth, 1.2, 0, 7), Math.max(0, spacing - minimumGap));
+      const maximumExcursion = maximumWidth / 2;
+      const minimumWidth = Math.min(maximumWidth, bounded(method.minimumWidth, 0, 0, 3));
+      const shadowThreshold = bounded(method.shadowThreshold, 35, 0, 254);
+      const highlightThreshold = Math.max(shadowThreshold + 1, bounded(method.highlightThreshold, 225, 35, 255));
+      const tonePower = bounded(method.tonePower, 0.9, 0.3, 3);
+      const sampleDistance = style === 'blocks' ? bounded(method.blockSpacing, 0.55, 0.15, 5) : bounded(method.sampleStep, 0.45, 0.1, 2.5);
+      const smoothingRadius = Math.max(0, Math.round(bounded(method.smoothing, 0.6, 0, 8) / sampleDistance));
+      const waveLength = bounded(method.waveLength, 3.7, 0.5, 20);
+      const phase = bounded(method.phase, 0, 0, 360) * Math.PI / 180;
+      const skipWhiteAreas = Boolean(method.skipWhiteAreas ?? false);
+      const radians = bounded(method.angle, 0, 0, 180) * Math.PI / 180;
+      const direction = { x: Math.cos(radians), y: Math.sin(radians) };
+      const normal = { x: -direction.y, y: direction.x };
+      const centre = { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+      const regionBounds = pageRegionBounds(i);
+      const corners = [
+        { x: regionBounds.minX, y: regionBounds.minY }, { x: regionBounds.maxX, y: regionBounds.minY },
+        { x: regionBounds.maxX, y: regionBounds.maxY }, { x: regionBounds.minX, y: regionBounds.maxY },
+      ];
+      const project = (location: Point, axis: Point) => (location.x - centre.x) * axis.x + (location.y - centre.y) * axis.y;
+      const offsets = corners.map(location => project(location, normal));
+      const distances = corners.map(location => project(location, direction));
+      const firstOffset = Math.ceil(Math.min(...offsets) / spacing) * spacing;
+      const lastOffset = Math.max(...offsets);
+      const from = Math.min(...distances);
+      const to = Math.max(...distances);
+      for (let offset = firstOffset; offset <= lastOffset + 1e-6; offset += spacing) {
+        const sampleDistances: number[] = [];
+        for (let distance = from; distance < to; distance += sampleDistance) sampleDistances.push(distance);
+        sampleDistances.push(to);
+        const rawTones = sampleDistances.map(distance => {
+          const location = { x: centre.x + normal.x * offset + direction.x * distance, y: centre.y + normal.y * offset + direction.y * distance };
+          return Math.pow(clamp((highlightThreshold - luminanceAt(location)) / (highlightThreshold - shadowThreshold)), tonePower);
+        });
+        const tones = rawTones.map((_, index) => {
+          if (!smoothingRadius) return rawTones[index]!;
+          let total = 0; let count = 0;
+          for (let sample = Math.max(0, index - smoothingRadius); sample <= Math.min(rawTones.length - 1, index + smoothingRadius); sample++) { total += rawTones[sample]!; count++; }
+          return total / count;
+        });
+        let previous: Point | undefined;
+        for (let index = 0; index < sampleDistances.length; index++) {
+          const distance = sampleDistances[index]!;
+          const baseline = { x: centre.x + normal.x * offset + direction.x * distance, y: centre.y + normal.y * offset + direction.y * distance };
+          const tone = tones[index]!;
+          const hasTone = tone > 0.002;
+          if (skipWhiteAreas && !hasTone) { previous = undefined; continue; }
+          if (style === 'blocks') {
+            if (previous) addMasked(previous, baseline);
+            if (hasTone && maximumExcursion > 0) {
+              const side = index % 2 === 0 ? 1 : -1;
+              const excursion = maximumExcursion * tone * side;
+              const peak = { x: baseline.x + normal.x * excursion, y: baseline.y + normal.y * excursion };
+              addMasked(baseline, peak); addMasked(peak, baseline);
+            }
+            previous = baseline;
+          } else {
+            const waveWidth = hasTone ? minimumWidth + (maximumWidth - minimumWidth) * tone : 0;
+            const excursion = Math.sin(distance / waveLength * Math.PI * 2 + phase) * waveWidth / 2;
+            const waved = { x: baseline.x + normal.x * excursion, y: baseline.y + normal.y * excursion };
+            if (previous) addMasked(previous, waved);
+            previous = waved;
+          }
+        }
+      }
+      return;
+    }
     if (treatment.fill === 'dither') {
       const spacing = bounded(method.spacing, 1.5, 0.3, 8);
       const markSize = bounded(method.markSize, 0.45, 0.1, 8);

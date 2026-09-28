@@ -1,7 +1,11 @@
+import { hatchSourcePath } from './vectorHatching';
 import type { CanvasSettings, PlotGeometry, PlotLayer, PlotPath, Point, SourcePath } from '@plotter/core';
+export { formatMapCoordinates, generateMapAnnotations, generateMapTitle, mapAnnotationBackgrounds, mapTitleBackground, maskPathsBehindMapAnnotations, maskPathsBehindMapTitle, MAP_ANNOTATION_FONT_OPTIONS, MAP_MARKER_OPTIONS } from './mapAnnotations';
 import { drawableBounds, type Bounds } from '@plotter/geometry';
 export { DEFAULT_COLOUR_TREATMENT, colourPassId, scribbleColourPassId, separateColours, generateColourSeparation, generateScribbleColourUnderlay, ensureColourPasses, ensureScribbleColourPasses } from './colourSeparation';
 export { traceRasterContours, type RasterContourOptions } from './rasterContours';
+export { generateTonalAreaFill, type TonalAreaFillOptions } from './tonalAreaFill';
+export { generateColourTonalAreaFill, type ColourTonalAreaFillOptions } from './colourTonalAreaFill';
 export { generateContinuousScribble } from './continuousScribble';
 
 export type ControlDefinition = {
@@ -71,6 +75,41 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'minimumLength', label: 'Minimum line length', type: 'range', min: 0, max: 20, step: 0.25, unit: 'mm', default: 1 },
     { key: 'simplification', label: 'Line smoothing', type: 'range', min: 0, max: 2, step: 0.05, unit: 'mm', default: 0.15 },
   ] },
+  { id: 'raster.tonal-area-fill', name: 'Tonal area fill', group: 'raster', worker: true, controls: [
+    { key: 'levels', label: 'Tone levels', type: 'range', min: 1, max: 6, step: 1, default: 3 },
+    { key: 'highlightThreshold', label: 'Lightest filled tone', type: 'range', min: 80, max: 255, step: 1, default: 225 },
+    { key: 'shadowThreshold', label: 'Darkest tone', type: 'range', min: 0, max: 220, step: 1, default: 70 },
+    { key: 'spacing', label: 'Fill spacing', type: 'range', min: 0.2, max: 5, step: 0.05, unit: 'mm', default: 0.55 },
+    { key: 'angle', label: 'First fill angle', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 45 },
+    { key: 'angleStep', label: 'Angle between tones', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 60 },
+    { key: 'closeRadius', label: 'Close small gaps', type: 'range', min: 0, max: 4, step: 1, unit: 'px', default: 1 },
+    { key: 'minimumRegionPixels', label: 'Minimum area', type: 'number', min: 1, max: 10000, step: 1, unit: 'px', default: 6 },
+    { key: 'minimumStroke', label: 'Minimum fill stroke', type: 'range', min: 0, max: 5, step: 0.05, unit: 'mm', default: 0.2 },
+    { key: 'includeContours', label: 'Trace detail edges', type: 'boolean', default: true },
+    { key: 'edgeThreshold', label: 'Detail edge threshold', type: 'range', min: 10, max: 240, step: 1, default: 55, visibleWhen: { key: 'includeContours', value: true } },
+    { key: 'minimumContourLength', label: 'Minimum edge length', type: 'range', min: 0, max: 20, step: 0.25, unit: 'mm', default: 0.5, visibleWhen: { key: 'includeContours', value: true } },
+    { key: 'contourSimplification', label: 'Edge smoothing', type: 'range', min: 0, max: 2, step: 0.05, unit: 'mm', default: 0.12, visibleWhen: { key: 'includeContours', value: true } },
+  ] },
+  { id: 'raster.colour-tonal-area-fill', name: 'Colour tonal area fill', group: 'raster', worker: true, controls: [
+    { key: 'colourCount', label: 'Palette colours', type: 'range', min: 2, max: 12, step: 1, default: 6 },
+    { key: 'minRegionPixels', label: 'Minimum colour region', type: 'number', min: 1, max: 10000, step: 1, unit: 'px', default: 12 },
+    { key: 'skipPaper', label: 'Leave pale paper unplotted', type: 'boolean', default: true },
+    { key: 'paperCutoff', label: 'Paper brightness', type: 'range', min: 70, max: 100, step: 1, unit: '%', default: 90, visibleWhen: { key: 'skipPaper', value: true } },
+    { key: 'cleanEdges', label: 'Clean isolated colour speckles', type: 'boolean', default: true },
+    { key: 'levels', label: 'Tone levels per colour', type: 'range', min: 1, max: 6, step: 1, default: 3 },
+    { key: 'highlightThreshold', label: 'Lightest filled tone', type: 'range', min: 80, max: 255, step: 1, default: 250 },
+    { key: 'shadowThreshold', label: 'Darkest tone', type: 'range', min: 0, max: 220, step: 1, default: 70 },
+    { key: 'spacing', label: 'Fill spacing', type: 'range', min: 0.2, max: 5, step: 0.05, unit: 'mm', default: 0.55 },
+    { key: 'angle', label: 'First fill angle', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 45 },
+    { key: 'angleStep', label: 'Angle between tones', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 60 },
+    { key: 'closeRadius', label: 'Close small gaps', type: 'range', min: 0, max: 4, step: 1, unit: 'px', default: 1 },
+    { key: 'minimumRegionPixels', label: 'Minimum tonal area', type: 'number', min: 1, max: 10000, step: 1, unit: 'px', default: 4 },
+    { key: 'minimumStroke', label: 'Minimum fill stroke', type: 'range', min: 0, max: 5, step: 0.05, unit: 'mm', default: 0.2 },
+    { key: 'includeContours', label: 'Trace detail edges per colour', type: 'boolean', default: true },
+    { key: 'edgeThreshold', label: 'Detail edge threshold', type: 'range', min: 10, max: 240, step: 1, default: 55, visibleWhen: { key: 'includeContours', value: true } },
+    { key: 'minimumContourLength', label: 'Minimum edge length', type: 'range', min: 0, max: 20, step: 0.25, unit: 'mm', default: 0.5, visibleWhen: { key: 'includeContours', value: true } },
+    { key: 'contourSimplification', label: 'Edge smoothing', type: 'range', min: 0, max: 2, step: 0.05, unit: 'mm', default: 0.12, visibleWhen: { key: 'includeContours', value: true } },
+  ] },
   { id: 'raster.hatch', name: 'Hatching', group: 'raster', worker: true, controls: [
     { key: 'spacing', label: 'Spacing', type: 'range', min: 0.5, max: 10, step: 0.25, unit: 'mm', default: 2.5 },
     { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 180, step: 1, unit: '°', default: 45 },
@@ -121,6 +160,7 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'smoothing', label: 'Tone smoothing', type: 'range', min: 0, max: 8, step: 0.1, unit: 'mm', default: 0.6 },
     { key: 'shadowThreshold', label: 'Shadow threshold', type: 'range', min: 0, max: 220, step: 1, default: 35 },
     { key: 'highlightThreshold', label: 'Highlight threshold', type: 'range', min: 35, max: 255, step: 1, default: 225 },
+    { key: 'skipWhiteAreas', label: 'Skip white / blank areas', type: 'boolean', default: false },
     { key: 'tonePower', label: 'Tone response', type: 'range', min: 0.3, max: 3, step: 0.05, default: 0.9 },
   ] },
   { id: 'raster.paint-scanlines', name: 'Paint · pressure scanlines', group: 'raster', worker: true, controls: [
@@ -190,6 +230,22 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 999999, step: 1, default: 33881 },
     { key: 'tileSize', label: 'Tile size', type: 'range', min: 4, max: 40, step: 1, unit: 'mm', default: 14 },
     { key: 'density', label: 'Density', type: 'range', min: 0.1, max: 1, step: 0.05, default: 0.9 },
+    { key: 'lineCount', label: 'Lines per band', type: 'range', min: 1, max: 9, step: 1, default: 1 },
+    { key: 'lineSpacing', label: 'Line spacing', type: 'range', min: 0.2, max: 4, step: 0.1, unit: 'mm', default: 1.2 },
+    { key: 'colourMode', label: 'Colour arrangement', type: 'select', options: [
+      { value: 'curves', label: 'Alternate curves' },
+      { value: 'lines', label: 'Alternate parallel lines' },
+      { value: 'tiles', label: 'Alternate tiles' },
+      { value: 'random', label: 'Random by tile' },
+      { value: 'single', label: 'Single colour' },
+    ], default: 'curves' },
+    { key: 'mirror', label: 'Mirror symmetry', type: 'select', options: [
+      { value: 'none', label: 'None' },
+      { value: 'horizontal', label: 'Left ↔ right' },
+      { value: 'vertical', label: 'Top ↔ bottom' },
+      { value: 'both', label: 'Four-way' },
+    ], default: 'none' },
+    { key: 'variation', label: 'Orientation variation', type: 'range', min: 0, max: 1, step: 0.05, default: 1 },
   ] },
   { id: 'generative.guilloche', name: 'Guilloché', group: 'generative', controls: [
     { key: 'frequency', label: 'Frequency', type: 'range', min: 2, max: 32, step: 1, default: 11 },
@@ -408,6 +464,7 @@ export function generateScanlines(
   const shadowThreshold = Math.max(0, Math.min(254, numberSetting(settings, 'shadowThreshold', 35)));
   const highlightThreshold = Math.max(shadowThreshold + 1, Math.min(255, numberSetting(settings, 'highlightThreshold', 225)));
   const tonePower = Math.max(0.05, numberSetting(settings, 'tonePower', 0.9));
+  const skipWhiteAreas = Boolean(settings.skipWhiteAreas ?? false);
   const angle = numberSetting(settings, 'angle', 0) * Math.PI / 180;
   const direction = { x: Math.cos(angle), y: Math.sin(angle) };
   const normal = { x: -direction.y, y: direction.x };
@@ -443,14 +500,25 @@ export function generateScanlines(
       rawTone[index] = Math.pow(Math.max(0, Math.min(1, (highlightThreshold - luminance) / (highlightThreshold - shadowThreshold))), tonePower);
     }
     const tones = smoothTones(rawTone, smoothingRadius);
-    const points: Point[] = [];
+    let points: Point[] = [];
+    let segment = 0;
+    const finishSegment = () => {
+      if (points.length > 1) paths.push(path(`scanline-${row}-${segment}`, points, passId, 'primary'));
+      points = [];
+      segment += 1;
+    };
     for (let index = 0; index < distances.length; index += 1) {
       const distance = distances[index]!;
       const baseline = { x: origin.x + direction.x * distance, y: origin.y + direction.y * distance };
       const tone = tones[index] ?? 0;
+      const hasTone = tone > 0.002;
+      if (skipWhiteAreas && !hasTone) {
+        finishSegment();
+        continue;
+      }
       if (style === 'blocks') {
         points.push(baseline);
-        if (tone > 0.002 && maximumExcursion > 0) {
+        if (hasTone && maximumExcursion > 0) {
           const side = (index + row) % 2 === 0 ? 1 : -1;
           const excursion = maximumExcursion * tone * side;
           points.push({
@@ -468,7 +536,7 @@ export function generateScanlines(
         });
       }
     }
-    if (points.length > 1) paths.push(path(`scanline-${row}`, points, passId, 'primary'));
+    finishSegment();
     row += 1;
   }
 
@@ -619,6 +687,13 @@ function arc(cx: number, cy: number, radius: number, from: number, to: number, s
   });
 }
 
+function truchetRandom(seed: number, column: number, row: number, salt: number): number {
+  let value = (Math.trunc(seed) ^ Math.imul(column + 1, 0x9e3779b1) ^ Math.imul(row + 1, 0x85ebca6b) ^ Math.imul(salt + 1, 0xc2b2ae35)) | 0;
+  value = Math.imul(value ^ (value >>> 16), 0x7feb352d);
+  value = Math.imul(value ^ (value >>> 15), 0x846ca68b);
+  return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
+}
+
 function stippleMarkPaths(point: Point, size: number, style: string): Point[][] {
   const radius = Math.max(0.025, size / 2);
   if (style === 'cross') {
@@ -665,19 +740,57 @@ export function generateAlgorithm(id: string, canvas: CanvasSettings, settings: 
       if (points.length > 2) paths.push(path(`flow-${i}`, points, i % 5 === 0 ? secondary : primary, i % 5 === 0 ? 'accent' : 'primary'));
     }
   } else if (id === 'generative.truchet') {
-    const size = numberSetting(settings, 'tileSize', 14);
-    const random = mulberry32(numberSetting(settings, 'seed', 33881));
-    const density = numberSetting(settings, 'density', 0.9);
-    let index = 0;
-    for (let y = bounds.minY; y + size <= bounds.maxY; y += size) {
-      for (let x = bounds.minX; x + size <= bounds.maxX; x += size) {
-        if (random() > density) continue;
-        if (random() > 0.5) {
-          paths.push(path(`truchet-${index++}-a`, arc(x, y, size / 2, 0, Math.PI / 2), primary));
-          paths.push(path(`truchet-${index++}-b`, arc(x + size, y + size, size / 2, Math.PI, Math.PI * 1.5), secondary, 'secondary'));
-        } else {
-          paths.push(path(`truchet-${index++}-a`, arc(x + size, y, size / 2, Math.PI / 2, Math.PI), primary));
-          paths.push(path(`truchet-${index++}-b`, arc(x, y + size, size / 2, -Math.PI / 2, 0), secondary, 'secondary'));
+    const size = Math.max(1, numberSetting(settings, 'tileSize', 14));
+    const seed = numberSetting(settings, 'seed', 33881);
+    const density = Math.max(0, Math.min(1, numberSetting(settings, 'density', 0.9)));
+    const lineCount = Math.min(9, Math.max(1, Math.round(numberSetting(settings, 'lineCount', 1))));
+    const lineSpacing = Math.min(Math.max(0.05, numberSetting(settings, 'lineSpacing', 1.2)), size / lineCount);
+    const colourMode = String(settings.colourMode ?? 'curves');
+    const mirror = String(settings.mirror ?? 'none');
+    const variation = Math.max(0, Math.min(1, numberSetting(settings, 'variation', 1)));
+    const colours = passIds.length ? passIds : [primary];
+    const columns = Math.floor((bounds.maxX - bounds.minX) / size);
+    const rows = Math.floor((bounds.maxY - bounds.minY) / size);
+    const mirrorsX = mirror === 'horizontal' || mirror === 'both';
+    const mirrorsY = mirror === 'vertical' || mirror === 'both';
+    const startX = mirrorsX ? (bounds.minX + bounds.maxX - columns * size) / 2 : bounds.minX;
+    const startY = mirrorsY ? (bounds.minY + bounds.maxY - rows * size) / 2 : bounds.minY;
+    const passFor = (tile: number, curve: number, line: number, randomValue: number) => {
+      if (colourMode === 'single') return colours[0]!;
+      if (colourMode === 'lines') return colours[line % colours.length]!;
+      if (colourMode === 'tiles') return colours[tile % colours.length]!;
+      if (colourMode === 'random') return colours[Math.floor(randomValue * colours.length) % colours.length]!;
+      return colours[curve % colours.length]!;
+    };
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const mirrorColumn = columns - 1 - column;
+        const mirrorRow = rows - 1 - row;
+        const keyColumn = mirrorsX ? Math.min(column, mirrorColumn) : column;
+        const keyRow = mirrorsY ? Math.min(row, mirrorRow) : row;
+        if (truchetRandom(seed, keyColumn, keyRow, 0) > density) continue;
+        const randomOrientation = truchetRandom(seed, keyColumn, keyRow, 1) > 0.5;
+        const regularOrientation = (keyColumn + keyRow) % 2 === 0;
+        const useRandomOrientation = truchetRandom(seed, keyColumn, keyRow, 2) < variation;
+        const reflected = (mirrorsX && column > mirrorColumn) !== (mirrorsY && row > mirrorRow);
+        const orientation = (useRandomOrientation ? randomOrientation : regularOrientation) !== reflected;
+        const tileIndex = row * columns + column;
+        const colourTileIndex = keyRow * columns + keyColumn;
+        const swapCurveColours = mirrorsY && row > mirrorRow;
+        const tileColourRandom = truchetRandom(seed, keyColumn, keyRow, 3);
+        const x = startX + column * size;
+        const y = startY + row * size;
+        for (let line = 0; line < lineCount; line += 1) {
+          const radius = size / 2 + (line - (lineCount - 1) / 2) * lineSpacing;
+          if (radius <= 0 || radius >= size) continue;
+          const first = orientation
+            ? arc(x, y, radius, 0, Math.PI / 2)
+            : arc(x + size, y, radius, Math.PI / 2, Math.PI);
+          const second = orientation
+            ? arc(x + size, y + size, radius, Math.PI, Math.PI * 1.5)
+            : arc(x, y + size, radius, -Math.PI / 2, 0);
+          paths.push(path(`truchet-${tileIndex}-a-${line}`, first, passFor(colourTileIndex, swapCurveColours ? 1 : 0, line, tileColourRandom), `curve-1-line-${line + 1}`));
+          paths.push(path(`truchet-${tileIndex}-b-${line}`, second, passFor(colourTileIndex, swapCurveColours ? 0 : 1, line, tileColourRandom), `curve-2-line-${line + 1}`));
         }
       }
     }
@@ -700,30 +813,6 @@ export function generateAlgorithm(id: string, canvas: CanvasSettings, settings: 
     }
   }
   return geometry(id, paths);
-}
-
-const rotatePoint = (point: Point, angle: number): Point => ({ x: point.x * Math.cos(angle) - point.y * Math.sin(angle), y: point.x * Math.sin(angle) + point.y * Math.cos(angle) });
-
-function hatchSourcePath(source: SourcePath, angleDegrees: number, spacing: number): Point[][] {
-  if (!source.closed || source.points.length < 3) return [];
-  const angle = angleDegrees * Math.PI / 180;
-  const rotated = source.points.map((point) => rotatePoint(point, -angle));
-  const minY = Math.min(...rotated.map((point) => point.y));
-  const maxY = Math.max(...rotated.map((point) => point.y));
-  const lines: Point[][] = [];
-  for (let y = Math.ceil(minY / spacing) * spacing; y <= maxY; y += spacing) {
-    const intersections: number[] = [];
-    for (let index = 0; index < rotated.length; index += 1) {
-      const start = rotated[index]!;
-      const end = rotated[(index + 1) % rotated.length]!;
-      if ((start.y <= y && end.y > y) || (end.y <= y && start.y > y)) intersections.push(start.x + ((y - start.y) / (end.y - start.y)) * (end.x - start.x));
-    }
-    intersections.sort((a, b) => a - b);
-    for (let index = 0; index + 1 < intersections.length; index += 2) {
-      lines.push([rotatePoint({ x: intersections[index]!, y }, angle), rotatePoint({ x: intersections[index + 1]!, y }, angle)]);
-    }
-  }
-  return lines;
 }
 
 function pointInPolygon(point: Point, polygon: Point[]): boolean {
@@ -783,3 +872,4 @@ export function generateVectorLayers(layers: PlotLayer[]): PlotGeometry {
   }
   return geometry('vector.layers', output);
 }
+export { generateIsometric, buildIsometricScene, moveIsometricTile, planIsometricCells, matchRoadGlyph, isometricSettings, ISOMETRIC_ALGORITHMS } from './isometric';

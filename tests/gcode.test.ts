@@ -75,6 +75,47 @@ describe('G-code output', () => {
       .toThrow('needs a captured paint well X/Y position and dip Z height');
   });
 
+  it('groups straight-blade cuts by direction and pauses for manual indexing', () => {
+    const blade: PenProfile = {
+      ...pens[0]!, name: 'Straight lino blade', mediaType: 'blade', bladeAngleStep: 30,
+      zDown: -1, xyFeed: 500, zDownFeed: 150,
+    };
+    const bladeGeometry: PlotGeometry = { ...geometry, paths: [{
+      id: 'corner', layerId: 'l', passId: 'p1', points: [
+        { x: 10, y: 10 }, { x: 20, y: 10 }, { x: 20, y: 20 },
+      ],
+    }] };
+
+    const [document] = generateGCode('Lino', bladeGeometry, [passes[0]!], [blade], settings, 297);
+
+    expect(document?.content.match(/M0/g)).toHaveLength(2);
+    expect(document?.content).toContain('; Rotate straight blade to 0 degrees from +X');
+    expect(document?.content).toContain('; Rotate straight blade to 90 degrees from +X');
+    expect(document?.content).toContain('G1 Z-1 F150');
+    expect(document?.content.match(/G0 X0 Y0 F5000/g)).toHaveLength(3);
+  });
+
+  it('treats opposite straight-blade travel directions as the same blade axis', () => {
+    const blade: PenProfile = { ...pens[0]!, mediaType: 'blade', bladeAngleStep: 30 };
+    const paths = [
+      { id: 'right', layerId: 'l', passId: 'p1', points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] },
+      { id: 'left', layerId: 'l', passId: 'p1', points: [{ x: 10, y: 1 }, { x: 0, y: 1 }] },
+    ];
+    const [document] = generateGCode('Axis', { ...geometry, paths }, [passes[0]!], [blade], settings, 297);
+    expect(document?.content.match(/Rotate straight blade/g)).toHaveLength(1);
+    expect(document?.content.match(/M0/g)).toHaveLength(1);
+  });
+
+  it('lifts a straight blade instead of steering it through a changing tangent', () => {
+    const blade: PenProfile = { ...pens[0]!, mediaType: 'blade', bladeAngleStep: 30, zDown: -1 };
+    const paths = [{ id: 'shallow-corner', layerId: 'l', passId: 'p1', points: [
+      { x: 0, y: 0 }, { x: 10, y: 0 }, { x: 20, y: 0.2 },
+    ] }];
+    const [document] = generateGCode('No steering', { ...geometry, paths }, [passes[0]!], [blade], settings, 297);
+    expect(document?.content.match(/Rotate straight blade/g)).toHaveLength(1);
+    expect(document?.content.match(/G1 Z-1 F600/g)).toHaveLength(2);
+  });
+
   it('joins aligned paths separated by a tiny gap, avoiding an unnecessary pen lift', () => {
     const paths = [
       { id: 'a', layerId: 'l', passId: 'p1', points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] },
