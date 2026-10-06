@@ -14,6 +14,10 @@ import {
 
 import type { IsometricRole, IsometricTerrain, SourcePath } from '@plotter/core';
 import { GREENSPACE_CATEGORY, WATERFRONT_CATEGORY, TREELINED_CATEGORY, ISOMETRIC_STARTER_ASSETS, ISOMETRIC_STARTER_CATEGORIES } from './isometricStarterGlyphs';
+import { ANTIQUITY_ASSETS, ANTIQUITY_CATEGORY } from './isometricAntiquityGlyphs';
+import { MEDIEVAL_ASSETS, MEDIEVAL_CATEGORY } from './isometricMedievalGlyphs';
+import { CYBERPUNK_ASSETS, CYBERPUNK_CATEGORY } from './isometricCyberpunkGlyphs';
+import { CYBERPUNK_GEL_ASSETS, CYBERPUNK_GEL_CATEGORY, CYBERPUNK_GEL_NAME, CYBERPUNK_GEL_PAPER } from './isometricCyberpunkGelGlyphs';
 
 export type GlyphKind = 'map' | 'isometric';
 
@@ -28,6 +32,7 @@ export type GlyphAsset = {
   name: string;
   kind: GlyphKind;
   categoryId?: string;
+  collectionId?: string;
   svg: string;
   createdAt: string;
   isometricRole?: IsometricRole;
@@ -39,12 +44,22 @@ export type GlyphAsset = {
 };
 
 export type GlyphLibrary = {
-  version: 7;
+  version: 13;
   categories: GlyphCategory[];
   assets: GlyphAsset[];
 };
 
 export const GLYPHBOX_STORAGE_KEY = 'plotbox.glyphbox.v1';
+// Bundled artwork is shipped with the app. Store its metadata by reference so
+// additional packs do not exhaust localStorage with duplicate SVG/pen geometry.
+function serializeGlyphLibrary(library: GlyphLibrary): string {
+  return JSON.stringify({ ...library, assets: library.assets.map(asset => {
+    const builtin = ISOMETRIC_STARTER_ASSETS.find(item => item.id === asset.id);
+    if (!builtin || asset.svg !== builtin.svg || (asset.plotPaths !== builtin.plotPaths && JSON.stringify(asset.plotPaths) !== JSON.stringify(builtin.plotPaths))) return asset;
+    const { svg: _svg, plotPaths: _paths, ...metadata } = asset;
+    return { ...metadata, bundledArtwork: true };
+  }) });
+}
 export const LEGACY_ISOMETRIC_STARTER_IDS = new Set([
   'starter-road-straight', 'starter-road-corner', 'starter-road-tee', 'starter-road-cross', 'starter-road-end',
   'starter-iso-house', 'starter-iso-tower',
@@ -60,7 +75,7 @@ export const ISOMETRIC_ROLES: { value: IsometricRole; label: string }[] = [
   { value: 'road-cross', label: 'Road · crossroads' }, { value: 'road-end', label: 'Road · end (↘)' },
 ];
 const STARTER_LIBRARY: GlyphLibrary = {
-  version: 7,
+  version: 13,
   categories: [
     { id: 'map-wayfinding', name: 'Wayfinding', kind: 'map' },
     ...ISOMETRIC_STARTER_CATEGORIES,
@@ -89,19 +104,55 @@ const STARTER_LIBRARY: GlyphLibrary = {
 /** Replace only known bundled city assets. Preserve custom assets and any
  * categories they still use; migration does not restore deliberately deleted v4 tiles. */
 export function upgradeGlyphLibrary(source: { version: number; categories: GlyphCategory[]; assets: GlyphAsset[] }): GlyphLibrary {
-  if (source.version >= 7) return { version: 7, categories: source.categories, assets: source.assets };
+  if (source.version >= 13) return { version: 13, categories: source.categories, assets: source.assets };
+  const migrated = source.version < 10 ? upgradePreviousGlyphLibrary(source) : source;
+  const categories = source.version < 11
+    ? [...migrated.categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(c => c.id === CYBERPUNK_GEL_CATEGORY && !migrated.categories.some(existing => existing.id === c.id))]
+    : migrated.categories;
+  const assets = source.version < 11
+    ? [...migrated.assets, ...CYBERPUNK_GEL_ASSETS.filter(a => !migrated.assets.some(existing => existing.id === a.id))]
+    : migrated.assets;
+  return {
+    version: 13,
+    categories: categories.map(c => c.id === CYBERPUNK_GEL_CATEGORY && c.name === 'Cyberpunk · dark paper / gel pens' ? { ...c, name: CYBERPUNK_GEL_NAME } : c),
+    assets: assets.map(asset => {
+      const builtin = CYBERPUNK_GEL_ASSETS.find(a => a.id === asset.id);
+      return builtin ? { ...asset, svg: builtin.svg, plotPaths: builtin.plotPaths } : asset;
+    }),
+  };
+}
+
+function upgradePreviousGlyphLibrary(source: { version: number; categories: GlyphCategory[]; assets: GlyphAsset[] }): GlyphLibrary {
+  if (source.version === 9) return {
+    version: 13,
+    categories: [...source.categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(category => category.id === CYBERPUNK_CATEGORY && !source.categories.some(existing => existing.id === category.id))],
+    assets: [...source.assets, ...CYBERPUNK_ASSETS.filter(asset => !source.assets.some(existing => existing.id === asset.id))],
+  };
+  if (source.version === 8) return {
+    version: 13,
+    categories: [...source.categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(category => (category.id === MEDIEVAL_CATEGORY || category.id === CYBERPUNK_CATEGORY) && !source.categories.some(existing => existing.id === category.id))],
+    assets: [...source.assets, ...[...MEDIEVAL_ASSETS, ...CYBERPUNK_ASSETS].filter(asset => !source.assets.some(existing => existing.id === asset.id))],
+  };
+  if (source.version === 7) return {
+    version: 13,
+    categories: [...source.categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(category => (category.id === ANTIQUITY_CATEGORY || category.id === MEDIEVAL_CATEGORY || category.id === CYBERPUNK_CATEGORY) && !source.categories.some(existing => existing.id === category.id))],
+    assets: [...source.assets.map(asset => {
+      const builtin = ISOMETRIC_STARTER_ASSETS.find(item => item.id === asset.id);
+      return builtin ? { ...asset, collectionId: builtin.collectionId } : asset;
+    }), ...[...ANTIQUITY_ASSETS, ...MEDIEVAL_ASSETS, ...CYBERPUNK_ASSETS].filter(asset => !source.assets.some(existing => existing.id === asset.id))],
+  };
   if (source.version >= 4) return {
-    version: 7,
+    version: 13,
     categories: [...source.categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(category => !source.categories.some(existing => existing.id === category.id))],
     assets: [...source.assets.map(asset => {
       const refreshed = ISOMETRIC_STARTER_ASSETS.find(starter => starter.id === asset.id);
-      return refreshed ? { ...asset, svg: refreshed.svg, plotPaths: refreshed.plotPaths, isometricRole: refreshed.isometricRole, terrain: refreshed.terrain, shoreMask: refreshed.shoreMask, treeLined: refreshed.treeLined } : asset;
-    }), ...ISOMETRIC_STARTER_ASSETS.filter(asset => (asset.categoryId === TREELINED_CATEGORY || (source.version < 6 && asset.categoryId === WATERFRONT_CATEGORY) || (source.version === 4 && asset.categoryId === GREENSPACE_CATEGORY)) && !source.assets.some(existing => existing.id === asset.id))],
+      return refreshed ? { ...asset, svg: refreshed.svg, plotPaths: refreshed.plotPaths, isometricRole: refreshed.isometricRole, terrain: refreshed.terrain, shoreMask: refreshed.shoreMask, treeLined: refreshed.treeLined, collectionId: refreshed.collectionId } : asset;
+    }), ...ISOMETRIC_STARTER_ASSETS.filter(asset => (asset.categoryId === CYBERPUNK_CATEGORY || asset.categoryId === MEDIEVAL_CATEGORY || asset.categoryId === ANTIQUITY_CATEGORY || asset.categoryId === TREELINED_CATEGORY || (source.version < 6 && asset.categoryId === WATERFRONT_CATEGORY) || (source.version === 4 && asset.categoryId === GREENSPACE_CATEGORY)) && !source.assets.some(existing => existing.id === asset.id))],
   };
   const assets = source.assets.filter(asset => !LEGACY_ISOMETRIC_STARTER_IDS.has(asset.id));
   const categories = source.categories.filter(category => !LEGACY_CITY_CATEGORIES.has(category.id) || assets.some(asset => asset.categoryId === category.id));
   return {
-    version: 7,
+    version: 13,
     categories: [...categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(category => !categories.some(existing => existing.id === category.id))],
     assets: [...assets, ...ISOMETRIC_STARTER_ASSETS.filter(asset => !assets.some(existing => existing.id === asset.id))],
   };
@@ -111,11 +162,15 @@ export function loadGlyphLibrary(): GlyphLibrary {
   try {
     const saved = localStorage.getItem(GLYPHBOX_STORAGE_KEY);
     if (!saved) return STARTER_LIBRARY;
-    const parsed = JSON.parse(saved) as { version?: number; categories?: GlyphCategory[]; assets?: GlyphAsset[] };
-    if (![1, 2, 3, 4, 5, 6, 7].includes(parsed.version ?? 0) || !Array.isArray(parsed.categories) || !Array.isArray(parsed.assets)) return STARTER_LIBRARY;
-    const library = upgradeGlyphLibrary({ version: parsed.version!, categories: parsed.categories, assets: parsed.assets });
+    const parsed = JSON.parse(saved) as { version?: number; categories?: GlyphCategory[]; assets?: (GlyphAsset & { bundledArtwork?: boolean })[] };
+    if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(parsed.version ?? 0) || !Array.isArray(parsed.categories) || !Array.isArray(parsed.assets)) return STARTER_LIBRARY;
+    const assets = parsed.assets.map(({ bundledArtwork, ...asset }) => {
+      const builtin = bundledArtwork ? ISOMETRIC_STARTER_ASSETS.find(item => item.id === asset.id) : undefined;
+      return builtin ? { ...asset, svg: builtin.svg, plotPaths: builtin.plotPaths } : asset;
+    });
+    const library = upgradeGlyphLibrary({ version: parsed.version!, categories: parsed.categories, assets });
     if (parsed.version !== library.version) {
-      try { localStorage.setItem(GLYPHBOX_STORAGE_KEY, JSON.stringify(library)); } catch { /* Keep the migrated in-memory library if storage is full. */ }
+      try { localStorage.setItem(GLYPHBOX_STORAGE_KEY, serializeGlyphLibrary(library)); } catch { /* Keep the migrated in-memory library if storage is full. */ }
     }
     return library;
   } catch {
@@ -166,7 +221,7 @@ export function GlyphboxDialog({ onClose, initialKind = 'map' }: { onClose: () =
 
   const commit = (next: GlyphLibrary) => {
     try {
-      localStorage.setItem(GLYPHBOX_STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(GLYPHBOX_STORAGE_KEY, serializeGlyphLibrary(next));
       setLibrary(next);
       setError('');
     } catch {
@@ -251,7 +306,7 @@ export function GlyphboxDialog({ onClose, initialKind = 'map' }: { onClose: () =
     categories: [...library.categories, ...ISOMETRIC_STARTER_CATEGORIES.filter(category => !library.categories.some(existing => existing.id === category.id))],
     assets: [...library.assets.map(asset => {
       const builtin = ISOMETRIC_STARTER_ASSETS.find(item => item.id === asset.id);
-      return builtin ? { ...asset, name: asset.name.includes('\uFFFD') ? builtin.name : asset.name, svg: builtin.svg, plotPaths: builtin.plotPaths, isometricRole: builtin.isometricRole, terrain: builtin.terrain, shoreMask: builtin.shoreMask, treeLined: builtin.treeLined } : asset;
+      return builtin ? { ...asset, name: asset.name.includes('\uFFFD') ? builtin.name : asset.name, svg: builtin.svg, plotPaths: builtin.plotPaths, isometricRole: builtin.isometricRole, terrain: builtin.terrain, shoreMask: builtin.shoreMask, treeLined: builtin.treeLined, collectionId: builtin.collectionId } : asset;
     }), ...ISOMETRIC_STARTER_ASSETS.filter(asset => !library.assets.some(existing => existing.id === asset.id))],
   });
 
@@ -288,6 +343,10 @@ export function GlyphboxDialog({ onClose, initialKind = 'map' }: { onClose: () =
           </div>
 
           {kind === 'isometric' && categoryId === 'iso-cityscape' && <p className="panel-copy">One illustrated city: homes, shops, offices and industry, with connected roads. Six pen colours; pale areas use the paper. Select Cityscape in a drawing to use the whole collection.</p>}
+          {kind === 'isometric' && categoryId === ANTIQUITY_CATEGORY && <p className="panel-copy">Rome & Greece: terracotta homes, merchants, temples, civic landmarks, gardens, paved roads, ancient harbours and sailing vessels. Six pen colours; pale stone uses the paper. Choose Use Antiquity collection in the cityscape generator to use the complete pack.</p>}
+          {kind === 'isometric' && categoryId === CYBERPUNK_GEL_CATEGORY && <p className="panel-copy">Dark paper edition: bright gel-pen outlines, window light bars and sparse grids. Roofs, walls and water use the untouched paper. Choose Use Dark retrowave/cyberpunk cityscape in the generator for navy paper and six bright pen colours; Black is also available under Paper colour.</p>}
+          {kind === 'isometric' && categoryId === CYBERPUNK_CATEGORY && <p className="panel-copy">Retrowave / Cyberpunk city: houses, apartment blocks, factories, shops, neon landmarks, cars, boats, palm boulevards and waterfronts. Four views per building and boat; generated cities mix building views automatically. Six pen colours. Choose Use Retrowave / Cyberpunk collection in the generator to use the complete pack.</p>}
+          {kind === 'isometric' && categoryId === MEDIEVAL_CATEGORY && <p className="panel-copy">Half-timbered homes, merchants, castles, churches, gardens, cobbled lanes and medieval harbours. Every building and vessel includes four views, with different façades visible in each direction. Choose Use Medieval collection in the generator to use the complete pack.</p>}
           {kind === 'isometric' && categoryId === GREENSPACE_CATEGORY && <p className="panel-copy">Leafy trees, stone planters, garden walks and pocket parks drawn to match the Cityscape buildings. Add one or two green spaces to each city block from the scene generator.</p>}
           {kind === 'isometric' && categoryId === TREELINED_CATEGORY && <p className="panel-copy">Five connected road shapes with paved verges and street trees. Enable Tree-lined avenues in the scene generator, or place these tiles by hand.</p>}
           {visibleAssets.length > 0 && <div className="glyphbox-selection"><span>{visibleAssets.length} glyphs</span><button type="button" className="button quiet" onClick={() => setSelectedIds(current => [...new Set([...current, ...visibleAssets.map(asset => asset.id)])])}>Select {categoryId === 'all' || query ? 'all shown' : 'category'}</button>{selectedIds.length > 0 && <button type="button" className="button quiet" onClick={() => setSelectedIds([])}>Clear selection</button>}</div>}
@@ -297,7 +356,7 @@ export function GlyphboxDialog({ onClose, initialKind = 'map' }: { onClose: () =
               const selected = selectedIds.includes(asset.id);
               const category = library.categories.find((item) => item.id === asset.categoryId);
               return <button type="button" className={`glyph-card${selected ? ' selected' : ''}`} key={asset.id} title={asset.name} onClick={() => toggleSelected(asset.id)} aria-pressed={selected}>
-                <span className="glyph-preview"><img src={svgUrl(asset.svg)} alt="" />{selected && <span className="glyph-check"><Check /></span>}</span>
+                <span className="glyph-preview" style={asset.collectionId === CYBERPUNK_GEL_CATEGORY ? { background: CYBERPUNK_GEL_PAPER } : undefined}><img src={svgUrl(asset.svg)} alt="" />{selected && <span className="glyph-check"><Check /></span>}</span>
                 <span className="glyph-meta"><strong>{asset.name}</strong><small>{category?.name ?? 'Uncategorised'}{asset.kind === 'isometric' ? ' · ' + (asset.categoryId === GREENSPACE_CATEGORY ? 'Lot feature' : ISOMETRIC_ROLES.find(role => role.value === (asset.isometricRole ?? 'building'))?.label ?? 'Building') : ''}</small></span>
               </button>;
             })}

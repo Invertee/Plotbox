@@ -1,4 +1,5 @@
 import { PNG } from 'pngjs';
+import type { TerrainData } from '@plotter/core';
 import { createHash } from 'node:crypto';
 import { getMapCache, setMapCache } from './database.js';
 
@@ -185,7 +186,7 @@ async function fetchTile(zoom: number, x: number, y: number): Promise<PNG> {
   return tile;
 }
 
-export async function importTerrainContours(bounds: Bounds, interval: number): Promise<TerrainLayer[]> {
+export async function importTerrainData(bounds: Bounds, interval: number, relief = false): Promise<{ layers: TerrainLayer[]; terrain?: TerrainData }> {
   const zoom = chooseZoom(bounds);
   const westPixel = longitudeToPixel(bounds.west, zoom);
   const eastPixel = longitudeToPixel(bounds.east, zoom);
@@ -222,6 +223,25 @@ export async function importTerrainContours(bounds: Bounds, interval: number): P
     }
   }
 
+  if (relief) {
+    // Bound saved-project size while retaining a regular geographic mesh.
+    const factor = Math.min(1, 240 / Math.max(width - 1, height - 1));
+    const gridWidth = Math.max(2, Math.round((width - 1) * factor) + 1);
+    const gridHeight = Math.max(2, Math.round((height - 1) * factor) + 1);
+    const elevations: number[] = [];
+    for (let y = 0; y < gridHeight; y++) for (let x = 0; x < gridWidth; x++) {
+      const longitude = bounds.west + x / (gridWidth - 1) * (bounds.east - bounds.west);
+      const latitude = bounds.north - y / (gridHeight - 1) * (bounds.north - bounds.south);
+      const px = Math.max(0, Math.min(width - 1, longitudeToPixel(longitude, zoom) - tileWest * TILE_SIZE - startX));
+      const py = Math.max(0, Math.min(height - 1, latitudeToPixel(latitude, zoom) - tileNorth * TILE_SIZE - startY));
+      const ix = Math.min(width - 2, Math.floor(px)), iy = Math.min(height - 2, Math.floor(py));
+      const fx = px - ix, fy = py - iy;
+      const top = values[iy * width + ix]! * (1 - fx) + values[iy * width + ix + 1]! * fx;
+      const bottom = values[(iy + 1) * width + ix]! * (1 - fx) + values[(iy + 1) * width + ix + 1]! * fx;
+      elevations.push(Math.round((top * (1 - fy) + bottom * fy) * 100) / 100);
+    }
+    return { layers: [], terrain: { width: gridWidth, height: gridHeight, elevations, bounds } };
+  }
   const contours = contourGrid(values, width, height, interval);
   const minor: ContourFeature[] = [];
   const index: ContourFeature[] = [];
@@ -235,8 +255,12 @@ export async function importTerrainContours(bounds: Bounds, interval: number): P
       points: path.points.map((point) => [pixelToLongitude(originX + point.x + 0.5, zoom), pixelToLatitude(originY + point.y + 0.5, zoom)]),
     }));
   }
-  return [
+  return { layers: [
     { name: `Contours · ${interval} m`, category: 'terrain-contours', features: minor },
     { name: `Index contours · ${interval * 5} m`, category: 'terrain-index-contours', features: index },
-  ].filter((layer) => layer.features.length);
+  ].filter((layer) => layer.features.length) };
+}
+
+export async function importTerrainContours(bounds: Bounds, interval: number): Promise<TerrainLayer[]> {
+  return (await importTerrainData(bounds, interval)).layers;
 }

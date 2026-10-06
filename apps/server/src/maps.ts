@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
 import { getMapCache, setMapCache } from './database.js';
-import { importTerrainContours } from './terrain.js';
+import { importTerrainData } from './terrain.js';
 
 const nominatimUrl = process.env.NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org';
 const overpassUrl = process.env.OVERPASS_URL ?? 'https://overpass-api.de/api/interpreter';
 const userAgent = process.env.PLOTBOX_USER_AGENT ?? 'Plotbox/0.2 (local pen-plotter application)';
+const OVERPASS_TILE_SIDE_KM = 12.5;
+const OVERPASS_CONCURRENCY = 4;
 let lastNominatimRequest = 0;
 
 export type MapDataSource = 'openstreetmap' | 'terrain' | 'both';
@@ -89,6 +91,25 @@ export function mapDimensionsKm(bounds: MapBounds) {
   return { widthKm, heightKm, areaKm2: widthKm * heightKm };
 }
 
+/** Split large imports into provider-friendly requests without changing their detail level. */
+export function splitMapBounds(bounds: MapBounds, maximumSideKm = OVERPASS_TILE_SIDE_KM): MapBounds[] {
+  const dimensions = mapDimensionsKm(bounds);
+  const columns = Math.max(1, Math.ceil(dimensions.widthKm / maximumSideKm));
+  const rows = Math.max(1, Math.ceil(dimensions.heightKm / maximumSideKm));
+  const result: MapBounds[] = [];
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      result.push({
+        north: bounds.north - (bounds.north - bounds.south) * row / rows,
+        south: bounds.north - (bounds.north - bounds.south) * (row + 1) / rows,
+        west: bounds.west + (bounds.east - bounds.west) * column / columns,
+        east: bounds.west + (bounds.east - bounds.west) * (column + 1) / columns,
+      });
+    }
+  }
+  return result;
+}
+
 export function osmDetailForBounds(bounds: MapBounds): OsmDetail {
   const { areaKm2 } = mapDimensionsKm(bounds);
   if (areaKm2 <= 25) return 'detailed';
@@ -118,26 +139,63 @@ export function buildOverpassQuery(bbox: string, detail: OsmDetail) {
   );out tags geom;`;
 }
 
-export async function importMap(input: MapBounds & { name: string; dataSource: MapDataSource; contourInterval?: number }) {
+async function fetchOverpass(query: string): Promise<Response> {
+  let response: Response | undefined;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    response = await fetch(overpassUrl, {
+      method: 'POST',
+      headers: { 'User-Agent': userAgent, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: new URLSearchParams({ data: query }),
+      signal: AbortSignal.timeout(95_000),
+    });
+    if (response.ok || ![429, 502, 503, 504].includes(response.status) || attempt === 2) return response;
+    await delay(500 * 2 ** attempt);
+  }
+  return response!;
+}
+
+async function mapWithConcurrency<T, R>(items: T[], concurrency: number, operation: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      results[index] = await operation(items[index]!);
+    }
+  }));
+  return results;
+}
+
+async function importOsm(bounds: MapBounds, detail: OsmDetail) {
+  const tiles = splitMapBounds(bounds);
+  const tileElements = await mapWithConcurrency(tiles, OVERPASS_CONCURRENCY, async (tile) => {
+    const bbox = `${tile.south},${tile.west},${tile.north},${tile.east}`;
+    const query = buildOverpassQuery(bbox, detail);
+    const text = await cachedFetch(`overpass:${query}`, () => fetchOverpass(query));
+    return (JSON.parse(text) as { elements?: OSMElement[] }).elements ?? [];
+  });
+  const unique = new Map<string, OSMElement>();
+  for (const element of tileElements.flat()) unique.set(`${element.type}:${element.id}`, element);
+  return classifyOsmElements([...unique.values()]);
+}
+
+export async function importMap(input: MapBounds & { name: string; dataSource: MapDataSource; contourInterval?: number; relief?: boolean }) {
   const { south, west, north, east } = input;
   const includeOsm = input.dataSource !== 'terrain';
   const includeTerrain = input.dataSource !== 'openstreetmap';
-  const bbox = `${south},${west},${north},${east}`;
   const detail = osmDetailForBounds(input);
-  const query = buildOverpassQuery(bbox, detail);
   const osmPromise = includeOsm
-    ? cachedFetch(`overpass:${query}`, () => fetch(overpassUrl, { method: 'POST', headers: { 'User-Agent': userAgent, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ data: query }), signal: AbortSignal.timeout(95_000) }))
-      .then((text) => classifyOsmElements((JSON.parse(text) as { elements?: OSMElement[] }).elements ?? []))
+    ? importOsm({ north, south, east, west }, detail)
     : Promise.resolve([]);
   const terrainPromise = includeTerrain
-    ? importTerrainContours({ north, south, east, west }, input.contourInterval ?? 10)
-    : Promise.resolve([]);
-  const [osmLayers, terrainLayers] = await Promise.all([osmPromise, terrainPromise]);
+    ? importTerrainData({ north, south, east, west }, input.contourInterval ?? 10, input.relief)
+    : Promise.resolve({ layers: [], terrain: undefined });
+  const [osmLayers, terrainResult] = await Promise.all([osmPromise, terrainPromise]);
   const terrainAttribution = 'Terrain: Mapzen Terrain Tiles via AWS Open Data; source data includes ArcticDEM, Geoscience Australia, Open Data Austria, Canada Open Government data, Copernicus EU-DEM, NOAA ETOPO1, INEGI, LINZ, Kartverket, UK Environment Agency and USGS.';
   const attribution = input.dataSource === 'terrain'
     ? terrainAttribution
     : input.dataSource === 'openstreetmap'
       ? '© OpenStreetMap contributors · ODbL'
       : `Map data © OpenStreetMap contributors · ODbL. ${terrainAttribution}`;
-  return { name: input.name, attribution, bounds: { north, south, east, west }, layers: [...terrainLayers, ...osmLayers] };
+  return { name: input.name, attribution, bounds: { north, south, east, west }, terrain: terrainResult.terrain ? { ...terrainResult.terrain, water: osmLayers.filter(layer => layer.category === 'water' || layer.category === 'waterways').flatMap(layer => layer.features) } : undefined, layers: [...terrainResult.layers, ...osmLayers] };
 }

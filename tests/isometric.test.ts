@@ -147,6 +147,40 @@ describe('isometric cities', () => {
     expect(roads.every(p => p.layerId === 'iso-roads')).toBe(true);
   });
 
+  it('paves vacant lots and building setbacks while keeping the roadway clear', () => {
+    const road: IsometricGlyph = { id: 'street', name: 'Street', role: 'road-cross', paths: [{
+      id: 'surface', closed: true, fill: '#9697bd', stroke: 'none',
+      points: [{ x: .5, y: 0 }, { x: 1, y: .5 }, { x: .5, y: 1 }, { x: 0, y: .5 }],
+    }] };
+    const house: IsometricGlyph = { ...building, paths: [{ ...building.paths[0]!, fill: '#fff5df', paper: true }] };
+    const tiles = [
+      { id: 'street', glyphId: road.id, u: 0, v: 0, rotation: 0 },
+      { id: 'house', glyphId: house.id, u: 1, v: 0, rotation: 0 },
+    ];
+    const paths = generateIsometric(canvas, { cells: 4, tiles, fillMode: 'outline' }, [house, road]).paths;
+    expect(paths.some(p => p.id.startsWith('pavement-1:1-'))).toBe(true);
+    expect(paths.some(p => p.id.startsWith('pavement-1:0-'))).toBe(true);
+    expect(paths.some(p => p.id.startsWith('pavement-0:0-'))).toBe(false);
+    expect(paths.filter(p => p.id.startsWith('pavement-')).every(p => p.layerId === 'iso-roads')).toBe(true);
+  });
+
+  it('replaces pavement joints with plotted grass on exposed land', () => {
+    const road: IsometricGlyph = { id: 'street', name: 'Street', role: 'road-cross', paths: [{
+      id: 'surface', closed: true, fill: '#9697bd', stroke: 'none',
+      points: [{ x: .5, y: 0 }, { x: 1, y: .5 }, { x: .5, y: 1 }, { x: 0, y: .5 }],
+    }] };
+    const tiles = [{ id: 'street', glyphId: road.id, u: 0, v: 0, rotation: 0 }];
+    const paths = generateIsometric(canvas, { cells: 4, tiles, groundSurface: 'grass', gridPassId: 'green' }, [road], ['ink', 'green']).paths;
+    expect(paths.some(p => p.id.startsWith('pavement-'))).toBe(false);
+    expect(paths.some(p => p.id.startsWith('grass-1:1-'))).toBe(true);
+    expect(paths.some(p => p.id.startsWith('grass-shade-1:1-'))).toBe(true);
+    expect(paths.some(p => p.id.startsWith('grass-0:0-'))).toBe(false);
+    expect(paths.filter(p => p.id.startsWith('grass-')).every(p => p.layerId === 'iso-terrain' && p.passId === 'green')).toBe(true);
+    const coloured = generateIsometric(canvas, { cells: 4, tiles, groundSurface: 'grass', colourPasses: { '#7d9e86': 'garden' } }, [road], ['ink', 'garden']).paths;
+    expect(coloured.filter(p => p.id.startsWith('grass-')).every(p => p.passId === 'garden')).toBe(true);
+    expect(generateIsometric(canvas, { cells: 4, tiles }, [road]).paths.some(p => p.id.startsWith('pavement-'))).toBe(true);
+  });
+
   it('bounds invalid settings and rejects impossible page geometry', () => {
     expect(generateIsometric(canvas, { cells: NaN, angle: Infinity }, [building]).paths.length).toBeGreaterThan(0);
     expect(() => generateIsometric({ ...canvas, marginMm: 200 }, {}, [])).toThrow('no drawing area');

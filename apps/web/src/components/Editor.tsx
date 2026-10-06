@@ -1,15 +1,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Cable, ChevronDown, ChevronUp, Download, FileImage, LocateFixed, Maximize2, Play, Plus, RefreshCw, Save, Terminal, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
-import { BLADE_ANGLE_STEPS, isometricLayers, DEFAULT_PREPROCESS, DEFAULT_RASTER_PLACEMENT, DEFAULT_TURTLE_PLACEMENT, PAPER_COLOURS, type PaperColour, type PenProfile, type PlotGeometry, type PlotPass, type ProjectState } from '@plotter/core';
+import { ArrowLeft, Cable, ChevronDown, ChevronUp, Download, FileImage, ImageDown, LocateFixed, Maximize2, Play, Plus, RefreshCw, Save, Terminal, Trash2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { BLADE_ANGLE_STEPS, isometricLayers, DEFAULT_BORDER, DEFAULT_PREPROCESS, DEFAULT_RASTER_PLACEMENT, DEFAULT_TURTLE_PLACEMENT, PAPER_COLOURS, type BorderPattern, type PaperColour, type PenProfile, type PlotGeometry, type PlotPass, type PlotPath, type ProjectState } from '@plotter/core';
 import { ALGORITHMS, algorithmDefaults, generateAlgorithm, generateMapAnnotations, generateMapTitle, generateVectorLayers, maskPathsBehindMapAnnotations, maskPathsBehindMapTitle, ensureColourPasses, ensureScribbleColourPasses } from '@plotter/algorithms';
 import type { GCodeDocument } from '@plotter/gcode';
-import { pathLength } from '@plotter/geometry';
+import { applyPlotBorder, BORDER_LAYER_ID, pathLength } from '@plotter/geometry';
 import { api } from '../api';
 import { glyphSvgToPaths } from '../vectorSources';
 import { useEditorStore } from '../store';
 import { MapAnnotationPanel, MapSourcePanel, MapTitlePanel, SvgSourcePanel, VectorLayerEditor } from './VectorModePanels';
 import { loadGlyphLibrary } from './Glyphbox';
 import { FluidNCControlDialog } from './FluidNC';
+import { ReliefPanel } from './ReliefPanel';
 import { IsometricPanel } from './IsometricPanel';
 import { IsometricCanvasEditor } from './IsometricCanvasEditor';
 import { ColourSeparationPanel } from './ColourSeparationPanel';
@@ -23,6 +24,115 @@ const PREVIEW_QUALITY: Record<PreviewQuality, { label: string; scale: number; ma
   high: { label: 'High', scale: 2, maxPixels: 24_000_000, maxDimension: 8_192 },
   ultra: { label: 'Ultra', scale: 4, maxPixels: 40_000_000, maxDimension: 12_000 },
 };
+
+const PNG_EXPORT_DPI = 300;
+const PNG_EXPORT_MAX_PIXELS = 64_000_000;
+const PNG_EXPORT_MAX_DIMENSION = 16_384;
+
+function pngDimensions(widthMm: number, heightMm: number) {
+  return {
+    width: Math.max(1, Math.round(widthMm / 25.4 * PNG_EXPORT_DPI)),
+    height: Math.max(1, Math.round(heightMm / 25.4 * PNG_EXPORT_DPI)),
+  };
+}
+
+function isPlotPathVisible(plotPath: PlotPath, state: ProjectState) {
+  if (plotPath.layerId === BORDER_LAYER_ID) return true;
+  if (plotPath.layerId.startsWith('annotation:')) {
+    const annotationId = plotPath.layerId.slice('annotation:'.length);
+    return Boolean(state.mapAnnotations?.find((annotation) => annotation.id === annotationId)?.visible);
+  }
+  return plotPath.layerId === 'map-title' || Boolean(state.layers.find((layer) => layer.id === plotPath.layerId)?.visible);
+}
+
+function drawPlotPath(context: CanvasRenderingContext2D, plotPath: PlotPath, paperColour: PaperColour) {
+  if (plotPath.channel === 'annotation-background') {
+    const fillPath = new Path2D();
+    const first = plotPath.points[0]!;
+    fillPath.moveTo(first.x, first.y);
+    for (let index = 1; index < plotPath.points.length; index++) {
+      const point = plotPath.points[index]!;
+      fillPath.lineTo(point.x, point.y);
+    }
+    fillPath.closePath();
+    context.save();
+    context.globalAlpha = 1;
+    context.fillStyle = PAPER_COLOURS[paperColour];
+    context.fill(fillPath);
+    context.restore();
+  }
+
+  // Bounded chunks keep very dense raster-derived paths from creating one
+  // enormous browser path while retaining continuous, round-ended strokes.
+  for (let start = 0; start < plotPath.points.length - 1; start += 4096) {
+    context.beginPath();
+    const first = plotPath.points[start]!;
+    context.moveTo(first.x, first.y);
+    const last = Math.min(plotPath.points.length - 1, start + 4096);
+    for (let index = start + 1; index <= last; index++) {
+      const point = plotPath.points[index]!;
+      context.lineTo(point.x, point.y);
+    }
+    if (plotPath.closed && last === plotPath.points.length - 1) context.lineTo(plotPath.points[0]!.x, plotPath.points[0]!.y);
+    context.stroke();
+  }
+}
+
+function renderPngCanvas(state: ProjectState) {
+  const dimensions = pngDimensions(state.canvas.widthMm, state.canvas.heightMm);
+  if (dimensions.width > PNG_EXPORT_MAX_DIMENSION || dimensions.height > PNG_EXPORT_MAX_DIMENSION || dimensions.width * dimensions.height > PNG_EXPORT_MAX_PIXELS) {
+    throw new Error(`This paper would create a ${dimensions.width.toLocaleString()} × ${dimensions.height.toLocaleString()} PNG. Reduce the paper size before exporting at ${PNG_EXPORT_DPI} DPI.`);
+  }
+
+  const output = document.createElement('canvas');
+  output.width = dimensions.width;
+  output.height = dimensions.height;
+  const context = output.getContext('2d');
+  if (!context) throw new Error('PNG rendering is unavailable in this browser.');
+
+  const paperColour = state.canvas.paperColour ?? 'white';
+  context.fillStyle = PAPER_COLOURS[paperColour];
+  context.fillRect(0, 0, output.width, output.height);
+  context.setTransform(output.width / state.canvas.widthMm, 0, 0, output.height / state.canvas.heightMm, 0, 0);
+  context.beginPath();
+  context.rect(0, 0, state.canvas.widthMm, state.canvas.heightMm);
+  context.clip();
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  const outputGeometry = applyPlotBorder(state.geometry, state.canvas, state.border);
+  for (const plotPath of outputGeometry.paths) {
+    if (!isPlotPathVisible(plotPath, state) || plotPath.points.length < 2) continue;
+    const plotPass = state.passes.find((pass) => pass.id === plotPath.passId);
+    if (!plotPass?.enabled) continue;
+    const pen = state.pens.find((item) => item.id === plotPass.penId);
+    if (!pen) continue;
+    context.globalAlpha = 1;
+    context.strokeStyle = pen.color;
+    context.lineWidth = Math.max(0.01, pen.widthMm);
+    drawPlotPath(context, plotPath, paperColour);
+  }
+  return output;
+}
+
+function safePngName(projectName: string) {
+  const stem = projectName.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^[.-]+|[.-]+$/g, '');
+  return `${stem || 'plot'}-${PNG_EXPORT_DPI}dpi.png`;
+}
+
+function exportPng(projectName: string, state: ProjectState) {
+  const output = renderPngCanvas(state);
+  return new Promise<void>((resolve, reject) => output.toBlob((blob) => {
+    if (!blob) { reject(new Error('The browser could not encode the PNG.')); return; }
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = safePngName(projectName);
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    resolve();
+  }, 'image/png'));
+}
 
 async function imageDataFromUrl(url: string, maximum = 1000): Promise<ImageData> {
   const image = new Image();
@@ -44,6 +154,7 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
   const [render, setRender] = useState<RenderStatus>({ active: false, value: 0, message: '' });
   const [gcodeOpen, setGcodeOpen] = useState(false);
+  const [pngExporting, setPngExporting] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
   const [paintCapture, setPaintCapture] = useState<{ penId: string; passName: string }>();
   const [selectedRegion, setSelectedRegion] = useState('');
@@ -69,13 +180,14 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
       loaded.state.rasterPlacement = { ...DEFAULT_RASTER_PLACEMENT, ...loaded.state.rasterPlacement };
       loaded.state.turtlePlacement = { ...DEFAULT_TURTLE_PLACEMENT, ...loaded.state.turtlePlacement };
       loaded.state.canvas.paperColour = loaded.state.canvas.paperColour ?? 'white';
+      loaded.state.border = { ...DEFAULT_BORDER, passId: loaded.state.passes[0]?.id ?? DEFAULT_BORDER.passId, ...loaded.state.border };
       loaded.state.pens = loaded.state.pens.map((pen) => ({ ...pen, mediaType: pen.mediaType ?? 'pen', zUpFeed: pen.zUpFeed ?? pen.zFeed ?? 600, zDownFeed: pen.zDownFeed ?? pen.zFeed ?? 600 }));
       const savedMapSettings = loaded.state.mapSettings as Partial<ProjectState['mapSettings']> | undefined;
       const dataSource = savedMapSettings?.dataSource ?? (savedMapSettings?.includeTopography ? 'both' : 'openstreetmap');
       const legacyMapCentre = loaded.state.sourceName && savedMapSettings?.latitude !== undefined && savedMapSettings.longitude !== undefined
         ? { north: savedMapSettings.latitude, south: savedMapSettings.latitude, east: savedMapSettings.longitude, west: savedMapSettings.longitude }
         : undefined;
-      loaded.state.mapSettings = { query: savedMapSettings?.query ?? '', radiusKm: savedMapSettings?.radiusKm ?? 1, dataSource, includeTopography: dataSource !== 'openstreetmap', contourInterval: savedMapSettings?.contourInterval ?? 10, latitude: savedMapSettings?.latitude, longitude: savedMapSettings?.longitude, zoom: savedMapSettings?.zoom ?? 14, bounds: savedMapSettings?.bounds ?? legacyMapCentre };
+      loaded.state.mapSettings = { shape: savedMapSettings?.shape, importedShape: savedMapSettings?.importedShape, relief: savedMapSettings?.relief, terrain: savedMapSettings?.terrain, query: savedMapSettings?.query ?? '', radiusKm: savedMapSettings?.radiusKm ?? 1, dataSource, includeTopography: dataSource !== 'openstreetmap', contourInterval: savedMapSettings?.contourInterval ?? 10, latitude: savedMapSettings?.latitude, longitude: savedMapSettings?.longitude, zoom: savedMapSettings?.zoom ?? 14, bounds: savedMapSettings?.bounds ?? legacyMapCentre };
       loaded.state.mapTitle = { enabled: false, text: '', position: 'top', font: 'single-line', titleSizeMm: 8, showCoordinates: false, subtitleSizeMm: 3, passId: loaded.state.passes[0]?.id ?? '', ...loaded.state.mapTitle };
       const mapGlyphs = loadGlyphLibrary().assets.filter((asset) => asset.kind === 'map');
       const defaultGlyph = mapGlyphs.find((asset) => asset.id === 'starter-map-pin') ?? mapGlyphs[0];
@@ -119,13 +231,14 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   const layersKey = JSON.stringify(project?.state.layers ?? []);
   const isometricKey = JSON.stringify({ settings: project?.state.isometric, glyphs: project?.state.isometricGlyphs });
   const annotationsKey = JSON.stringify(project?.state.mapAnnotations ?? []);
-  const mapTitleKey = JSON.stringify({ title: project?.state.mapTitle, bounds: project?.state.mapSettings.bounds });
+  const mapTitleKey = JSON.stringify({ title: project?.state.mapTitle, bounds: project?.state.mapSettings.bounds, shape: project?.state.mapSettings.importedShape, relief: project?.state.mapSettings.relief, terrain: project?.state.mapSettings.terrain });
   const colourKey = JSON.stringify(project?.state.colourSeparation ?? {});
   const colourPensKey = algorithmId === 'raster.colour-separation' ? JSON.stringify({ passes: project?.state.passes, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
-  const scribblePenKey = algorithmId === 'raster.continuous-scribble' || algorithmId === 'raster.paint-scribble' ? JSON.stringify({ pass: project?.state.passes[0]?.penId, pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
+  const scribblePenKey = algorithmId === 'raster.continuous-scribble' || algorithmId === 'raster.paint-scribble' || algorithmId === 'raster.straight-lines' ? JSON.stringify({ passes: project?.state.passes.map(p => ({ id: p.id, penId: p.penId })), pens: project?.state.pens.map(p => ({ id: p.id, widthMm: p.widthMm })) }) : '';
   const projectMode = project?.mode;
   const renderSignature = useMemo(() => JSON.stringify({ projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, annotationsKey, mapTitleKey, isometricKey, projectMode, redrawNonce, colourKey, colourPensKey, scribblePenKey }), [projectId, algorithmId, settingsKey, preprocessKey, placementKey, turtlePlacementKey, sourceImage, canvasKey, passIds, layersKey, annotationsKey, mapTitleKey, isometricKey, projectMode, redrawNonce, colourKey, colourPensKey, scribblePenKey]);
-  const drawingLength = useMemo(() => project?.state.geometry.paths.reduce((total, item) => total + pathLength(item), 0) ?? 0, [project?.state.geometry]);
+  const outputGeometry = useMemo(() => project ? applyPlotBorder(project.state.geometry, project.state.canvas, project.state.border) : undefined, [project?.state.geometry, project?.state.canvas, project?.state.border]);
+  const drawingLength = useMemo(() => outputGeometry?.paths.reduce((total, item) => total + pathLength(item), 0) ?? 0, [outputGeometry]);
   const latestRenderSignature = useRef(renderSignature);
 
   // Update before paint so a worker that finishes between a state commit and effect
@@ -155,7 +268,8 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         return;
       }
       if (algorithmId.startsWith('raster.') && !state.sourceImage) { setRender({ active: false, value: 0, message: 'Import an image to render.' }); return; }
-      if (project.mode === 'isometric' || algorithmId === 'generative.turtle' || algorithmId.startsWith('raster.')) {
+      if (project.mode === 'topography' && !state.mapSettings.terrain) { setRender({ active: false, value: 0, message: 'Select a region to download terrain.' }); return; }
+      if (project.mode === 'topography' || project.mode === 'isometric' || ALGORITHMS.find(item => item.id === algorithmId)?.worker || algorithmId.startsWith('raster.')) {
         const worker = new Worker(new URL('../workers/render.worker.ts', import.meta.url), { type: 'module' });
         workerRef.current = worker;
         setRender({ active: true, value: 0.01, message: 'Preparing render' });
@@ -163,12 +277,12 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         worker.onmessage = (event: MessageEvent<{ type: string; jobId: number; value?: number; message?: string; result?: PlotGeometry }>) => {
           if (event.data.jobId !== renderJob.current || !isCurrentRender()) return;
           if (event.data.type === 'progress') setRender({ active: true, value: event.data.value ?? 0, message: event.data.message ?? 'Rendering' });
-          if (event.data.type === 'complete' && event.data.result) { const result = event.data.result; if (algorithmId === 'raster.continuous-scribble') { updateState(current => ({ ...current, geometry: result, ...ensureScribbleColourPasses(result.colourSeparation?.palette ?? [], current.passes, current.pens) })); } else if (result.colourSeparation) { updateState(current => ({ ...current, geometry: result, ...ensureColourPasses(result.colourSeparation!.palette, current.passes, current.pens) })); } else setGeometry(result); setRender({ active: false, value: 1, message: `${event.data.result.paths.length.toLocaleString()} paths` }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
+          if (event.data.type === 'complete' && event.data.result) { const result = event.data.result; if (project.mode === 'topography') { result.paths = [...maskPathsBehindMapTitle(result.paths, state.mapTitle, state.mapSettings.bounds, state.canvas), ...generateMapTitle(state.mapTitle, state.mapSettings.bounds, state.canvas).paths]; } if (algorithmId === 'raster.continuous-scribble') { updateState(current => ({ ...current, geometry: result, ...ensureScribbleColourPasses(result.colourSeparation?.palette ?? [], current.passes, current.pens) })); } else if (result.colourSeparation) { updateState(current => ({ ...current, geometry: result, ...ensureColourPasses(result.colourSeparation!.palette, current.passes, current.pens) })); } else setGeometry(result); setRender({ active: false, value: 1, message: `${result.paths.length.toLocaleString()} paths` }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
           if (event.data.type === 'error') { setRender({ active: false, value: 0, message: '', error: event.data.message }); worker.terminate(); if (workerRef.current === worker) workerRef.current = null; }
         };
         const imageData = state.sourceImage ? await imageDataFromUrl(state.sourceImage, algorithmId === 'raster.continuous-scribble' || algorithmId === 'raster.paint-scribble' ? 2400 : 1000) : undefined;
         if (!isCurrentRender()) { worker.terminate(); return; }
-        worker.postMessage({ jobId, algorithmId, isometric: state.isometric, isometricGlyphs: state.isometricGlyphs, canvas: state.canvas, settings: state.algorithmSettings, preprocess: state.preprocess, rasterPlacement: state.rasterPlacement, turtlePlacement: state.turtlePlacement, passIds: state.passes.map((pass) => pass.id), colourSeparation: state.colourSeparation, passes: state.passes, pens: state.pens, imageData });
+        worker.postMessage({ terrain: state.mapSettings.terrain, relief: { ...state.mapSettings.relief, shape: state.mapSettings.importedShape }, layers: state.layers, jobId, algorithmId, mode: project.mode, isometric: state.isometric, isometricGlyphs: state.isometricGlyphs, canvas: state.canvas, settings: state.algorithmSettings, preprocess: state.preprocess, rasterPlacement: state.rasterPlacement, turtlePlacement: state.turtlePlacement, passIds: state.passes.map((pass) => pass.id), colourSeparation: state.colourSeparation, passes: state.passes, pens: state.pens, imageData });
         return;
       }
       setRender({ active: true, value: 0.4, message: 'Generating geometry' });
@@ -182,7 +296,11 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
   if (loading) return <div className="loading-screen"><RefreshCw className="spin" /> Loading plot…</div>;
   if (!project) return <div className="loading-screen"><p>{render.error ?? 'Project not found.'}</p><button className="button" onClick={onBack}>Back to projects</button></div>;
   const state = project.state;
-  const algorithms = ALGORITHMS.filter((algorithm) => project.mode === 'raster' ? algorithm.group === 'raster' : algorithm.group !== 'raster');
+  const definitionPasses = state.passes.filter(pass => pass.id !== state.passes[0]?.id && !pass.id.startsWith('scribble-colour-pass-'));
+  const definitionPassId = definitionPasses.find(pass => pass.id === state.algorithmSettings.definitionPassId)?.id ?? definitionPasses[0]?.id ?? '';
+  const algorithms = ALGORITHMS.filter((algorithm) => project.mode === 'engraving'
+    ? ['raster.tonal-area-fill', 'raster.colour-tonal-area-fill', 'raster.colour-separation'].includes(algorithm.id)
+    : project.mode === 'raster' ? algorithm.group === 'raster' : algorithm.group !== 'raster');
   const definition = ALGORITHMS.find((item) => item.id === state.algorithmId);
   const updateAlgorithm = (nextId: string) => updateState({ algorithmId: nextId, algorithmSettings: algorithmDefaults(nextId), layers: state.layers.map((layer) => ({ ...layer, algorithmId: nextId })), ...(nextId === 'raster.continuous-scribble' ? {} : ensureScribbleColourPasses([], state.passes, state.pens)) });
   const resetColours = () => ({ colourSeparation: { colours: {}, regions: {} }, passes: state.passes.filter(p => !p.id.startsWith('colour-pass-')), pens: state.pens.filter(p => !p.id.startsWith('colour-pen-')) });
@@ -198,17 +316,29 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
     reader.onload = () => updateState({ sourceImage: String(reader.result), ...resetColours() });
     reader.readAsDataURL(file);
   };
+  const downloadPng = async () => {
+    setPngExporting(true);
+    try {
+      await exportPng(project.name, state);
+    } catch (error) {
+      setRender({ active: false, value: 0, message: '', error: error instanceof Error ? error.message : 'PNG export failed.' });
+    } finally {
+      setPngExporting(false);
+    }
+  };
+  const pngSize = pngDimensions(state.canvas.widthMm, state.canvas.heightMm);
   return <div className="editor-shell">
     <header className="editor-header">
       <button className="icon-button" onClick={onBack} title="Back to projects"><ArrowLeft /></button>
       <div className="editor-title"><input value={project.name} onChange={(event) => updateName(event.target.value)} /><span>{project.mode} · {state.canvas.widthMm} × {state.canvas.heightMm} mm</span></div>
       <div className={`save-state ${saveState}`}><Save size={14} /> {saveState === 'saved' ? 'Saved locally' : saveState === 'saving' ? 'Saving…' : 'Save failed'}</div>
       <button className="button quiet" onClick={() => { setPaintCapture(undefined); setControlOpen(true); }}><Cable size={16} /> Control</button>
+      <button className="button quiet" disabled={pngExporting || render.active} title={`Export ${pngSize.width.toLocaleString()} × ${pngSize.height.toLocaleString()} pixels at ${PNG_EXPORT_DPI} DPI`} onClick={() => void downloadPng()}><ImageDown size={16} /> {pngExporting ? 'Exporting…' : 'Export PNG'}</button>
       <button className="button secondary" onClick={() => setGcodeOpen(true)}><Download size={16} /> Export G-code</button>
     </header>
     <aside className="left-panel scroll-panel">
       <Panel title="Source" open>
-        {project.mode === 'raster' && <div className="stack">
+        {(project.mode === 'raster' || project.mode === 'engraving') && <div className="stack">
           <label className="file-drop"><FileImage /><span><strong>{state.sourceImage ? 'Replace image' : 'Import raster image'}</strong><small>PNG, JPEG or WebP</small></span><input type="file" accept="image/*" onChange={(event) => importImage(event.target.files?.[0])} /></label>
           {state.sourceImage && <><img className="source-thumb" style={state.algorithmId === 'raster.colour-separation' || state.algorithmId === 'raster.colour-tonal-area-fill' ? { filter: 'none' } : undefined} src={state.sourceImage} alt="Imported source" /><div className="source-placement">
             <label>Fit inside safe area<select value={state.rasterPlacement.fit} onChange={(event) => updateState({ rasterPlacement: { ...state.rasterPlacement, fit: event.target.value as ProjectState['rasterPlacement']['fit'] } })}><option value="contain">Contain — show all</option><option value="cover">Cover — crop to fill</option><option value="stretch">Stretch — fill exactly</option></select></label>
@@ -221,11 +351,12 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         {project.mode === 'generative' && <p className="panel-copy">Seeded generators create reproducible vector paths directly in paper coordinates.</p>}
         {(project.mode === 'svg' || project.mode === 'linocut') && <SvgSourcePanel state={state} updateState={updateState} />}
         {project.mode === 'linocut' && <div className="notice">Use open SVG strokes where possible. The exporter lifts a straight blade, groups each cut by its nearest direction, parks, and pauses for manual blade rotation.</div>}
-        {project.mode === 'map' && <MapSourcePanel state={state} updateState={updateState} />}
+        {(project.mode === 'map' || project.mode === 'topography') && <MapSourcePanel state={state} updateState={updateState} relief={project.mode === 'topography'} />}
       </Panel>
-      {project.mode === 'map' && <Panel title="Map title"><MapTitlePanel state={state} updateState={updateState} /></Panel>}
+      {project.mode === 'topography' && <Panel title="Terrain & colour passes" open><ReliefPanel state={state} updateState={updateState} /></Panel>}
+      {(project.mode === 'map' || project.mode === 'topography') && <Panel title="Map title"><MapTitlePanel state={state} updateState={updateState} /></Panel>}
       {project.mode === 'map' && <Panel title="Annotations" open><MapAnnotationPanel state={state} updateState={updateState} /></Panel>}
-      {project.mode === 'raster' && state.algorithmId !== 'raster.colour-separation' && <Panel title="Image preprocessing">
+      {(project.mode === 'raster' || project.mode === 'engraving') && state.algorithmId !== 'raster.colour-separation' && <Panel title="Image preprocessing">
         <RangeField label="Brightness" value={state.preprocess.brightness} min={-100} max={100} onChange={(value) => updateState({ preprocess: { ...state.preprocess, brightness: value } })} />
         <RangeField label="Contrast" value={state.preprocess.contrast} min={-100} max={100} onChange={(value) => updateState({ preprocess: { ...state.preprocess, contrast: value } })} />
         <RangeField label="Gamma" value={state.preprocess.gamma} min={0.2} max={3} step={0.1} onChange={(value) => updateState({ preprocess: { ...state.preprocess, gamma: value } })} />
@@ -234,40 +365,49 @@ export function Editor({ projectId, onBack }: { projectId: string; onBack: () =>
         <label className="check-field"><input type="checkbox" checked={state.preprocess.invert} onChange={(event) => updateState({ preprocess: { ...state.preprocess, invert: event.target.checked } })} /> Invert tones</label>
         <button className="button quiet full" onClick={() => updateState({ preprocess: { ...DEFAULT_PREPROCESS } })}><RefreshCw size={15} /> Reset preprocessing</button>
       </Panel>}
-      {(project.mode === 'raster' || project.mode === 'generative') && <Panel title={project.mode === 'raster' ? 'Vectorisation' : 'Generator'} open>
+      {(project.mode === 'raster' || project.mode === 'engraving' || project.mode === 'generative') && <Panel title={project.mode === 'engraving' ? 'Engraving pattern' : project.mode === 'raster' ? 'Vectorisation' : 'Generator'} open>
         <label>Algorithm<select value={state.algorithmId} onChange={(event) => updateAlgorithm(event.target.value)}>{algorithms.map((algorithm) => <option value={algorithm.id} key={algorithm.id}>{algorithm.name}</option>)}</select></label>
+        {state.algorithmId === 'generative.isometric-maze' && <><p className="panel-copy">Connected terraces, stairways and tower rooftops form a seeded city maze. Gaps separate unconnected terraces; monuments mark dead ends. Start at S and reach E. Zero extra connections gives a single solution; increase it to add alternate routes.</p><p className="panel-copy">Rotation and viewing elevation preserve the map. Use 90° elevation for a plan view. The first pen draws architecture, the second draws landmarks, and the third draws the optional dashed solution (falling back to the available pens). Foreground buildings hide paths behind them in both preview and export.</p><button className="button quiet full" onClick={() => changeAlgorithmSettings({ ...state.algorithmSettings, seed: Math.floor(Math.random() * 999999) + 1 })}><RefreshCw size={15} /> New maze seed</button><div className="field-row compact"><button className="button quiet" onClick={() => changeAlgorithmSettings({ ...state.algorithmSettings, rotation: 45, elevation: 35 })}>Isometric view</button><button className="button quiet" onClick={() => changeAlgorithmSettings({ ...state.algorithmSettings, rotation: 0, elevation: 90 })}>Plan view</button></div></>}
         {state.algorithmId === 'raster.continuous-scribble' && <p className="panel-copy">One flowing line forms irregular, overlapping loops across the image, including highlights. Optional under-colour passes use solid colour-separated fills and are plotted before the main scribble; set their thicker pen widths and calibration under Pens &amp; passes. Lower Fine detail size preserves smaller features. Skip white / pale areas lifts the scribble pen across gaps.</p>}
+        {state.algorithmId === 'raster.straight-lines' && <p className="panel-copy">Short straight strokes build tone in layers. Dark areas receive more lines, and strokes follow nearby edges to keep features defined. The optional definition pass adds lines in shadows and detailed areas; give it a different pen colour under Pens &amp; passes.</p>}
         {state.algorithmId === 'raster.tonal-area-fill' && <p className="panel-copy">Builds connected darkness masks, closes tiny breaks and clips dense fill strokes inside each tonal area. Darker areas receive additional fill angles; optional detail contours restore narrow edges that fall between the fill lines. For bold black artwork, use closely spaced fills and three or four tone levels.</p>}
-        {state.algorithmId === 'raster.colour-tonal-area-fill' && <p className="panel-copy">Separates the source into a plotter palette, then builds independent connected tonal fills inside every colour. Each palette colour creates an automatic pen pass below; darker tones receive additional fill angles without crossing into a neighbouring colour.</p>}
+        {state.algorithmId === 'raster.colour-tonal-area-fill' && <p className="panel-copy">Separates the source into a palette, then builds independent connected tonal fills inside every colour. Each palette colour creates an automatic tool pass below; darker tones receive additional fill angles without crossing into a neighbouring colour.</p>}
+        {project.mode === 'engraving' && state.algorithmId === 'raster.colour-separation' && <p className="panel-copy">Enamel pockets: each detected colour becomes a separate engraving pass with a dense fill and boundary. Adjust colours and individual pieces below. Engrave one pass at a time, then apply enamel after machining.</p>}
         {state.algorithmId === 'raster.spiroglyph' && <p className="panel-copy">Image tone controls wave width. Choose two or more interleaved spirals for a multi-arm design; each arm uses the matching pen pass below, cycling through available passes.</p>}
         {state.algorithmId === 'raster.spiral-blocks' && <p className="panel-copy">Image tone controls dense radial blocks. Choose two or more interleaved spirals for a multi-arm design; each arm uses the matching pen pass below, cycling through available passes.</p>}
         {state.algorithmId === 'raster.scanlines' && <p className="panel-copy">Choose smooth waves or perpendicular blocks along each line. Image tone controls their width; line angle, spacing, thresholds and smoothing shape the result while the minimum gap prevents neighboring lines from merging. Enable Skip white / blank areas to lift the pen across pale regions.</p>}
         {state.algorithmId === 'generative.truchet' && <p className="panel-copy">Build classic Truchet curves as single strokes or parallel bands. Colour arrangements cycle through the pen passes below, so passes can use different colours and pen widths. Mirror symmetry repeats the seeded layout; orientation variation moves from an orderly weave to fully random tiles.</p>}
+        {state.algorithmId === 'generative.guilloche' && <p className="panel-copy">Choose a rose, barleycorn, moiré, petal, spirograph or spiral design. Parallel passes draw closely spaced companion lines; colour arrangements assign your Pens &amp; passes palette to the curves or to sections of each curve.</p>}
+        {state.algorithmId === 'generative.flow-field' && <p className="panel-copy">Shape the streamlines with rain, waterfall, radial, vortex, four-way, diamond or magnetic fields. Broken trails make the short plotted marks shown in the reference; colour cycling uses the Pens &amp; passes palette.</p>}
         {(state.algorithmId === 'raster.paint-scribble' || state.algorithmId === 'raster.paint-scanlines') && <p className="panel-copy">This paint-aware variant stores image tone as brush pressure. Assign the pass to Paint below and enable variable Z to map highlights and shadows across the configured contact range.</p>}
         {state.algorithmId === 'generative.turtle' && <><p className="panel-copy">Runs standard TurtleToy code with <code>Canvas</code>, <code>new Turtle()</code> and optional <code>walk(i)</code>. <a href="https://turtletoy.net/syntax" target="_blank" rel="noreferrer">TurtleToy API reference</a>.</p><button className="button quiet full" disabled={render.active} onClick={() => setRedrawNonce((value) => value + 1)}><RefreshCw size={15} className={render.active ? 'spin' : undefined} /> Redraw</button><div className="source-placement"><label>Fit TurtleToy canvas<select value={state.turtlePlacement.fit} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, fit: event.target.value as ProjectState['turtlePlacement']['fit'] } })}><option value="contain">Contain — preserve scale</option><option value="cover">Cover — crop to fill</option><option value="stretch">Stretch — fill exactly</option></select></label><RangeField label="Canvas scale" unit="%" value={state.turtlePlacement.scalePercent} min={10} max={300} step={5} onChange={(value) => updateState({ turtlePlacement: { ...state.turtlePlacement, scalePercent: value } })} /><div className="field-row compact"><label>Offset X (mm)<input type="number" step="1" value={state.turtlePlacement.offsetXmm} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, offsetXmm: Number(event.target.value) } })} /></label><label>Offset Y (mm)<input type="number" step="1" value={state.turtlePlacement.offsetYmm} onChange={(event) => updateState({ turtlePlacement: { ...state.turtlePlacement, offsetYmm: Number(event.target.value) } })} /></label></div><button className="button quiet full" onClick={() => updateState({ turtlePlacement: { ...DEFAULT_TURTLE_PLACEMENT } })}>Reset TurtleToy canvas</button></div></>}
         {definition?.controls.filter(control => (!control.key.startsWith('underlay') || Boolean(state.algorithmSettings.colourUnderlay)) && (!control.visibleWhen || (state.algorithmSettings[control.visibleWhen.key] ?? definition.controls.find(item => item.key === control.visibleWhen?.key)?.default) === control.visibleWhen.value)).map((control) => control.type === 'textarea' ? <label key={control.key}>{control.label}<textarea rows={10} spellCheck={false} value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })} /></label> : control.type === 'boolean' ? <label className="check-field" key={control.key}><input type="checkbox" checked={Boolean(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.checked })} /> {control.label}</label> : control.type === 'select' ? <label key={control.key}>{control.label}<select value={String(state.algorithmSettings[control.key] ?? control.default)} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: event.target.value })}>{control.options?.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : <RangeField key={control.key} label={control.label} unit={control.unit} value={Number(state.algorithmSettings[control.key] ?? control.default)} min={control.min ?? 0} max={control.max ?? 100} step={control.step} numberOnly={control.type === 'number'} onChange={(value) => changeAlgorithmSettings({ ...state.algorithmSettings, [control.key]: value })} />)}
+        {state.algorithmId === 'raster.straight-lines' && state.algorithmSettings.secondPass === true && <label>Definition pen pass<select value={definitionPassId} disabled={!definitionPasses.length} onChange={(event) => changeAlgorithmSettings({ ...state.algorithmSettings, definitionPassId: event.target.value })}>{definitionPasses.map(pass => <option value={pass.id} key={pass.id}>{pass.name}</option>)}</select>{!definitionPasses.length && <small>Add a second pass under Pens &amp; passes.</small>}</label>}
         <button className="button quiet full" onClick={() => changeAlgorithmSettings(algorithmDefaults(state.algorithmId))}><RefreshCw size={15} /> Reset {project.mode === 'raster' ? 'vectorisation' : 'generator'} settings</button>
       </Panel>}
-      {state.algorithmId === 'raster.colour-separation' && <Panel title="Colours & pieces" open><ColourSeparationPanel state={state} updateState={updateState} selected={selectedRegion} setSelected={setSelectedRegion} /></Panel>}
+      {state.algorithmId === 'raster.colour-separation' && <Panel title="Colours & pieces" open><ColourSeparationPanel state={state} updateState={updateState} selected={selectedRegion} setSelected={setSelectedRegion} engraving={project.mode === 'engraving'} /></Panel>}
       {(project.mode === 'svg' || project.mode === 'map' || project.mode === 'linocut') && <Panel title="Layers & treatments" open><VectorLayerEditor state={state} updateState={updateState} /></Panel>}
       <Panel title="Paper & safe area">
         <div className="field-row"><label>Width (mm)<input type="number" min="20" value={state.canvas.widthMm} onChange={(event) => updateState({ canvas: { ...state.canvas, preset: 'custom', widthMm: Number(event.target.value) } })} /></label><label>Height (mm)<input type="number" min="20" value={state.canvas.heightMm} onChange={(event) => updateState({ canvas: { ...state.canvas, preset: 'custom', heightMm: Number(event.target.value) } })} /></label></div>
-        <label>Paper colour<select value={state.canvas.paperColour ?? 'white'} onChange={(event) => updateState({ canvas: { ...state.canvas, paperColour: event.target.value as PaperColour } })}><option value="white">White</option><option value="black">Black</option><option value="grey">Grey</option><option value="blue">Blue</option></select></label>
+        <label>Paper colour<select value={state.canvas.paperColour ?? 'white'} onChange={(event) => updateState({ canvas: { ...state.canvas, paperColour: event.target.value as PaperColour } })}><option value="white">White</option><option value="black">Black</option><option value="grey">Grey</option><option value="blue">Blue</option><option value="navy">Navy</option></select></label>
         <label>Safe margin (mm)<input type="number" min="0" value={state.canvas.marginMm} onChange={(event) => updateState({ canvas: { ...state.canvas, marginMm: Number(event.target.value) } })} /></label>
       </Panel>
-      {(project.mode === 'raster' || project.mode === 'generative' || project.mode === 'isometric') && <Panel title="Layers">
+      <Panel title="Borders">
+        <BorderPanel state={state} updateState={updateState} />
+      </Panel>
+      {(project.mode === 'raster' || project.mode === 'engraving' || project.mode === 'generative' || project.mode === 'isometric') && <Panel title="Layers">
         {state.layers.map((layer) => <div className="layer-row" key={layer.id}><label className="check-field"><input type="checkbox" checked={layer.visible} onChange={(event) => updateState({ layers: state.layers.map((item) => item.id === layer.id ? { ...item, visible: event.target.checked } : item) })} /><span><strong>{layer.name}</strong><small>{definition?.name ?? layer.algorithmId}</small></span></label><span>{state.geometry.paths.filter((path) => path.layerId === layer.id).length.toLocaleString()}</span></div>)}
       </Panel>}
-      <Panel title={project.mode === 'linocut' ? 'Tools & cutting passes' : 'Pens & passes'}>
-        <PenPassEditor state={state} updateState={updateState} cutting={project.mode === 'linocut'} onCapturePaintWell={(penId, passName) => { setPaintCapture({ penId, passName }); setControlOpen(true); }} />
+      <Panel title={project.mode === 'linocut' ? 'Tools & cutting passes' : project.mode === 'engraving' ? 'Rotary tool & passes' : 'Pens & passes'}>
+        <PenPassEditor state={state} updateState={updateState} cutting={project.mode === 'linocut'} engraving={project.mode === 'engraving'} onCapturePaintWell={(penId, passName) => { setPaintCapture({ penId, passName }); setControlOpen(true); }} />
       </Panel>
-      <Panel title="Post processing"><p className="panel-copy">{project.mode === 'linocut' ? 'Geometry is clipped to the safe area. Straight-blade output is split into indexed direction groups, lifted between groups, and never joined across gaps.' : 'Geometry is clipped to the safe area. G-code output uses nearest-neighbour path ordering and automatically chooses the shorter path direction.'}</p></Panel>
+      <Panel title="Post processing"><p className="panel-copy">{project.mode === 'linocut' ? 'Geometry is clipped to the safe area. Straight-blade output is split into indexed direction groups, lifted between groups, and never joined across gaps.' : project.mode === 'engraving' ? 'Paths are clipped to the tile safe area, lifted to clearance Z between cuts, and ordered to reduce travel. Export separate files for each enamel colour if you want to inspect or machine them independently.' : 'Geometry is clipped to the safe area. G-code output uses nearest-neighbour path ordering and automatically chooses the shorter path direction.'}</p></Panel>
     </aside>
     <section className="workspace">
       <CanvasPreview state={state} updateState={updateState} selectedRegion={state.algorithmId === 'raster.colour-separation' && state.geometry.colourSeparation?.regions.some(r => r.id === selectedRegion) ? selectedRegion : undefined} />
       <div className={`render-status ${render.error ? 'failed' : ''}`}>
         {render.active && <div className="progress-track"><span style={{ width: `${Math.round(render.value * 100)}%` }} /></div>}
-        <span>{render.error ?? render.message}</span><span>{state.geometry.paths.length.toLocaleString()} paths · {(drawingLength / 1000).toFixed(1)} m drawing</span>
+        <span>{render.error ?? render.message}</span><span>{(outputGeometry?.paths.length ?? state.geometry.paths.length).toLocaleString()} paths · {(drawingLength / 1000).toFixed(1)} m drawing</span>
       </div>
     </section>
     {gcodeOpen && <GCodeDrawer projectName={project.name} state={state} updateState={updateState} onOpenControl={() => { setPaintCapture(undefined); setControlOpen(true); }} onClose={() => setGcodeOpen(false)} />}
@@ -283,7 +423,30 @@ function RangeField({ label, value, min, max, step = 1, unit, onChange, numberOn
   return <label className="range-field"><span><span>{label}</span><output>{value}{unit ?? ''}</output></span>{!numberOnly && <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />}<input className={numberOnly ? '' : 'sr-only'} type="number" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} /></label>;
 }
 
-function PenPassEditor({ state, updateState, cutting, onCapturePaintWell }: { state: ProjectState; updateState: (update: Partial<ProjectState> | ((state: ProjectState) => ProjectState)) => void; cutting?: boolean; onCapturePaintWell: (penId: string, passName: string) => void }) {
+function BorderPanel({ state, updateState }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void }) {
+  const border = { ...DEFAULT_BORDER, passId: state.passes[0]?.id ?? DEFAULT_BORDER.passId, ...state.border };
+  const change = (update: Partial<typeof border>) => updateState({ border: { ...border, ...update } });
+  const maximumInset = Math.max(0, Math.floor(Math.min(state.canvas.widthMm, state.canvas.heightMm) / 2 - 2));
+  return <>
+    <p className="panel-copy">Add a plotted frame, an untouched paper band, or both. The whitespace option cuts every artwork path at the band so exported G-code lifts the pen across it.</p>
+    <label className="check-field"><input type="checkbox" checked={border.enabled} onChange={(event) => change({ enabled: event.target.checked })} /> Draw border line</label>
+    <label className="check-field"><input type="checkbox" checked={border.whitespace} onChange={(event) => change({ whitespace: event.target.checked })} /> Leave a whitespace frame</label>
+    <label>Border pattern<select value={border.pattern} onChange={(event) => change({ pattern: event.target.value as BorderPattern })} disabled={!border.enabled}>
+      <option value="straight">Straight line</option>
+      <option value="waves">Waves</option>
+      <option value="dotted">Dotted</option>
+      <option value="scallops">Curved scallops</option>
+    </select></label>
+    <RangeField label="Inset from paper edge" unit=" mm" value={border.insetMm} min={0} max={maximumInset} step={1} onChange={(value) => change({ insetMm: value })} />
+    {border.whitespace && <RangeField label="Whitespace width" unit=" mm" value={border.whitespaceWidthMm} min={1} max={Math.max(1, Math.min(40, maximumInset))} step={1} onChange={(value) => change({ whitespaceWidthMm: value })} />}
+    {border.enabled && border.pattern !== 'straight' && <RangeField label={border.pattern === 'dotted' ? 'Dot diameter' : 'Curve depth'} unit=" mm" value={border.amplitudeMm} min={0.5} max={10} step={0.5} onChange={(value) => change({ amplitudeMm: value })} />}
+    {border.enabled && border.pattern !== 'straight' && <RangeField label={border.pattern === 'dotted' ? 'Dot spacing' : 'Pattern spacing'} unit=" mm" value={border.spacingMm} min={2} max={30} step={1} onChange={(value) => change({ spacingMm: value })} />}
+    {border.enabled && <label>Plot with pass<select value={border.passId} onChange={(event) => change({ passId: event.target.value })}>{state.passes.map((pass) => <option key={pass.id} value={pass.id}>{pass.name}</option>)}</select></label>}
+    {(border.enabled || border.whitespace) && <button className="button quiet full" onClick={() => updateState({ border: { ...DEFAULT_BORDER, passId: state.passes[0]?.id ?? DEFAULT_BORDER.passId } })}><RefreshCw size={15} /> Reset border</button>}
+  </>;
+}
+
+function PenPassEditor({ state, updateState, cutting, engraving, onCapturePaintWell }: { state: ProjectState; updateState: (update: Partial<ProjectState> | ((state: ProjectState) => ProjectState)) => void; cutting?: boolean; engraving?: boolean; onCapturePaintWell: (penId: string, passName: string) => void }) {
   const updatePen = (id: string, update: Partial<PenProfile>) => updateState({ pens: state.pens.map((pen) => pen.id === id ? { ...pen, ...update } : pen) });
   const updatePass = (id: string, update: Partial<PlotPass>) => updateState({ passes: state.passes.map((pass) => pass.id === id ? { ...pass, ...update } : pass) });
   const addPass = () => {
@@ -291,8 +454,9 @@ function PenPassEditor({ state, updateState, cutting, onCapturePaintWell }: { st
     const penId = `pen-${crypto.randomUUID()}`;
     const tool: PenProfile = cutting
       ? { id: penId, name: `Straight blade ${index}`, color: '#9b3125', widthMm: 1, zUp: 0, zDown: -1, xyFeed: 500, zUpFeed: 600, zDownFeed: 150, mediaType: 'blade', bladeAngleStep: 15 }
+      : engraving ? { id: penId, name: `Rotary bit ${index}`, color: '#547d91', widthMm: 0.5, zUp: 3, zDown: -0.1, xyFeed: 300, zUpFeed: 600, zDownFeed: 100, mediaType: 'rotary', rotaryControl: 'manual', rotaryRpm: 12000, rotarySpinupSeconds: 2 }
       : { id: penId, name: `Pen ${index}`, color: '#d84a35', widthMm: 0.3, zUp: 0, zDown: -10, xyFeed: 2500, zUpFeed: 600, zDownFeed: 600, mediaType: 'pen' };
-    updateState({ pens: [...state.pens, tool], passes: [...state.passes, { id: `pass-${crypto.randomUUID()}`, name: cutting ? `Cut pass ${index}` : `Pass ${index}`, penId, enabled: true }] });
+    updateState({ pens: [...state.pens, tool], passes: [...state.passes, { id: `pass-${crypto.randomUUID()}`, name: cutting ? `Cut pass ${index}` : engraving ? `Engrave pass ${index}` : `Pass ${index}`, penId, enabled: true }] });
   };
   return <div className="pass-list">{state.passes.map((pass, index) => {
     const pen = state.pens.find((item) => item.id === pass.penId);
@@ -300,10 +464,10 @@ function PenPassEditor({ state, updateState, cutting, onCapturePaintWell }: { st
     return <div className="pass-card" key={pass.id}>
       <div className="pass-head"><label className="check-field"><input type="checkbox" checked={pass.enabled} onChange={(event) => updatePass(pass.id, { enabled: event.target.checked })} /><strong>{pass.name}</strong></label>{state.passes.length > 1 && !pass.id.startsWith('colour-pass-') && !pass.id.startsWith('scribble-colour-pass-') && <button className="icon-button small" onClick={() => updateState({ passes: state.passes.filter((item) => item.id !== pass.id), pens: state.pens.filter((item) => item.id !== pen.id) })}><Trash2 /></button>}</div>
       <label>Pass name<input value={pass.name} onChange={(event) => updatePass(pass.id, { name: event.target.value })} /></label>
-      <label>Media type<select value={pen.mediaType ?? 'pen'} onChange={(event) => { const mediaType = event.target.value as PenProfile['mediaType']; updatePen(pen.id, mediaType === 'paint' ? { mediaType, paintReloadDistanceMm: pen.paintReloadDistanceMm ?? 150, paintDipDwellSeconds: pen.paintDipDwellSeconds ?? 0.5, paintUsePressure: pen.paintUsePressure ?? true, paintMaxPressureZ: pen.paintMaxPressureZ ?? pen.zDown - 1 } : mediaType === 'blade' ? { mediaType, bladeAngleStep: pen.bladeAngleStep ?? 15 } : { mediaType }); }}><option value="pen">Pen</option><option value="paint">Paint / brush</option><option value="blade">Fixed straight blade</option></select></label>
+      <label>Media type<select value={pen.mediaType ?? 'pen'} onChange={(event) => { const mediaType = event.target.value as PenProfile['mediaType']; updatePen(pen.id, mediaType === 'paint' ? { mediaType, paintReloadDistanceMm: pen.paintReloadDistanceMm ?? 150, paintDipDwellSeconds: pen.paintDipDwellSeconds ?? 0.5, paintUsePressure: pen.paintUsePressure ?? true, paintMaxPressureZ: pen.paintMaxPressureZ ?? pen.zDown - 1 } : mediaType === 'blade' ? { mediaType, bladeAngleStep: pen.bladeAngleStep ?? 15 } : mediaType === 'rotary' ? { mediaType, rotaryControl: pen.rotaryControl ?? 'manual', rotaryRpm: pen.rotaryRpm ?? 12000, rotarySpinupSeconds: pen.rotarySpinupSeconds ?? 2 } : { mediaType }); }}><option value="pen">Pen</option><option value="paint">Paint / brush</option><option value="blade">Fixed straight blade</option><option value="rotary">Rotary engraver</option></select></label>
       <div className="pen-name"><input type="color" value={pen.color} onChange={(event) => updatePen(pen.id, { color: event.target.value })} /><input value={pen.name} onChange={(event) => updatePen(pen.id, { name: event.target.value })} /></div>
-      <div className="field-row compact"><label>{pen.mediaType === 'paint' ? 'Brush width' : pen.mediaType === 'blade' ? 'Cut width' : 'Width'}<input type="number" min="0.01" step="0.1" value={pen.widthMm} onChange={(event) => updatePen(pen.id, { widthMm: Number(event.target.value) })} /></label><label>XY feed<input type="number" step="100" value={pen.xyFeed} onChange={(event) => updatePen(pen.id, { xyFeed: Number(event.target.value) })} /></label></div>
-      <div className="field-row compact"><label>Z up<input type="number" step="0.5" value={pen.zUp} onChange={(event) => updatePen(pen.id, { zUp: Number(event.target.value) })} /></label><label>{pen.mediaType === 'paint' ? 'Light contact Z' : pen.mediaType === 'blade' ? 'Cut depth Z' : 'Z down'}<input type="number" step="0.5" value={pen.zDown} onChange={(event) => updatePen(pen.id, { zDown: Number(event.target.value) })} /></label></div>
+      <div className="field-row compact"><label>{pen.mediaType === 'paint' ? 'Brush width' : pen.mediaType === 'blade' ? 'Cut width' : pen.mediaType === 'rotary' ? 'Bit mark width' : 'Width'}<input type="number" min="0.01" step="0.1" value={pen.widthMm} onChange={(event) => updatePen(pen.id, { widthMm: Number(event.target.value) })} /></label><label>XY feed<input type="number" min="1" step="100" value={pen.xyFeed} onChange={(event) => updatePen(pen.id, { xyFeed: Number(event.target.value) })} /></label></div>
+      <div className="field-row compact"><label>{pen.mediaType === 'rotary' ? 'Clearance Z' : 'Z up'}<input type="number" step="0.1" value={pen.zUp} onChange={(event) => updatePen(pen.id, { zUp: Number(event.target.value) })} /></label><label>{pen.mediaType === 'paint' ? 'Light contact Z' : pen.mediaType === 'blade' ? 'Cut depth Z' : pen.mediaType === 'rotary' ? 'Engraving Z' : 'Z down'}<input type="number" step="0.1" value={pen.zDown} onChange={(event) => updatePen(pen.id, { zDown: Number(event.target.value) })} /></label></div>
       <div className="field-row compact"><label>Z up feed<input type="number" min="1" step="50" value={pen.zUpFeed ?? pen.zFeed ?? 600} onChange={(event) => updatePen(pen.id, { zUpFeed: Number(event.target.value) })} /></label><label>Z down feed<input type="number" min="1" step="50" value={pen.zDownFeed ?? pen.zFeed ?? 600} onChange={(event) => updatePen(pen.id, { zDownFeed: Number(event.target.value) })} /></label></div>
       {pen.mediaType === 'paint' && <div className="paint-settings">
         <div className="paint-settings-head"><div><strong>Paint well</strong><small>Work coordinates used to reload this pass</small></div><button className="button quiet compact-button" type="button" onClick={() => onCapturePaintWell(pen.id, pass.name)}><LocateFixed size={14} /> Capture XY</button></div>
@@ -318,13 +482,19 @@ function PenPassEditor({ state, updateState, cutting, onCapturePaintWell }: { st
         <label>Direction step (°)<select value={pen.bladeAngleStep ?? 15} onChange={(event) => updatePen(pen.id, { bladeAngleStep: Number(event.target.value) })}>{BLADE_ANGLE_STEPS.map((step) => <option value={step} key={step}>{step}° · {180 / step} positions</option>)}</select><small>Maximum direction mismatch is about {((pen.bladeAngleStep ?? 15) / 2).toFixed(1)}°. Smaller steps are gentler but need more manual rotations.</small></label>
         <p className="panel-copy">The machine parks and pauses before every direction group. Rotate the blade to the angle in the G-code comment, then resume. Curves become short indexed cuts; test shallow cuts first.</p>
       </div>}
+      {pen.mediaType === 'rotary' && <div className="paint-settings">
+        <label>Rotary power<select value={pen.rotaryControl ?? 'manual'} onChange={(event) => updatePen(pen.id, { rotaryControl: event.target.value as 'manual' | 'gcode' })}><option value="manual">Manual switch with pause</option><option value="gcode">Controller M3 / M5</option></select></label>
+        {pen.rotaryControl === 'gcode' && <div className="field-row compact"><label>Spindle speed (RPM)<input type="number" min="1" step="100" value={pen.rotaryRpm ?? 12000} onChange={(event) => updatePen(pen.id, { rotaryRpm: Number(event.target.value) })} /></label><label>Spin-up dwell (s)<input type="number" min="0" step="0.5" value={pen.rotarySpinupSeconds ?? 2} onChange={(event) => updatePen(pen.id, { rotarySpinupSeconds: Number(event.target.value) })} /></label></div>}
+        <p className="panel-copy">Set Z zero on the tile surface. Test clearance and a shallow cut on scrap of the same material. Controller power requires a wired spindle relay or speed controller.</p>
+      </div>}
       <small>{state.geometry.paths.filter((path) => path.passId === pass.id).length.toLocaleString()} paths</small>
     </div>;
   })}<button className="button quiet full" onClick={addPass}><Plus size={15} /> Add pass</button></div>;
 }
 
 function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void; selectedRegion?: string }) {
-  const { canvas, geometry, pens, passes, viewport } = state;
+  const { canvas, pens, passes, viewport } = state;
+  const geometry = useMemo(() => applyPlotBorder(state.geometry, canvas, state.border), [state.geometry, canvas, state.border]);
   const previewPaths = geometry.generator === state.algorithmId ? geometry.paths : [];
   // Cache bounded chunks: rebuilding and stroking a million-point path on every
   // resize/zoom can dominate generation time and stall the editor.
@@ -437,10 +607,7 @@ function CanvasPreview({ state, updateState, selectedRegion }: { state: ProjectS
       context.lineJoin = 'round';
 
       for (const { plotPath, chunks } of previewChunks) {
-        if (plotPath.layerId.startsWith('annotation:')) {
-          const annotationId = plotPath.layerId.slice('annotation:'.length);
-          if (!state.mapAnnotations?.find((annotation) => annotation.id === annotationId)?.visible) continue;
-        } else if (plotPath.layerId !== 'map-title' && !state.layers.find((layer) => layer.id === plotPath.layerId)?.visible) continue;
+        if (!isPlotPathVisible(plotPath, state)) continue;
         const plotPass = passes.find((pass) => pass.id === plotPath.passId);
         if (!plotPass?.enabled || plotPath.points.length < 2) continue;
         const pen = pens.find((item) => item.id === plotPass.penId);
@@ -534,12 +701,15 @@ function GCodeDrawer({ projectName, state, updateState, onOpenControl, onClose }
   const [remoteFiles, setRemoteFiles] = useState<Record<string, { path?: string; action?: 'uploading' | 'running'; message?: string; error?: boolean }>>({});
   const workerRef = useRef<Worker | null>(null);
   const jobRef = useRef(0);
+  const outputGeometry = useMemo(() => applyPlotBorder(state.geometry, state.canvas, state.border), [state.geometry, state.canvas, state.border]);
   const visibleLayerIds = [
     ...state.layers.filter((layer) => layer.visible).map((layer) => layer.id),
     ...(state.mapAnnotations ?? []).filter((annotation) => annotation.visible).map((annotation) => `annotation:${annotation.id}`),
+    'map-title',
+    BORDER_LAYER_ID,
   ];
   const visibleLayerKey = visibleLayerIds.join(',');
-  const visiblePathCount = state.geometry.paths.reduce((count, path) => count + (visibleLayerIds.includes(path.layerId) ? 1 : 0), 0);
+  const visiblePathCount = outputGeometry.paths.reduce((count, path) => count + (visibleLayerIds.includes(path.layerId) ? 1 : 0), 0);
   const hasBlade = state.passes.some((pass) => pass.enabled && state.pens.find((pen) => pen.id === pass.penId)?.mediaType === 'blade');
 
   useEffect(() => {
@@ -573,9 +743,9 @@ function GCodeDrawer({ projectName, state, updateState, onOpenControl, onClose }
       worker.terminate();
       if (workerRef.current === worker) workerRef.current = null;
     };
-    worker.postMessage({ jobId, projectName, geometry: state.geometry, passes: state.passes, pens: state.pens, settings: state.gcode, pageHeight: state.canvas.heightMm, split, visibleLayerIds });
+    worker.postMessage({ terrain: state.mapSettings.terrain, relief: { ...state.mapSettings.relief, shape: state.mapSettings.importedShape }, layers: state.layers, jobId, projectName, geometry: outputGeometry, passes: state.passes, pens: state.pens, settings: state.gcode, pageHeight: state.canvas.heightMm, split, visibleLayerIds });
     return () => { jobRef.current += 1; worker.terminate(); if (workerRef.current === worker) workerRef.current = null; };
-  }, [projectName, state.geometry, state.passes, state.pens, state.gcode, state.canvas.heightMm, split, visibleLayerKey, retry]);
+  }, [projectName, outputGeometry, state.passes, state.pens, state.gcode, state.canvas.heightMm, split, visibleLayerKey, retry]);
 
   const cancel = () => {
     jobRef.current += 1;
@@ -619,6 +789,7 @@ function GCodeDrawer({ projectName, state, updateState, onOpenControl, onClose }
       <label className="check-field"><input type="checkbox" checked={state.gcode.pauseBetweenPasses} onChange={(event) => updateState({ gcode: { ...state.gcode, pauseBetweenPasses: event.target.checked } })} /> Pause between tool passes</label>
       <label className="check-field"><input type="checkbox" checked={state.gcode.includeComments} onChange={(event) => updateState({ gcode: { ...state.gcode, includeComments: event.target.checked } })} /> Include comments</label>
       {hasBlade && <div className="notice">Straight-blade direction changes always park and run the pause command, even when pass pauses are disabled. Keep comments enabled to see the requested angle.</div>}
+      {state.passes.some((pass) => pass.enabled && state.pens.find((pen) => pen.id === pass.penId)?.mediaType === 'rotary') && <div className="notice">Rotary passes lift before travel. Manual power inserts pauses to switch the tool on and off; controller power emits M3/M5. Check the generated file and test Z zero, clearance and spindle wiring on scrap before machining.</div>}
       <div className="segmented"><button className={!split ? 'active' : ''} onClick={() => setSplit(false)}>Combined file</button><button className={split ? 'active' : ''} onClick={() => setSplit(true)}>One per pass</button></div>
       {(generation.active || generation.error) && <div className={`export-progress${generation.error ? ' failed' : ''}`} role="status" aria-live="polite">
         <div><strong>{generation.error ?? generation.message}</strong><span>{generation.active ? `${Math.round(generation.value * 100)}%` : ''}</span></div>

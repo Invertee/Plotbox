@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, FileCode2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
 import { MAP_ANNOTATION_FONT_OPTIONS, VECTOR_ALGORITHMS, algorithmDefaults } from '@plotter/algorithms';
-import { makeId, type MapAnnotation, type PlotLayer, type ProjectState } from '@plotter/core';
+import { makeId, type MapShape, type MapAnnotation, type PlotLayer, type ProjectState } from '@plotter/core';
 import { api } from '../api';
 import { glyphSvgToPaths, importedMapToLayers, parseSvgLayers, type MapSearchResult } from '../vectorSources';
 import { loadGlyphLibrary } from './Glyphbox';
@@ -27,12 +27,12 @@ export function SvgSourcePanel({ state, updateState }: { state: ProjectState; up
   </div>;
 }
 
-export function MapSourcePanel({ state, updateState }: { state: ProjectState; updateState: UpdateState }) {
+export function MapSourcePanel({ state, updateState, relief = false }: { state: ProjectState; updateState: UpdateState; relief?: boolean }) {
   const [results, setResults] = useState<MapSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
-  const dataSource = state.mapSettings.dataSource ?? (state.mapSettings.includeTopography ? 'both' : 'openstreetmap');
+  const dataSource = relief ? (state.mapSettings.dataSource === 'terrain' ? 'terrain' : 'both') : state.mapSettings.dataSource ?? (state.mapSettings.includeTopography ? 'both' : 'openstreetmap');
   const view: MapView = { latitude: state.mapSettings.latitude ?? 54.5973, longitude: state.mapSettings.longitude ?? -5.9301, zoom: state.mapSettings.zoom ?? 14 };
   const search = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -48,21 +48,28 @@ export function MapSourcePanel({ state, updateState }: { state: ProjectState; up
   const downloadRegion = async (bounds: MapBounds) => {
     setDownloading(true); setError('');
     // Locking a new area intentionally discards the previous map before the request starts.
-    updateState({ layers: [], sourceName: undefined, sourceAttribution: undefined, mapSettings: { ...state.mapSettings, bounds: undefined }, geometry: { paths: [], generatedAt: new Date().toISOString(), generator: 'none' } });
+    updateState({ layers: relief ? state.layers : [], sourceName: undefined, sourceAttribution: undefined, mapSettings: { ...state.mapSettings, terrain: undefined, bounds: undefined }, geometry: { paths: [], generatedAt: new Date().toISOString(), generator: 'none' } });
     try {
-      const map = await api.importMap({ ...bounds, name: state.mapSettings.query.trim() || 'Selected map region', dataSource, contourInterval: state.mapSettings.contourInterval });
-      const layers = importedMapToLayers(map, state.canvas, state.passes.map((pass) => pass.id));
+      const map = await api.importMap({ ...bounds, name: state.mapSettings.query.trim() || 'Selected map region', dataSource, relief, contourInterval: state.mapSettings.contourInterval });
+      if (relief) {
+        if (!map.terrain) throw new Error('The terrain provider returned no elevation grid.');
+        updateState({ sourceName: map.name, sourceAttribution: map.attribution, mapSettings: { ...state.mapSettings, bounds, importedShape: state.mapSettings.shape ?? 'rectangle', terrain: map.terrain }, algorithmId: 'topography.relief' });
+        return;
+      }
+      const layers = importedMapToLayers(map, state.canvas, state.passes.map((pass) => pass.id), state.mapSettings.shape);
       if (!layers.length) throw new Error('No supported map features were found in this area. Zoom out or move the selection.');
-      updateState({ layers, sourceName: map.name, sourceAttribution: map.attribution, mapSettings: { ...state.mapSettings, bounds }, algorithmId: 'vector.layers' });
+      updateState({ layers, sourceName: map.name, sourceAttribution: map.attribution, mapSettings: { ...state.mapSettings, bounds, importedShape: state.mapSettings.shape ?? 'rectangle' }, algorithmId: 'vector.layers' });
     } catch (value) { setError(value instanceof Error ? value.message : String(value)); }
     finally { setDownloading(false); }
   };
   return <div className="stack">
     <form className="map-search" onSubmit={(event) => void search(event)}><label>Place or address<input value={state.mapSettings.query} placeholder="e.g. Belfast City Hall" onChange={(event) => updateState({ mapSettings: { ...state.mapSettings, query: event.target.value } })} /></label><button className="button primary" disabled={searching}><Search size={15} /> {searching ? 'Searching…' : 'Search'}</button></form>
     {results.length > 0 && <div className="map-results">{results.map((result) => <button type="button" key={result.id} onClick={() => selectResult(result)}><MapPin /><span><strong>{result.displayName}</strong><small>{result.type} · show on map</small></span></button>)}</div>}
-    <div className={`map-data-options ${dataSource === 'openstreetmap' ? 'osm-only' : ''}`}><label>Download<select value={dataSource} onChange={(event) => { const next = event.target.value as typeof dataSource; updateState({ mapSettings: { ...state.mapSettings, dataSource: next, includeTopography: next !== 'openstreetmap' } }); }}><option value="both">OSM + terrain</option><option value="terrain">Terrain only</option><option value="openstreetmap">OpenStreetMap only</option></select></label>{dataSource !== 'openstreetmap' && <label>Contour interval<select value={state.mapSettings.contourInterval ?? 10} onChange={(event) => updateState({ mapSettings: { ...state.mapSettings, contourInterval: Number(event.target.value) } })}><option value={5}>5 m</option><option value={10}>10 m</option><option value={20}>20 m</option><option value={25}>25 m</option><option value={50}>50 m</option><option value={100}>100 m</option><option value={200}>200 m</option></select></label>}<small>{dataSource === 'terrain' ? 'Only plot-ready elevation contours will be downloaded.' : dataSource === 'openstreetmap' ? 'Only OSM vectors. Large areas automatically omit buildings and minor roads.' : 'OSM and contours together. Large areas automatically omit buildings and minor roads.'}</small></div>
-    <MapRegionPicker view={view} aspect={Math.max(0.1, (state.canvas.widthMm - state.canvas.marginMm * 2) / Math.max(1, state.canvas.heightMm - state.canvas.marginMm * 2))} busy={downloading} hasImport={Boolean(state.sourceName)} onChange={(next) => updateState({ mapSettings: { ...state.mapSettings, ...next } })} onDownload={(bounds) => void downloadRegion(bounds)} />
-    {state.sourceName && <div className="source-summary"><strong>{state.sourceName}</strong><span>{state.layers.reduce((total, layer) => total + (layer.sourcePaths?.length ?? 0), 0).toLocaleString()} map features in {state.layers.length} layers</span></div>}
+    <div className={`map-data-options ${dataSource === 'openstreetmap' ? 'osm-only' : ''}`}><label>Download<select value={dataSource} onChange={(event) => { const next = event.target.value as typeof dataSource; updateState({ mapSettings: { ...state.mapSettings, dataSource: next, includeTopography: next !== 'openstreetmap' } }); }}><option value="both">OSM + terrain</option><option value="terrain">Terrain only</option>{!relief && <option value="openstreetmap">OpenStreetMap only</option>}</select></label>{!relief && dataSource !== 'openstreetmap' && <label>Contour interval<select value={state.mapSettings.contourInterval ?? 10} onChange={(event) => updateState({ mapSettings: { ...state.mapSettings, contourInterval: Number(event.target.value) } })}><option value={5}>5 m</option><option value={10}>10 m</option><option value={20}>20 m</option><option value={25}>25 m</option><option value={50}>50 m</option><option value={100}>100 m</option><option value={200}>200 m</option></select></label>}<small>{relief ? 'Downloads real elevations. Choose OSM + terrain to include lakes and rivers.' : dataSource === 'terrain' ? 'Only plot-ready elevation contours will be downloaded.' : dataSource === 'openstreetmap' ? 'Only OSM vectors. Large areas automatically omit buildings and minor roads.' : 'OSM and contours together. Large areas automatically omit buildings and minor roads.'}</small></div>
+    <label>Region shape<select value={state.mapSettings.shape ?? 'rectangle'} disabled={downloading} onChange={event => updateState({ mapSettings: { ...state.mapSettings, shape: event.target.value as MapShape } })}><option value="rectangle">Rectangle · paper proportions</option><option value="square">Square</option><option value="circle">Circle</option></select></label>
+    <small>The shape applies when you download a region.</small>
+    <MapRegionPicker shape={state.mapSettings.shape} view={view} aspect={Math.max(0.1, (state.canvas.widthMm - state.canvas.marginMm * 2) / Math.max(1, state.canvas.heightMm - state.canvas.marginMm * 2))} busy={downloading} hasImport={Boolean(state.sourceName)} onChange={(next) => updateState({ mapSettings: { ...state.mapSettings, ...next } })} onDownload={(bounds) => void downloadRegion(bounds)} />
+    {state.sourceName && <div className="source-summary"><strong>{state.sourceName}</strong><span>{relief && state.mapSettings.terrain ? `${state.mapSettings.terrain.width} × ${state.mapSettings.terrain.height} elevation samples` : `${state.layers.reduce((total, layer) => total + (layer.sourcePaths?.length ?? 0), 0).toLocaleString()} map features in ${state.layers.length} layers`}</span></div>}
     {error && <div className="notice error">{error}</div>}
     <p className="attribution">{state.sourceAttribution ?? 'Map data © OpenStreetMap contributors · ODbL'}</p>
   </div>;

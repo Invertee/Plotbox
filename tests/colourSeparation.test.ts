@@ -17,6 +17,20 @@ const render = (image: ReturnType<typeof pixels>, config?: ColourSeparationSetti
 };
 
 describe('colour separation', () => {
+  it('starts engraving projects with a rotary tool and keeps enamel colours in separate dense passes', () => {
+    const initial = createDefaultState('engraving', canvas);
+    expect(initial.algorithmId).toBe('raster.tonal-area-fill');
+    expect(initial.pens[0]).toMatchObject({ mediaType: 'rotary', rotaryControl: 'manual', zUp: 3, zDown: -0.1 });
+    const image = pixels(['RRBB', 'RRBB']);
+    const separated = separateColours(image, settings);
+    const { passes, pens } = ensureColourPasses(separated.palette, initial.passes, initial.pens);
+    expect(pens.filter(pen => pen.id.startsWith('colour-pen-')).every(pen => pen.mediaType === 'rotary')).toBe(true);
+    const result = generateColourSeparation(image, canvas, DEFAULT_RASTER_PLACEMENT, settings, undefined, passes, pens,
+      { defaultTreatment: { fill: 'solid', outline: true } });
+    expect(new Set(result.paths.map(path => path.passId))).toEqual(new Set(separated.palette.map(colour => colourPassId(colour.id))));
+    expect(result.paths.length).toBeGreaterThan(separated.palette.length * 4);
+  });
+
   it('uses a deterministic palette and splits disconnected pieces of the same colour', () => {
     const image = pixels(['RR.BB', 'RR.BB', '.....', 'RR.TT']);
     const a = separateColours(image, settings); const b = separateColours(image, settings);

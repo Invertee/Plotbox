@@ -1,10 +1,15 @@
 /// <reference lib="webworker" />
-import type { IsometricSettings, IsometricGlyph, CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
+import type { TerrainData, ReliefSettings, PlotLayer, IsometricSettings, IsometricGlyph, CanvasSettings, ColourSeparationSettings, PenProfile, PlotPass, PlotGeometry, PlotPath, Point, PreprocessSettings, RasterPlacementSettings, TurtlePlacementSettings } from '@plotter/core';
 import { calculateImagePlacement, drawableBounds, type Bounds } from '@plotter/geometry';
-import { generateIsometric, addPaintPressure, generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateColourTonalAreaFill, generateScribbleColourUnderlay, generateTonalAreaFill, traceRasterContours, generateContinuousScribble } from '@plotter/algorithms';
+import { generateRelief, generateIsometric, addPaintPressure, generateSpiroglyph, generateSpiralBlocks, generateScanlines, generateColourSeparation, generateColourTonalAreaFill, generateScribbleColourUnderlay, generateTonalAreaFill, traceRasterContours, generateContinuousScribble, generateStraightLinePortrait } from '@plotter/algorithms';
 import { turtleDraw } from 'turtletoy';
+import { generateIsometricMaze } from '@plotter/algorithms';
 
 type Job = {
+  terrain?: TerrainData;
+  relief?: Partial<ReliefSettings>;
+  layers: PlotLayer[];
+  mode?: 'engraving';
   isometric?: IsometricSettings;
   isometricGlyphs?: IsometricGlyph[];
   jobId: number;
@@ -129,7 +134,8 @@ function rasterGeometry(job: Job): PlotGeometry {
   if (!job.imageData) throw new Error('Import an image before running a raster algorithm.');
   if (job.algorithmId === 'raster.colour-separation') {
     progress(job.jobId, 0.1, 'Separating colours and connected regions');
-    return generateColourSeparation(job.imageData, job.canvas, job.rasterPlacement, job.settings, job.colourSeparation, job.passes, job.pens);
+    return generateColourSeparation(job.imageData, job.canvas, job.rasterPlacement, job.settings, job.colourSeparation, job.passes, job.pens,
+      job.mode === 'engraving' ? { defaultTreatment: { fill: 'solid', outline: true } } : {});
   }
   progress(job.jobId, 0.04, 'Preprocessing image');
   const luminance = preprocessImage(job.imageData, job.preprocess);
@@ -182,7 +188,7 @@ function rasterGeometry(job: Job): PlotGeometry {
   };
 
   const threshold = job.preprocess.threshold;
-  if (job.algorithmId === 'raster.continuous-scribble' || job.algorithmId === 'raster.paint-scribble') {
+  if (job.algorithmId === 'raster.continuous-scribble' || job.algorithmId === 'raster.paint-scribble' || job.algorithmId === 'raster.straight-lines') {
     const imageBounds = {
       minX: Math.max(bounds.minX, placement.x), minY: Math.max(bounds.minY, placement.y),
       maxX: Math.min(bounds.maxX, placement.x + placement.width), maxY: Math.min(bounds.maxY, placement.y + placement.height),
@@ -199,6 +205,17 @@ function rasterGeometry(job: Job): PlotGeometry {
     };
     const pass = job.passes.find(item => item.id === primary);
     const penWidth = job.pens.find(item => item.id === pass?.penId)?.widthMm ?? 0.3;
+    if (job.algorithmId === 'raster.straight-lines') {
+      const requested = stringSetting(job.settings, 'definitionPassId', '');
+      const definitionPass = job.settings.secondPass === true
+        ? job.passes.find(item => item.id === requested && item.id !== primary) ?? job.passes.find(item => item.id !== primary && !item.id.startsWith('scribble-colour-pass-'))
+        : undefined;
+      const definitionPen = job.pens.find(item => item.id === definitionPass?.penId);
+      return generateStraightLinePortrait(imageBounds, job.settings, smoothSample,
+        { id: primary, penWidth },
+        definitionPass ? { id: definitionPass.id, penWidth: definitionPen?.widthMm ?? 0.3 } : undefined,
+        value => progress(job.jobId, 0.1 + value * 0.85, 'Drawing straight tonal lines'));
+    }
     const underlay = job.algorithmId === 'raster.continuous-scribble' && job.settings.colourUnderlay === true
       ? generateScribbleColourUnderlay(job.imageData, job.canvas, job.rasterPlacement, job.settings, job.passes, job.pens)
       : undefined;
@@ -473,7 +490,7 @@ scope.onmessage = (event: MessageEvent<Job>) => {
   const job = event.data;
   try {
     progress(job.jobId, 0.01, 'Starting render');
-    const result = job.algorithmId.startsWith('isometric.') ? generateIsometric(job.canvas, job.isometric ?? {}, job.isometricGlyphs ?? [], job.passIds) : job.algorithmId === 'generative.turtle' ? turtleGeometry(job) : rasterGeometry(job);
+    const result = job.algorithmId === 'generative.isometric-maze' ? generateIsometricMaze(job.canvas, job.settings, job.passIds) : job.algorithmId === 'topography.relief' ? generateRelief(job.canvas, job.terrain!, job.relief ?? {}, job.layers) : job.algorithmId.startsWith('isometric.') ? generateIsometric(job.canvas, job.isometric ?? {}, job.isometricGlyphs ?? [], job.passIds) : job.algorithmId === 'generative.turtle' ? turtleGeometry(job) : rasterGeometry(job);
     scope.postMessage({ type: 'complete', jobId: job.jobId, result });
   } catch (error) {
     scope.postMessage({ type: 'error', jobId: job.jobId, message: error instanceof Error ? error.message : String(error) });

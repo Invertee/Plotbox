@@ -3,8 +3,13 @@ import { DEFAULT_ISOMETRIC, isometricLayers, type IsometricGlyph, type Isometric
 import { ISOMETRIC_ALGORITHMS } from '@plotter/algorithms';
 import { glyphSvgToPaths } from '../vectorSources';
 import { GlyphboxDialog, LEGACY_ISOMETRIC_STARTER_IDS, loadGlyphLibrary } from './Glyphbox';
-import { glyphColours, prepareGlyphColourPasses } from './isometricColourPasses';
-import { CITYSCAPE_CATEGORY, CITYSCAPE_PALETTE } from './isometricStarterGlyphs';
+import { glyphColours, ISOMETRIC_PALETTE, prepareGlyphColourPasses } from './isometricColourPasses';
+import { CITYSCAPE_CATEGORY } from './isometricStarterGlyphs';
+import { ANTIQUITY_CATEGORY } from './isometricAntiquityGlyphs';
+import { MEDIEVAL_CATEGORY } from './isometricMedievalGlyphs';
+import { CYBERPUNK_CATEGORY } from './isometricCyberpunkGlyphs';
+import { CYBERPUNK_GEL_CATEGORY } from './isometricCyberpunkGelGlyphs';
+import { cyberpunkGelPreset } from './isometricCyberpunkGelPreset';
 
 export function IsometricPanel({ state, updateState, onRedraw }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void; onRedraw: () => void }) {
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -15,7 +20,7 @@ export function IsometricPanel({ state, updateState, onRedraw }: { state: Projec
     try {
       const library = loadGlyphLibrary();
       const glyphs: IsometricGlyph[] = library.assets.filter(g => g.kind === 'isometric').map(g => ({
-        id: g.id, name: g.name, categoryId: g.categoryId, categoryName: library.categories.find(c => c.id === g.categoryId)?.name,
+        id: g.id, name: g.name, categoryId: g.categoryId, categoryName: library.categories.find(c => c.id === g.categoryId)?.name, collectionId: g.collectionId,
         role: g.isometricRole ?? 'building', terrain: g.terrain, shoreMask: g.shoreMask, treeLined: g.treeLined, paths: g.plotPaths ?? glyphSvgToPaths(g.svg, !!g.isometricRole && g.isometricRole !== 'building'),
       }));
       const { colourPasses, ...palette } = prepareGlyphColourPasses(glyphs, state.passes, state.pens, s.colourPasses);
@@ -53,6 +58,11 @@ export function IsometricPanel({ state, updateState, onRedraw }: { state: Projec
     <p className="panel-copy">{glyphs.filter(g => g.role === 'building').length} buildings · {glyphs.filter(g => g.role.startsWith('road-')).length} roads · {glyphs.filter(g => g.role === 'terrain').length} landscape tiles. Reload to apply library changes.</p>
     {hasLegacyGlyphs && <div className="notice">The new Cityscape collection is available. Reload glyphs to replace the older city artwork in this drawing.</div>}
     {glyphs.some(g => g.categoryId === CITYSCAPE_CATEGORY) && <button className="button quiet full" onClick={() => update({ buildingCategories: [CITYSCAPE_CATEGORY], roadCategories: [CITYSCAPE_CATEGORY] })}>Use whole Cityscape collection</button>}
+    {glyphs.some(g => g.categoryId === ANTIQUITY_CATEGORY) && <button className="button quiet full" onClick={() => update({ buildingCategories: [ANTIQUITY_CATEGORY], roadCategories: [ANTIQUITY_CATEGORY] })}>Use Antiquity collection · Rome & Greece</button>}
+    {glyphs.some(g => g.categoryId === MEDIEVAL_CATEGORY) && <button className="button quiet full" onClick={() => update({ buildingCategories: [MEDIEVAL_CATEGORY], roadCategories: [MEDIEVAL_CATEGORY] })}>Use Medieval collection · towns & castles</button>}
+    {glyphs.some(g => g.categoryId === CYBERPUNK_CATEGORY) && <button className="button quiet full" onClick={() => update({ buildingCategories: [CYBERPUNK_CATEGORY], roadCategories: [CYBERPUNK_CATEGORY] })}>Use Retrowave / Cyberpunk collection</button>}
+    {glyphs.some(g => g.collectionId === CYBERPUNK_GEL_CATEGORY) && <button className="button quiet full" onClick={() => updateState(cyberpunkGelPreset(state))}>Use Dark retrowave/cyberpunk cityscape</button>}
+    {s.buildingCategories.includes(CYBERPUNK_GEL_CATEGORY) && <p className="panel-copy">Bright outlines and window light bars leave the dark paper exposed. Choose Black or Navy under Paper colour. The six gel passes start at 0.45 mm; match their widths to your pens. Existing pen calibration is kept.</p>}
     {error && <div className="notice error">{error}</div>}
     {!glyphs.some(g => g.role === 'building') && <div className="notice">Add isometric buildings in Glyphbox, then reload glyphs.</div>}
     {s.algorithm === 'city' && <p className="panel-copy">Missing road shapes use connected centre lines. Restore the city set in Glyphbox for curbs and markings, or assign your SVGs road roles.</p>}
@@ -85,18 +95,20 @@ export function IsometricPanel({ state, updateState, onRedraw }: { state: Projec
       {groups('roadCategories', 'road')}
     </>}
     {groups('buildingCategories', 'building')}
+    {s.algorithm === 'city' && <label>Ground between buildings<select value={s.groundSurface} onChange={e => update({ groundSurface: e.target.value as IsometricSettings['groundSurface'] })}><option value="pavement">Paved grid</option><option value="grass">Grass</option></select></label>}
     {colours.length > 0 && <fieldset className="iso-categories"><legend>City colours</legend>
       <label className="check-field"><input type="checkbox" checked={s.useGlyphColours} onChange={e => update({ useGlyphColours: e.target.checked })} /> Use artwork colours</label>
       <label>Surface treatment<select value={s.fillMode} onChange={e => update({ fillMode: e.target.value as IsometricSettings['fillMode'] })}><option value="hatch">Hatched colour fills</option><option value="outline">Outlines only</option></select></label>
       {s.fillMode === 'hatch' && number('fillSpacing', 'Hatch spacing (mm)', 0.15, 5, 0.05)}
-      <p className="panel-copy">Pale areas use the paper. Fills and lettering stay separated by pen colour. Use fewer grid cells or a larger sheet to give small signs and windows more room.</p>
-      {s.useGlyphColours && colours.map(colour => <label className="iso-colour-assignment" key={colour}><span><i style={{ background: colour }} />{CITYSCAPE_PALETTE.find(c => c.colour === colour)?.name ?? colour}</span><select aria-label={`Pen for ${colour}`} value={state.passes.some(p => p.id === s.colourPasses[colour]) ? s.colourPasses[colour] : ''} onChange={e => update({ colourPasses: { ...s.colourPasses, [colour]: e.target.value } })}><option value="">Use building / road pen</option>{state.passes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>)}
+      <p className="panel-copy">Unfilled surfaces use the paper. Fills and lettering stay separated by pen colour. Use fewer grid cells or a larger sheet to give small signs and windows more room.</p>
+      {s.useGlyphColours && colours.map(colour => <label className="iso-colour-assignment" key={colour}><span><i style={{ background: colour }} />{ISOMETRIC_PALETTE.find(c => c.colour === colour)?.name ?? colour}</span><select aria-label={`Pen for ${colour}`} value={state.passes.some(p => p.id === s.colourPasses[colour]) ? s.colourPasses[colour] : ''} onChange={e => update({ colourPasses: { ...s.colourPasses, [colour]: e.target.value } })}><option value="">Use building / road pen</option>{state.passes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>)}
       {s.useGlyphColours && <button className="button quiet full" onClick={() => { const { colourPasses, ...palette } = prepareGlyphColourPasses(glyphs, state.passes, state.pens, s.colourPasses); updateState({ ...palette, isometric: { ...s, colourPasses } }); }}>Restore colour passes</button>}
     </fieldset>}
     <label className="check-field"><input type="checkbox" checked={s.showGrid} onChange={e => update({ showGrid: e.target.checked })} /> Draw grid lines (included in export)</label>
     {pass('buildingPassId', 'Building pen pass')}
     {s.algorithm === 'city' && pass('roadPassId', 'Road pen pass')}
-    {s.showGrid && pass('gridPassId', 'Grid pen pass')}
+    {(s.showGrid || s.groundSurface === 'grass') && pass('gridPassId', s.groundSurface === 'grass' ? 'Grid / grass fallback pen pass' : 'Grid pen pass')}
+    {s.groundSurface === 'grass' && <p className="panel-copy">Grass shading and tufts use the Garden green colour pen when artwork colours are enabled; otherwise they use the fallback pen above.</p>}
     <button className="button quiet full" onClick={() => update({ ...DEFAULT_ISOMETRIC, tiles: s.tiles, colourPasses: s.colourPasses })}>Reset isometric settings</button>
     {libraryOpen && <GlyphboxDialog initialKind="isometric" onClose={() => setLibraryOpen(false)} />}
   </div>;

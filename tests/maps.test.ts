@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildOverpassQuery, mapDimensionsKm, osmDetailForBounds } from '../apps/server/src/maps';
+import { buildOverpassQuery, mapDimensionsKm, osmDetailForBounds, splitMapBounds } from '../apps/server/src/maps';
 import { boundsForView, dimensionsForBounds } from '../apps/web/src/components/MapRegionPicker';
 
 describe('large map imports', () => {
@@ -40,5 +40,21 @@ describe('large map imports', () => {
     expect(detailed).toContain('way["highway"]');
     expect(detailed).toContain('["building"]');
     expect(detailed).toContain('["leisure"="park"]');
+  });
+
+  it('caps square selections at 50 km and divides them into provider-friendly requests', () => {
+    const bounds = boundsForView({ latitude: 45.9237, longitude: 6.8694, zoom: 8 }, 1, 'square');
+    const dimensions = dimensionsForBounds(bounds);
+    expect(dimensions.widthKm).toBeLessThanOrEqual(50);
+    expect(dimensions.heightKm).toBeLessThanOrEqual(50);
+    expect(dimensions.widthKm).toBeGreaterThan(49);
+    expect(dimensions.heightKm).toBeGreaterThan(49);
+
+    const tiles = splitMapBounds(bounds);
+    expect(tiles.length).toBe(16);
+    expect(tiles.every((tile) => {
+      const tileDimensions = mapDimensionsKm(tile);
+      return tileDimensions.widthKm <= 12.6 && tileDimensions.heightKm <= 12.6;
+    })).toBe(true);
   });
 });

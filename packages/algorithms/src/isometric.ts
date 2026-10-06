@@ -210,8 +210,13 @@ export function buildIsometricScene(canvas: CanvasSettings, input: Partial<Isome
   const selectedLand = glyphs.filter(g => (g.role === 'building' || g.terrain === 'park') && (!s.buildingCategories.length || s.buildingCategories.includes(g.categoryId ?? '')));
   const architecture = selectedLand.filter(g => g.role === 'building');
   const buildings = s.algorithm === 'city' && architecture.length ? architecture : selectedLand;
-  const parks = glyphs.filter(g => g.terrain === 'park');
-  const roads = glyphs.filter(g => g.role.startsWith('road-') && (!s.roadCategories.length || s.roadCategories.includes(g.categoryId ?? '') || (s.treeLinedStreets && g.treeLined)));
+  // A selected artwork pack supplies its own gardens, coastline and vessels.
+  const landCollections = new Set(selectedLand.map(g => g.collectionId).filter((id): id is string => !!id));
+  const landscape = glyphs.filter(g => !s.buildingCategories.length || !landCollections.size || (g.collectionId && landCollections.has(g.collectionId)));
+  const parks = landscape.filter(g => g.terrain === 'park');
+  const selectedRoads = glyphs.filter(g => g.role.startsWith('road-') && (!s.roadCategories.length || s.roadCategories.includes(g.categoryId ?? '')));
+  const roadCollections = new Set(selectedRoads.map(g => g.collectionId).filter((id): id is string => !!id));
+  const roads = glyphs.filter(g => selectedRoads.includes(g) || (s.treeLinedStreets && g.treeLined && g.collectionId && roadCollections.has(g.collectionId)));
   const groups = [...new Set(buildings.map(g => g.categoryId ?? ''))].sort();
   const bounds = new Map<string, { left: number; bottom: number; width: number; height: number }>();
   let maxRise = 0;
@@ -261,13 +266,13 @@ export function buildIsometricScene(canvas: CanvasSettings, input: Partial<Isome
     const variant = (hash ^ (hash >>> 13)) >>> 0;
     if (cell.water) {
       const matches: Array<{ glyph: IsometricGlyph; rotation: number }> = [];
-      if (cell.shoreMask) for (const glyph of glyphs.filter(g => g.terrain === 'shore')) {
+      if (cell.shoreMask) for (const glyph of landscape.filter(g => g.terrain === 'shore')) {
         for (let rotation = 0; rotation < 4; rotation++) if ((((glyph.shoreMask ?? 4) << rotation | (glyph.shoreMask ?? 4) >> (4 - rotation)) & 15) === cell.shoreMask) {
           matches.push({ glyph, rotation }); break;
         }
       }
-      const pool = glyphs.filter(g => g.terrain === (s.waterFeatures && !cell.shoreMask && variant % 7 === 0 ? 'feature' : 'water'));
-      const fallback = glyphs.filter(g => g.terrain === 'water');
+      const pool = landscape.filter(g => g.terrain === (s.waterFeatures && !cell.shoreMask && variant % 7 === 0 ? 'feature' : 'water'));
+      const fallback = landscape.filter(g => g.terrain === 'water');
       const match = matches[mod(variant, matches.length)];
       const glyph = match?.glyph ?? pool[mod(variant, pool.length)] ?? fallback[0];
       if (glyph) generated.push({ id, glyphId: glyph.id, u: cell.u, v: cell.v, rotation: match?.rotation ?? 0 });
@@ -318,7 +323,7 @@ export function moveIsometricTile(tiles: IsometricTile[], id: string, u: number,
 
 export function generateIsometric(canvas: CanvasSettings, input: Partial<IsometricSettings>, glyphs: IsometricGlyph[], passIds = ['pass-1']): PlotGeometry {
   const s = isometricSettings(input);
-  const { tiles, project, tilePaths, min, max, byId } = buildIsometricScene(canvas, s, glyphs);
+  const { tiles, project, tilePaths, min, max, unit, byId } = buildIsometricScene(canvas, s, glyphs);
   const paths: PlotPath[] = [];
   let pointCount = 0;
   const emit = (id: string, points: Point[], layerId: string, pass: string, closed = false, masks: Occluder[] = []) => {
@@ -352,6 +357,57 @@ export function generateIsometric(canvas: CanvasSettings, input: Partial<Isometr
     const transformed = tilePaths(tile);
     paintGlyph(road ? `road-${tile.id}` : `building-${tile.id}-${tile.glyphId}`, transformed, layer, road ? s.roadPassId : s.buildingPassId);
     occluders.push(...glyphMasks(transformed));
+  }
+  if (s.algorithm === 'city' && tiles.some(tile => tile.roadMask || byId.get(tile.glyphId)?.role.startsWith('road-'))) {
+    // The glyph aprons are intentionally inset. Draw the selected ground surface
+    // in the exposed space; opaque buildings, streets and water mask it below.
+    const waterTiles = new Set(tiles.filter(tile => {
+      const terrain = byId.get(tile.glyphId)?.terrain;
+      return terrain === 'water' || terrain === 'shore' || terrain === 'feature';
+    }).map(tile => `${tile.u}:${tile.v}`));
+    const roadPaths = tiles.flatMap(tile => {
+      const glyph = byId.get(tile.glyphId);
+      return glyph?.role.startsWith('road-') ? glyph.paths : [];
+    });
+    // Use the placed road collection. An outline-only dark-paper pack has no
+    // ink fills, so use its bright outline colour for exposed paving instead.
+    const pavementColour = roadPaths.find(path => path.closed && path.fill && path.fill !== 'none' && !path.paper)?.fill
+      ?? roadPaths.find(path => path.stroke && /^#[0-9a-f]{6}$/i.test(path.stroke))?.stroke;
+    const pavementPass = s.useGlyphColours && pavementColour ? s.colourPasses[pavementColour] || s.roadPassId : s.roadPassId;
+    const grassPass = s.useGlyphColours ? s.colourPasses['#7d9e86'] || s.gridPassId : s.gridPassId;
+    // Outline-only road collections need broad paving slabs, not a dense mesh
+    // between their buildings. Filled collections retain their finer paving.
+    const inkFilledRoads = roadPaths.some(path => path.closed && path.fill && path.fill !== 'none' && !path.paper);
+    const joints = inkFilledRoads ? Math.max(2, Math.min(8, Math.round(unit / 3))) : 1;
+    for (const cell of planIsometricCells(s, min, max)) {
+      if (cell.water || waterTiles.has(`${cell.u}:${cell.v}`)) continue;
+      const centre = project(cell.u, cell.v);
+      if (centre.x < canvas.marginMm - 2 * unit || centre.x > canvas.widthMm - canvas.marginMm + 2 * unit || centre.y < canvas.marginMm - 2 * unit || centre.y > canvas.heightMm - canvas.marginMm + 2 * unit) continue;
+      if (s.groundSurface === 'grass') {
+        if (cell.roadMask) continue;
+        // A single direction of widely spaced hatching tints the lawn without
+        // recreating the square pavement joints beneath the buildings.
+        for (let i = 0; i < 6; i++) {
+          const offset = (i + .5) / 6 - .5;
+          emit(`grass-shade-${cell.u}:${cell.v}-${i}`, [project(cell.u - .5, cell.v + offset), project(cell.u + .5, cell.v + offset)], 'iso-terrain', grassPass, false, occluders);
+        }
+        for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+          const seed = (Math.imul(cell.u + 101, 73856093) ^ Math.imul(cell.v + 137, 19349663) ^ Math.imul(row + 1, 83492791) ^ Math.imul(col + 1, 2654435761)) >>> 0;
+          if (seed % 5 === 0) continue;
+          const u = cell.u + (col + .5 + ((seed >>> 5) % 7 - 3) / 30) / 4 - .5;
+          const v = cell.v + (row + .5 + ((seed >>> 9) % 7 - 3) / 30) / 4 - .5;
+          const base = project(u, v);
+          const blade = Math.min(1.4, unit * .13);
+          for (let i = -1; i <= 1; i++) emit(`grass-${cell.u}:${cell.v}-${row}-${col}-${i}`, [base, { x: base.x + i * blade * .55, y: base.y - blade * (i === 0 ? 1 : .7) }], 'iso-terrain', grassPass, false, occluders);
+        }
+        continue;
+      }
+      for (let i = 1; i <= joints; i++) {
+        const offset = i / joints - .5;
+        emit(`pavement-${cell.u}:${cell.v}-u-${i}`, [project(cell.u + offset, cell.v - .5), project(cell.u + offset, cell.v + .5)], 'iso-roads', pavementPass, false, occluders);
+        emit(`pavement-${cell.u}:${cell.v}-v-${i}`, [project(cell.u - .5, cell.v + offset), project(cell.u + .5, cell.v + offset)], 'iso-roads', pavementPass, false, occluders);
+      }
+    }
   }
   if (s.showGrid) for (let i = min; i <= max + 1; i++) {
     emit(`grid-u-${i}`, [project(i - 0.5, min - 0.5), project(i - 0.5, max + 0.5)], 'iso-grid', s.gridPassId, false, occluders);

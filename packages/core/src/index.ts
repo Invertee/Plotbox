@@ -1,7 +1,8 @@
-export type ProjectMode = 'generative' | 'raster' | 'svg' | 'map' | 'isometric' | 'linocut';
+export type ProjectMode = 'generative' | 'raster' | 'svg' | 'map' | 'topography' | 'isometric' | 'linocut' | 'engraving';
 export type Orientation = 'portrait' | 'landscape';
 export type PaperPreset = 'A4' | 'A3' | 'A2' | 'custom';
-export type PaperColour = 'white' | 'black' | 'grey' | 'blue';
+export type PaperColour = 'white' | 'black' | 'grey' | 'blue' | 'navy';
+export type BorderPattern = 'straight' | 'waves' | 'dotted' | 'scallops';
 
 export const BLADE_ANGLE_STEPS = [5, 10, 15, 20, 30, 45, 60, 90] as const;
 
@@ -10,6 +11,7 @@ export const PAPER_COLOURS: Record<PaperColour, string> = {
   black: '#1c1d1f',
   grey: '#aeb2b5',
   blue: '#8eb6d9',
+  navy: '#10172d',
 };
 
 export interface Point {
@@ -71,6 +73,34 @@ export interface CanvasSettings {
   paperColour?: PaperColour;
 }
 
+export interface BorderSettings {
+  /** Draw the selected border pattern. */
+  enabled: boolean;
+  /** Remove artwork beneath the border band, leaving the paper untouched. */
+  whitespace: boolean;
+  pattern: BorderPattern;
+  /** Distance from the paper edge to the outside of the border band. */
+  insetMm: number;
+  /** Width of the untouched band. */
+  whitespaceWidthMm: number;
+  /** Wave/scallop depth. */
+  amplitudeMm: number;
+  /** Distance between repeated dots or curves. */
+  spacingMm: number;
+  passId: string;
+}
+
+export const DEFAULT_BORDER: BorderSettings = {
+  enabled: false,
+  whitespace: false,
+  pattern: 'straight',
+  insetMm: 10,
+  whitespaceWidthMm: 8,
+  amplitudeMm: 2,
+  spacingMm: 8,
+  passId: 'pass-1',
+};
+
 export interface PenProfile {
   id: string;
   name: string;
@@ -86,7 +116,11 @@ export interface PenProfile {
   /** Legacy shared Z feed rate, retained for older saved projects. */
   zFeed?: number;
   /** Defaults to pen for older projects. */
-  mediaType?: 'pen' | 'paint' | 'blade';
+  mediaType?: 'pen' | 'paint' | 'blade' | 'rotary';
+  /** Manual Dremel switching, or controller-managed M3/M5 spindle commands. */
+  rotaryControl?: 'manual' | 'gcode';
+  rotaryRpm?: number;
+  rotarySpinupSeconds?: number;
   /**
    * Angular spacing between manual straight-blade positions. Blade paths are
    * split and grouped from 0° up to 180°; smaller steps follow curves more
@@ -141,6 +175,8 @@ export interface IsometricGlyph {
   name: string;
   categoryId?: string;
   categoryName?: string;
+  /** Artwork pack shared by buildings, roads and landscape tiles. */
+  collectionId?: string;
   role: IsometricRole;
   terrain?: IsometricTerrain;
   /** Land-facing edges, clockwise from +u. */
@@ -161,6 +197,7 @@ export interface IsometricSettings {
   density: number;
   districtSize: number;
   showGrid: boolean;
+  groundSurface: 'pavement' | 'grass';
   buildingCategories: string[];
   roadCategories: string[];
   buildingPassId: string;
@@ -181,7 +218,7 @@ export interface IsometricSettings {
 export const DEFAULT_ISOMETRIC: IsometricSettings = {
   algorithm: 'city', fit: 'square', cells: 12, angle: 30, sourceAngle: 30,
   buildingScale: 0.72, blockSize: 4, roadLayout: 'blocks', clusterDepth: 2,
-  density: 85, districtSize: 2, showGrid: false,
+  density: 85, districtSize: 2, showGrid: false, groundSurface: 'pavement',
   buildingCategories: [], roadCategories: [], buildingPassId: 'pass-1', roadPassId: 'pass-1', gridPassId: 'pass-2',
   useGlyphColours: true, colourPasses: {}, fillMode: 'hatch', fillSpacing: 0.65,
   landscape: 'city', waterCoverage: 40, waterFeatures: true,
@@ -207,7 +244,14 @@ export interface PlotLayer {
   sourceCategory?: string;
 }
 
+export type MapShape = 'rectangle' | 'square' | 'circle';
+
 export interface MapSettings {
+  shape?: MapShape;
+  /** Shape of the last successful download, independent of the next selection. */
+  importedShape?: MapShape;
+  relief?: ReliefSettings;
+  terrain?: TerrainData;
   query: string;
   radiusKm: number;
   dataSource?: 'openstreetmap' | 'terrain' | 'both';
@@ -219,6 +263,42 @@ export interface MapSettings {
   zoom?: number;
   /** Geographic footprint of the downloaded map; older projects may store its centre as a zero-area fallback. */
   bounds?: { north: number; south: number; east: number; west: number };
+}
+
+/** Regular north-to-south elevation grid, in metres, over geographic bounds. */
+export interface TerrainData {
+  width: number;
+  height: number;
+  elevations: number[];
+  bounds: { north: number; south: number; east: number; west: number };
+  water?: Array<{ closed: boolean; points: Array<[number, number]> }>;
+}
+
+export interface ReliefSettings {
+  shape?: MapShape;
+  rotation: number;
+  tilt: number;
+  exaggeration: number;
+  contourInterval: number;
+  spacing: number;
+  baseDepth: number;
+  clipBaseDepth: boolean;
+  maxBaseDepth: number;
+  shading: boolean;
+  bands: boolean;
+  water: boolean;
+}
+
+export const DEFAULT_RELIEF: ReliefSettings = {
+  rotation: 45, tilt: 35.264, exaggeration: 2, contourInterval: 20,
+  spacing: 0.7, baseDepth: 3, clipBaseDepth: false, maxBaseDepth: 15,
+  shading: true, bands: true, water: true,
+};
+
+export function reliefLayers(): PlotLayer[] {
+  return ['Low elevations', 'Middle elevations', 'High elevations', 'Slope shading', 'Water', 'Contours & base'].map((name, i) => ({
+    id: `relief-${i}`, name, visible: true, algorithmId: 'topography.relief', passId: `relief-pass-${i}`,
+  }));
 }
 
 export interface MapTitleSettings {
@@ -322,6 +402,8 @@ export interface ProjectState {
   /** Project-owned paths keep drawings reproducible if Glyphbox changes. */
   isometricGlyphs?: IsometricGlyph[];
   canvas: CanvasSettings;
+  /** Optional so projects saved before plot borders were introduced remain compatible. */
+  border?: BorderSettings;
   pens: PenProfile[];
   passes: PlotPass[];
   layers: PlotLayer[];
@@ -386,19 +468,27 @@ const defaultPen = (id: string, name: string, color: string): PenProfile => ({
 export function createDefaultState(mode: ProjectMode, canvas: CanvasSettings): ProjectState {
   const pens = mode === 'linocut'
     ? [{ ...defaultPen('blade-straight', 'Straight lino blade', '#9b3125'), widthMm: 1, zDown: -1, xyFeed: 500, zDownFeed: 150, mediaType: 'blade' as const, bladeAngleStep: 15 }]
+    : mode === 'engraving'
+      ? [{ ...defaultPen('rotary-1', 'Rotary engraving bit', '#547d91'), widthMm: 0.5, zUp: 3, zDown: -0.1, xyFeed: 300, zUpFeed: 600, zDownFeed: 100, mediaType: 'rotary' as const, rotaryControl: 'manual' as const, rotaryRpm: 12000, rotarySpinupSeconds: 2 }]
     : [defaultPen('pen-black', 'Black fineliner', '#15171a'), defaultPen('pen-blue', 'Blue fineliner', '#2762d7')];
-  const passes: PlotPass[] = mode === 'linocut'
-    ? [{ id: 'pass-1', name: 'Cut pass 1', penId: pens[0]!.id, enabled: true }]
+  const passes: PlotPass[] = mode === 'linocut' || mode === 'engraving'
+    ? [{ id: 'pass-1', name: mode === 'engraving' ? 'Engrave pass 1' : 'Cut pass 1', penId: pens[0]!.id, enabled: true }]
     : [
       { id: 'pass-1', name: 'Pass 1', penId: pens[0]!.id, enabled: true },
       { id: 'pass-2', name: 'Pass 2', penId: pens[1]!.id, enabled: true },
     ];
-  const initialAlgorithm = mode === 'isometric' ? 'isometric.city' : mode === 'raster' ? 'raster.hatch' : mode === 'svg' || mode === 'map' || mode === 'linocut' ? 'vector.layers' : 'generative.test-pattern';
+  if (mode === 'topography') {
+    const colours = ['#d7a371', '#bc774c', '#965536', '#735441', '#267d89', '#302820'];
+    pens.splice(0, pens.length, ...reliefLayers().map((layer, i) => defaultPen(`relief-pen-${i}`, layer.name, colours[i]!)));
+    passes.splice(0, passes.length, ...reliefLayers().map((layer, i) => ({ id: layer.passId, name: layer.name, penId: pens[i]!.id, enabled: true })));
+  }
+  const initialAlgorithm = mode === 'topography' ? 'topography.relief' : mode === 'isometric' ? 'isometric.city' : mode === 'engraving' ? 'raster.tonal-area-fill' : mode === 'raster' ? 'raster.hatch' : mode === 'svg' || mode === 'map' || mode === 'linocut' ? 'vector.layers' : 'generative.test-pattern';
   return {
     canvas,
+    border: { ...DEFAULT_BORDER, passId: passes[0]!.id },
     pens,
     passes,
-    layers: mode === 'isometric' ? isometricLayers() : [{ id: 'layer-1', name: 'Artwork', visible: true, algorithmId: mode === 'svg' || mode === 'map' || mode === 'linocut' ? 'vector.outline' : initialAlgorithm, passId: passes[0]!.id }],
+    layers: mode === 'topography' ? reliefLayers() : mode === 'isometric' ? isometricLayers() : [{ id: 'layer-1', name: 'Artwork', visible: true, algorithmId: mode === 'svg' || mode === 'map' || mode === 'linocut' ? 'vector.outline' : initialAlgorithm, passId: passes[0]!.id }],
     geometry: { paths: [], generatedAt: new Date(0).toISOString(), generator: 'none' },
     algorithmId: initialAlgorithm,
     algorithmSettings: {},
@@ -406,7 +496,7 @@ export function createDefaultState(mode: ProjectMode, canvas: CanvasSettings): P
     preprocess: { ...DEFAULT_PREPROCESS },
     rasterPlacement: { ...DEFAULT_RASTER_PLACEMENT },
     turtlePlacement: { ...DEFAULT_TURTLE_PLACEMENT },
-    mapSettings: { query: '', radiusKm: 1, dataSource: 'both', includeTopography: true, contourInterval: 10 },
+    mapSettings: { query: '', radiusKm: 1, dataSource: 'both', includeTopography: true, contourInterval: mode === 'topography' ? 20 : 10, ...(mode === 'topography' ? { relief: { ...DEFAULT_RELIEF } } : {}) },
     mapAnnotations: [],
     mapTitle: { enabled: false, text: '', position: 'top', font: 'single-line', titleSizeMm: 8, showCoordinates: false, subtitleSizeMm: 3, passId: passes[0]!.id },
     gcode: { origin: 'bottom-left', travelFeed: 5000, pathJoinTolerance: 0.15, parkX: 0, parkY: 0, pauseBetweenPasses: true, pauseCommand: 'M0', includeComments: true },

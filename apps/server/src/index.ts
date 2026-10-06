@@ -50,13 +50,13 @@ app.get<{ Params: { id: string } }>('/api/projects/:id', async (request, reply) 
 app.post<{ Body: { name?: string; mode?: ProjectMode; canvas?: Partial<CanvasSettings> } }>('/api/projects', async (request, reply) => {
   const name = request.body?.name?.trim();
   const mode = request.body?.mode;
-  if (!name || !mode || !['generative', 'raster', 'svg', 'map', 'isometric', 'linocut'].includes(mode)) return reply.code(400).send({ error: 'A name and valid mode are required' });
+  if (!name || !mode || !['generative', 'raster', 'svg', 'map', 'topography', 'isometric', 'linocut', 'engraving'].includes(mode)) return reply.code(400).send({ error: 'A name and valid mode are required' });
   const preset = request.body.canvas?.preset ?? 'A4';
   const orientation = request.body.canvas?.orientation ?? 'portrait';
   const custom: [number, number] = [request.body.canvas?.widthMm ?? 210, request.body.canvas?.heightMm ?? 297];
   const [widthMm, heightMm] = paperDimensions(preset, orientation, custom);
   const requestedPaperColour = request.body.canvas?.paperColour;
-  const paperColour: PaperColour = requestedPaperColour && ['white', 'black', 'grey', 'blue'].includes(requestedPaperColour) ? requestedPaperColour : 'white';
+  const paperColour: PaperColour = requestedPaperColour && ['white', 'black', 'grey', 'blue', 'navy'].includes(requestedPaperColour) ? requestedPaperColour : 'white';
   const canvas: CanvasSettings = { preset, orientation, widthMm, heightMm, marginMm: Math.max(0, request.body.canvas?.marginMm ?? 10), paperColour };
   const id = crypto.randomUUID();
   return reply.code(201).send(createProject({ id, name, mode, state: createDefaultState(mode, canvas) }));
@@ -78,7 +78,7 @@ app.get<{ Querystring: { q?: string } }>('/api/maps/search', async (request, rep
   try { return await searchPlaces(query); } catch (error) { return reply.code(502).send({ error: error instanceof Error ? error.message : 'Place search failed' }); }
 });
 
-app.post<{ Body: { north?: number; south?: number; east?: number; west?: number; name?: string; dataSource?: MapDataSource; includeTopography?: boolean; contourInterval?: number } }>('/api/maps/import', async (request, reply) => {
+app.post<{ Body: { north?: number; south?: number; east?: number; west?: number; name?: string; dataSource?: MapDataSource; includeTopography?: boolean; contourInterval?: number; relief?: boolean } }>('/api/maps/import', async (request, reply) => {
   const { north, south, east, west, name = 'Map import', contourInterval = 10 } = request.body ?? {};
   const dataSource = request.body?.dataSource ?? (request.body?.includeTopography ? 'both' : 'openstreetmap');
   const coordinates = [north, south, east, west];
@@ -87,10 +87,10 @@ app.post<{ Body: { north?: number; south?: number; east?: number; west?: number;
     && Math.abs(north!) <= 85 && Math.abs(south!) <= 85 && Math.abs(east!) <= 180 && Math.abs(west!) <= 180;
   if (!coordinateValid) return reply.code(400).send({ error: 'Select a valid map region.' });
   const dimensions = mapDimensionsKm({ north: north!, south: south!, east: east!, west: west! });
-  if (dimensions.areaKm2 > 1_000 || dimensions.widthKm > 60 || dimensions.heightKm > 60) return reply.code(400).send({ error: 'Select a region no larger than 1,000 km² (about 386 mi²) or 60 km across.' });
+  if (dimensions.widthKm > 50.1 || dimensions.heightKm > 50.1) return reply.code(400).send({ error: 'Select a region no larger than 50 km per side.' });
   if (!['openstreetmap', 'terrain', 'both'].includes(dataSource)) return reply.code(400).send({ error: 'Choose OpenStreetMap, terrain, or both.' });
   if (dataSource !== 'openstreetmap' && (!Number.isFinite(contourInterval) || contourInterval < 5 || contourInterval > 200)) return reply.code(400).send({ error: 'Contour interval must be between 5 and 200 metres.' });
-  try { return await importMap({ north: north!, south: south!, east: east!, west: west!, name, dataSource, contourInterval }); } catch (error) { return reply.code(502).send({ error: error instanceof Error ? error.message : 'Map import failed' }); }
+  try { return await importMap({ north: north!, south: south!, east: east!, west: west!, name, dataSource, contourInterval, relief: request.body.relief === true }); } catch (error) { return reply.code(502).send({ error: error instanceof Error ? error.message : 'Map import failed' }); }
 });
 
 app.post<{ Body: { address?: string; projectName?: string; filename?: string; content?: string } }>('/api/fluidnc/upload', async (request, reply) => {

@@ -1,5 +1,9 @@
 import type { IsometricRole, Point, SourcePath } from '@plotter/core';
 import type { GlyphAsset, GlyphCategory } from './Glyphbox';
+import { ANTIQUITY_ASSETS, ANTIQUITY_CATEGORIES } from './isometricAntiquityGlyphs';
+import { MEDIEVAL_ASSETS, MEDIEVAL_CATEGORIES } from './isometricMedievalGlyphs';
+import { CYBERPUNK_ASSETS, CYBERPUNK_CATEGORIES } from './isometricCyberpunkGlyphs';
+import { CYBERPUNK_GEL_ASSETS, CYBERPUNK_GEL_CATEGORIES } from './isometricCyberpunkGelGlyphs';
 
 /** One illustration system for SVG previews and actual pen geometry. */
 export const CITYSCAPE_PALETTE = [
@@ -48,7 +52,7 @@ class Illustration {
     const fmt = (v: number) => Number(v.toFixed(4));
     const shapes = this.paths.map(p => `<${p.closed ? 'polygon' : 'polyline'} points="${p.points.map(q => `${fmt(q.x)},${fmt(q.y)}`).join(' ')}" fill="${p.fill}" stroke="${p.stroke}"/>`).join('');
     return {
-      id: `cityscape-${id}`, name, kind: 'isometric', categoryId: CITYSCAPE_CATEGORY, isometricRole: role,
+      id: `cityscape-${id}`, name, kind: 'isometric', categoryId: CITYSCAPE_CATEGORY, collectionId: CITYSCAPE_CATEGORY, isometricRole: role,
       createdAt: new Date(0).toISOString(),
       svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${left} ${top} ${width} ${height}"><g stroke-width="0.85" stroke-linecap="round" stroke-linejoin="round">${shapes}</g></svg>`,
       // Isotropic building coordinates; roads occupy the full ground diamond.
@@ -517,12 +521,20 @@ const WATERFRONT: GlyphAsset[] = [
 ];
 
 export const ISOMETRIC_STARTER_CATEGORIES: GlyphCategory[] = [
+  ...CYBERPUNK_GEL_CATEGORIES,
+  ...CYBERPUNK_CATEGORIES,
+  ...MEDIEVAL_CATEGORIES,
+  ...ANTIQUITY_CATEGORIES,
   { id: CITYSCAPE_CATEGORY, name: 'Cityscape', kind: 'isometric' },
   { id: GREENSPACE_CATEGORY, name: 'Parks & green spaces', kind: 'isometric' },
   { id: WATERFRONT_CATEGORY, name: 'Coasts & lakes', kind: 'isometric' },
   { id: TREELINED_CATEGORY, name: 'Tree-lined roads', kind: 'isometric' },
 ];
 export const ISOMETRIC_STARTER_ASSETS = [
+  ...CYBERPUNK_GEL_ASSETS,
+  ...CYBERPUNK_ASSETS,
+  ...MEDIEVAL_ASSETS,
+  ...ANTIQUITY_ASSETS,
   ...BUILDINGS.map(building),
   ...(['avenue', 'signs', 'crossing'] as const).flatMap(variant => ROAD_ROLES.map(r => road(r.mask, r.role, r.name, variant))),
   ...ROAD_ROLES.map(r => road(r.mask, r.role, r.name, 'trees')),

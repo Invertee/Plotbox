@@ -22,6 +22,6 @@ describe('paper configuration', () => {
   });
 
   it('provides preview colours for every supported paper colour', () => {
-    expect(Object.keys(PAPER_COLOURS)).toEqual(['white', 'black', 'grey', 'blue']);
+    expect(Object.keys(PAPER_COLOURS)).toEqual(['white', 'black', 'grey', 'blue', 'navy']);
   });
 });

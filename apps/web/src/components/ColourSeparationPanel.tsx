@@ -8,7 +8,7 @@ const rasterTreatmentIds: Partial<Record<ColourTreatment['fill'], string>> = {
   'tonal-dashes': 'raster.tonal-dashes',
 };
 
-export function ColourSeparationPanel({ state, updateState, selected, setSelected }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void; selected: string; setSelected: (id: string) => void }) {
+export function ColourSeparationPanel({ state, updateState, selected, setSelected, engraving = false }: { state: ProjectState; updateState: (update: Partial<ProjectState>) => void; selected: string; setSelected: (id: string) => void; engraving?: boolean }) {
   const result = state.geometry.generator === 'raster.colour-separation' ? state.geometry.colourSeparation : undefined;
   if (!result) return <p className="panel-copy">Import an image to find its colours and separate pieces.</p>;
   const config = state.colourSeparation ?? { colours: {}, regions: {} };
@@ -35,7 +35,7 @@ export function ColourSeparationPanel({ state, updateState, selected, setSelecte
     <p className="panel-copy">{result.palette.length} colours · {result.regions.length} pieces. Each colour has its own pen pass. Set the real pen colour and thickness below. These are connected colour shapes, not recognised objects.</p>
     {result.palette.map(colour => {
       const pieces = result.regions.filter(r => r.colourId === colour.id);
-      const value = { ...DEFAULT_COLOUR_TREATMENT, passId: colourPassId(colour.id), ...config.colours[colour.id] };
+      const value = { ...DEFAULT_COLOUR_TREATMENT, ...(engraving ? { fill: 'solid' as const, outline: true } : {}), passId: colourPassId(colour.id), ...config.colours[colour.id] };
       const passName = state.passes.find(pass => pass.id === value.passId)?.name ?? `Colour ${Number(colour.id) + 1}`;
       return <details className="pass-card" key={colour.id}><summary><span style={{ display: 'inline-block', width: 14, height: 14, background: colour.colour, border: '1px solid #888', marginRight: 8 }} />{passName} · {pieces.length} pieces</summary>
         <small>Detected {colour.colour} · {colour.pixels.toLocaleString()} pixels</small>
@@ -49,7 +49,7 @@ export function ColourSeparationPanel({ state, updateState, selected, setSelecte
     })}</select></label>
     {region && <div className="pass-card">
       <p className="panel-copy">Position is measured from the image’s top-left corner. Only changed settings override the colour defaults.</p>
-      {treatmentFields({ ...DEFAULT_COLOUR_TREATMENT, passId: colourPassId(region.colourId), ...config.colours[region.colourId], ...config.regions[region.id], algorithmSettings: { ...config.colours[region.colourId]?.algorithmSettings, ...config.regions[region.id]?.algorithmSettings } }, patch => updateState({ colourSeparation: { ...config, regions: { ...config.regions, [region.id]: { ...config.regions[region.id], ...patch } } } }), 'this piece')}
+      {treatmentFields({ ...DEFAULT_COLOUR_TREATMENT, ...(engraving ? { fill: 'solid' as const, outline: true } : {}), passId: colourPassId(region.colourId), ...config.colours[region.colourId], ...config.regions[region.id], algorithmSettings: { ...config.colours[region.colourId]?.algorithmSettings, ...config.regions[region.id]?.algorithmSettings } }, patch => updateState({ colourSeparation: { ...config, regions: { ...config.regions, [region.id]: { ...config.regions[region.id], ...patch } } } }), 'this piece')}
       <button className="button quiet full" onClick={() => { const regions = { ...config.regions }; delete regions[region.id]; updateState({ colourSeparation: { ...config, regions } }); }}>Use colour defaults</button>
     </div>}
     <p className="panel-copy">Changing separation settings or replacing the image resets treatments and automatic colour pens. Dense fill uses lines spaced at 85% of the pen width. Small pieces may need a thinner pen. Outlines follow the image pixel edges.</p>

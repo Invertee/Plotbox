@@ -1,5 +1,7 @@
 import type { PlotGeometry, PlotPath, Point, RasterPlacementSettings } from '@plotter/core';
 
+export { applyPlotBorder, BORDER_LAYER_ID } from './borders';
+
 export interface Bounds { minX: number; minY: number; maxX: number; maxY: number }
 
 export interface ImagePlacement { x: number; y: number; width: number; height: number }
@@ -190,3 +192,5 @@ export function optimisePathOrder(paths: PlotPath[], start: Point = { x: 0, y: 0
   paths.forEach((path, index) => { if (!endpointsByPath.has(index)) result.push(path); });
   return result;
 }
+
+export { cropMapCircle } from './mapCrop';

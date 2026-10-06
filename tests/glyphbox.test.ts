@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { upgradeGlyphLibrary, type GlyphAsset } from '../apps/web/src/components/Glyphbox';
 import { CITYSCAPE_CATEGORY, CITYSCAPE_PALETTE, GREENSPACE_CATEGORY, WATERFRONT_CATEGORY, TREELINED_CATEGORY, ISOMETRIC_STARTER_ASSETS, ISOMETRIC_STARTER_CATEGORIES } from '../apps/web/src/components/isometricStarterGlyphs';
+import { ANTIQUITY_CATEGORY } from '../apps/web/src/components/isometricAntiquityGlyphs';
+import { MEDIEVAL_CATEGORY } from '../apps/web/src/components/isometricMedievalGlyphs';
+import { CYBERPUNK_CATEGORY } from '../apps/web/src/components/isometricCyberpunkGlyphs';
+import { CYBERPUNK_GEL_CATEGORY } from '../apps/web/src/components/isometricCyberpunkGelGlyphs';
 import { glyphColours, prepareGlyphColourPasses } from '../apps/web/src/components/isometricColourPasses';
 import { buildIsometricScene, generateIsometric, planIsometricCells } from '../packages/algorithms/src/isometric';
 import { createDefaultState, type IsometricGlyph } from '../packages/core/src';
 
-const glyphs: IsometricGlyph[] = ISOMETRIC_STARTER_ASSETS.map(asset => ({ id: asset.id, name: asset.name, categoryId: asset.categoryId, role: asset.isometricRole!, terrain: asset.terrain, shoreMask: asset.shoreMask, treeLined: asset.treeLined, paths: asset.plotPaths! }));
+// These existing artwork/colour assertions cover the original Cityscape pack.
+const glyphs: IsometricGlyph[] = ISOMETRIC_STARTER_ASSETS.filter(a => [CITYSCAPE_CATEGORY, GREENSPACE_CATEGORY, WATERFRONT_CATEGORY, TREELINED_CATEGORY].includes(a.categoryId!)).map(asset => ({ id: asset.id, name: asset.name, categoryId: asset.categoryId, role: asset.isometricRole!, terrain: asset.terrain, shoreMask: asset.shoreMask, treeLined: asset.treeLined, paths: asset.plotPaths! }));
 
 describe('Glyphbox isometric starter collection', () => {
   it('contains varied low-rise, tall and shop architecture', () => {
     const buildings = ISOMETRIC_STARTER_ASSETS.filter(asset => asset.isometricRole === 'building' && asset.categoryId === CITYSCAPE_CATEGORY);
     expect(buildings).toHaveLength(18);
-    expect(new Set(ISOMETRIC_STARTER_ASSETS.map(asset => asset.categoryId))).toEqual(new Set([CITYSCAPE_CATEGORY, GREENSPACE_CATEGORY, WATERFRONT_CATEGORY, TREELINED_CATEGORY]));
-    expect(ISOMETRIC_STARTER_CATEGORIES.map(c => c.name)).toEqual(['Cityscape', 'Parks & green spaces', 'Coasts & lakes', 'Tree-lined roads']);
+    expect(new Set(ISOMETRIC_STARTER_ASSETS.map(asset => asset.categoryId))).toEqual(new Set([CYBERPUNK_GEL_CATEGORY, CYBERPUNK_CATEGORY, MEDIEVAL_CATEGORY, ANTIQUITY_CATEGORY, CITYSCAPE_CATEGORY, GREENSPACE_CATEGORY, WATERFRONT_CATEGORY, TREELINED_CATEGORY]));
+    expect(ISOMETRIC_STARTER_CATEGORIES.map(c => c.name)).toEqual(['Dark retrowave/cyberpunk cityscape', 'Retrowave / Cyberpunk city', 'Medieval · towns & castles', 'Antiquity · Rome & Greece', 'Cityscape', 'Parks & green spaces', 'Coasts & lakes', 'Tree-lined roads']);
     for (const use of ['Residential', 'Commercial', 'Industrial']) expect(buildings.some(b => b.name.startsWith(use))).toBe(true);
     expect(buildings.some(b => b.name.includes('11 storeys'))).toBe(true);
     expect(buildings.every(asset => asset.plotPaths!.some(p => p.closed && p.fill !== 'none') && !/<(text|image)\b/.test(asset.svg))).toBe(true);
@@ -46,7 +51,7 @@ describe('Glyphbox isometric starter collection', () => {
       categories: [{ id: 'old-architecture', name: 'Architecture', kind: 'isometric' }],
       assets: [custom],
     });
-    expect(upgraded.version).toBe(7);
+    expect(upgraded.version).toBe(13);
     expect(upgraded.assets).toContain(custom);
     expect(upgraded.assets).toHaveLength(1 + ISOMETRIC_STARTER_ASSETS.length);
     expect(upgradeGlyphLibrary(upgraded).assets).toHaveLength(upgraded.assets.length);
@@ -70,7 +75,7 @@ describe('Glyphbox isometric starter collection', () => {
   it('adds green spaces to v4 libraries without restoring deleted city tiles', () => {
     const v4Assets = ISOMETRIC_STARTER_ASSETS.filter(asset => asset.categoryId === CITYSCAPE_CATEGORY && asset.id !== 'cityscape-cottage');
     const upgraded = upgradeGlyphLibrary({ version: 4, categories: [{ id: CITYSCAPE_CATEGORY, name: 'Cityscape', kind: 'isometric' }], assets: v4Assets });
-    expect(upgraded.version).toBe(7);
+    expect(upgraded.version).toBe(13);
     expect(upgraded.categories.some(category => category.id === GREENSPACE_CATEGORY)).toBe(true);
     expect(upgraded.assets.filter(asset => asset.categoryId === GREENSPACE_CATEGORY)).toHaveLength(10);
     expect(upgraded.assets.some(asset => asset.id === 'cityscape-cottage')).toBe(false);
@@ -102,7 +107,7 @@ describe('Glyphbox isometric starter collection', () => {
     const saved = { ...park, svg: '<svg>old park</svg>', name: 'My park', categoryId: 'saved-parks' };
     const upgraded = upgradeGlyphLibrary({ version: 6, categories: [], assets: [saved] });
     expect(upgraded.assets.find(a => a.id === park.id)).toMatchObject({ svg: park.svg, name: 'My park', categoryId: 'saved-parks' });
-    expect(upgraded.assets.filter(a => a.treeLined)).toHaveLength(5);
+    expect(upgraded.assets.filter(a => a.treeLined && a.categoryId === TREELINED_CATEGORY)).toHaveLength(5);
     expect(upgraded.assets.some(a => a.categoryId === WATERFRONT_CATEGORY)).toBe(false);
   });
 

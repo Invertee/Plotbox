@@ -287,8 +287,23 @@ function passGCode(pass: PlotPass, pen: PenProfile, geometry: PlotGeometry, sett
   const lines: string[] = [];
   const zUpFeed = pen.zUpFeed ?? pen.zFeed ?? 600;
   const zDownFeed = pen.zDownFeed ?? pen.zFeed ?? 600;
+  const isRotary = pen.mediaType === 'rotary';
+  if (isRotary) {
+    if (!Number.isFinite(pen.zUp) || !Number.isFinite(pen.zDown) || pen.zUp <= pen.zDown) throw new Error(`${pen.name} needs a clearance Z above its engraving Z.`);
+    if (![pen.xyFeed, zUpFeed, zDownFeed].every(value => Number.isFinite(value) && value > 0)) throw new Error(`${pen.name} needs positive XY, lift and plunge feeds.`);
+    if (pen.rotaryControl === 'gcode' && (!Number.isFinite(pen.rotaryRpm) || (pen.rotaryRpm ?? 0) <= 0)) throw new Error(`${pen.name} needs a positive spindle speed.`);
+  }
   if (settings.includeComments) lines.push(`; ${pass.name} — ${pen.name}`);
   lines.push(`G0 Z${n(pen.zUp)} F${n(zUpFeed)}`);
+  if (isRotary) {
+    if (pen.rotaryControl === 'gcode') {
+      lines.push(`M3 S${n(pen.rotaryRpm!)}`);
+      if ((pen.rotarySpinupSeconds ?? 0) > 0) lines.push(`G4 P${n(pen.rotarySpinupSeconds!)}`);
+    } else {
+      if (settings.includeComments) lines.push('; Switch on rotary tool, then resume');
+      lines.push(settings.pauseCommand || 'M0');
+    }
+  }
   const passPaths = geometry.paths.filter((path) => path.passId === pass.id && path.points.length > 1);
   const ordered = optimisePathOrder(passPaths, { x: 0, y: 0 }, (completed) => {
     onProgress?.(0.08 + 0.62 * ((completedBefore + completed) / Math.max(1, totalPaths)), `Optimising ${Math.min(totalPaths, completedBefore + completed).toLocaleString()} of ${totalPaths.toLocaleString()} paths`);
@@ -318,6 +333,13 @@ function passGCode(pass: PlotPass, pen: PenProfile, geometry: PlotGeometry, sett
     }
   }
   lines.push(`G0 Z${n(pen.zUp)} F${n(zUpFeed)}`);
+  if (isRotary) {
+    if (pen.rotaryControl === 'gcode') lines.push('M5');
+    else {
+      if (settings.includeComments) lines.push('; Switch off rotary tool, then resume');
+      lines.push(settings.pauseCommand || 'M0');
+    }
+  }
   lines.push(`G0 X${n(settings.parkX)} Y${n(settings.parkY)} F${n(settings.travelFeed)}`);
   return lines;
 }
@@ -355,7 +377,7 @@ export function generateGCode(projectName: string, geometry: PlotGeometry, passe
     appendLines(body, passGCode(pass, pen, safeGeometry, settings, pageHeight, completedBefore, totalPaths, onProgress));
     completedBefore += pathCounts[index] ?? 0;
     if (settings.pauseBetweenPasses && index < active.length - 1) {
-      if (settings.includeComments) body.push(pen.mediaType === 'blade' ? '; Change or reset cutting tool' : '; Change pen');
+      if (settings.includeComments) body.push(pen.mediaType === 'blade' ? '; Change or reset cutting tool' : pen.mediaType === 'rotary' ? '; Change or reset engraving tool' : '; Change pen');
       body.push(settings.pauseCommand || 'M0');
     }
   });

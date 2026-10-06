@@ -1,6 +1,6 @@
-import type { CanvasSettings, PlotLayer, Point, SourcePath } from '@plotter/core';
+import type { CanvasSettings, MapShape, PlotLayer, Point, SourcePath } from '@plotter/core';
 import { algorithmDefaults } from '@plotter/algorithms';
-import { drawableBounds } from '@plotter/geometry';
+import { cropMapCircle, drawableBounds } from '@plotter/geometry';
 
 type RawLayer = { name: string; category: string; paths: SourcePath[] };
 
@@ -13,6 +13,7 @@ export type MapSearchResult = {
 };
 
 export type ImportedMap = {
+  terrain?: import('@plotter/core').TerrainData;
   name: string;
   attribution: string;
   bounds?: { north: number; south: number; east: number; west: number };
@@ -223,7 +224,7 @@ export function parseSvgLayers(svgText: string, canvas: CanvasSettings, passIds:
   }
 }
 
-export function importedMapToLayers(map: ImportedMap, canvas: CanvasSettings, passIds: string[]): PlotLayer[] {
+export function importedMapToLayers(map: ImportedMap, canvas: CanvasSettings, passIds: string[], shape: MapShape = 'rectangle'): PlotLayer[] {
   const allLatitudes = map.layers.flatMap((layer) => layer.features.flatMap((feature) => feature.points.map((point) => point[1])));
   const centreLatitude = allLatitudes.length ? allLatitudes.reduce((total, value) => total + value, 0) / allLatitudes.length : 0;
   const longitudeScale = Math.cos(centreLatitude * Math.PI / 180);
@@ -242,7 +243,12 @@ export function importedMapToLayers(map: ImportedMap, canvas: CanvasSettings, pa
     minY: -map.bounds.north,
     maxY: -map.bounds.south,
   } : undefined;
-  return toPlotLayers(fitRawLayers(rawLayers, canvas, selectedBounds), passIds);
+  if (shape === 'rectangle') return toPlotLayers(fitRawLayers(rawLayers, canvas, selectedBounds), passIds);
+  const side = Math.min(canvas.widthMm, canvas.heightMm);
+  const fitted = fitRawLayers(rawLayers, { ...canvas, widthMm: side, heightMm: side }, selectedBounds).map(layer => ({
+    ...layer, paths: layer.paths.map(path => ({ ...path, points: path.points.map(p => ({ x: p.x + (canvas.widthMm - side) / 2, y: p.y + (canvas.heightMm - side) / 2 })) })),
+  }));
+  return toPlotLayers(shape === 'circle' ? fitted.map(layer => ({ ...layer, paths: cropMapCircle(layer.paths, { x: canvas.widthMm / 2, y: canvas.heightMm / 2 }, side / 2 - canvas.marginMm) })) : fitted, passIds);
 }
 
 /** Convert a Glyphbox SVG into normalized, plot-ready paths. The normalized

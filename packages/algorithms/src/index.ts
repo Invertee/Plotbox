@@ -1,4 +1,7 @@
 import { hatchSourcePath } from './vectorHatching';
+import { ISOMETRIC_MAZE, generateIsometricMaze } from './isometricMaze';
+export { ISOMETRIC_MAZE, generateIsometricMaze, buildIsometricMaze } from './isometricMaze';
+export type { MazeCell, IsometricMazeLayout } from './isometricMaze';
 import type { CanvasSettings, PlotGeometry, PlotLayer, PlotPath, Point, SourcePath } from '@plotter/core';
 export { formatMapCoordinates, generateMapAnnotations, generateMapTitle, mapAnnotationBackgrounds, mapTitleBackground, maskPathsBehindMapAnnotations, maskPathsBehindMapTitle, MAP_ANNOTATION_FONT_OPTIONS, MAP_MARKER_OPTIONS } from './mapAnnotations';
 import { drawableBounds, type Bounds } from '@plotter/geometry';
@@ -7,6 +10,7 @@ export { traceRasterContours, type RasterContourOptions } from './rasterContours
 export { generateTonalAreaFill, type TonalAreaFillOptions } from './tonalAreaFill';
 export { generateColourTonalAreaFill, type ColourTonalAreaFillOptions } from './colourTonalAreaFill';
 export { generateContinuousScribble } from './continuousScribble';
+export { generateStraightLinePortrait } from './straightLinePortrait';
 
 export type ControlDefinition = {
   key: string;
@@ -30,6 +34,17 @@ export interface AlgorithmDefinition {
 }
 
 export const ALGORITHMS: AlgorithmDefinition[] = [
+  ISOMETRIC_MAZE,
+  { id: 'raster.straight-lines', name: 'Straight line sketch', group: 'raster', worker: true, controls: [
+    { key: 'lineDensity', label: 'Lines', type: 'range', min: 0.2, max: 3, step: 0.1, default: 1.2 },
+    { key: 'tonePower', label: 'Tone contrast', type: 'range', min: 0.5, max: 2.5, step: 0.05, default: 1 },
+    { key: 'detailSize', label: 'Fine detail size', type: 'range', min: 0.35, max: 2, step: 0.05, unit: 'mm', default: 0.7 },
+    { key: 'lineLength', label: 'Line length', type: 'range', min: 0.5, max: 10, step: 0.1, unit: 'mm', default: 2.8 },
+    { key: 'paperCutoff', label: 'Leave pale areas blank above', type: 'range', min: 180, max: 255, step: 1, default: 245 },
+    { key: 'secondPass', label: 'Add overlapping definition pass', type: 'boolean', default: false },
+    { key: 'definitionStrength', label: 'Definition strength', type: 'range', min: 0.2, max: 2, step: 0.1, default: 0.8, visibleWhen: { key: 'secondPass', value: true } },
+    { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 999999, step: 1, default: 482923 },
+  ] },
   { id: 'raster.continuous-scribble', name: 'Continuous scribble', group: 'raster', worker: true, controls: [
     { key: 'colourUnderlay', label: 'Add colour passes behind scribble', type: 'boolean', default: false },
     { key: 'underlayColourCount', label: 'Under-colour palette', type: 'range', min: 2, max: 12, step: 1, default: 6 },
@@ -221,10 +236,31 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
   ] },
   { id: 'generative.flow-field', name: 'Flow field', group: 'generative', controls: [
     { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 999999, step: 1, default: 7421 },
+    { key: 'fieldStyle', label: 'Field shape', type: 'select', options: [
+      { value: 'organic', label: 'Organic currents' },
+      { value: 'rain', label: 'Static rain' },
+      { value: 'waterfall', label: 'Waterfall' },
+      { value: 'radial', label: 'Radial burst' },
+      { value: 'vortex', label: 'Vortex' },
+      { value: 'four-vortex', label: 'Four-way vortex' },
+      { value: 'diamond', label: 'Diamond saddle' },
+      { value: 'magnetic', label: 'Magnetic field' },
+    ], default: 'organic' },
     { key: 'particles', label: 'Particles', type: 'range', min: 20, max: 1200, step: 10, default: 280 },
     { key: 'steps', label: 'Steps', type: 'range', min: 10, max: 250, step: 5, default: 70 },
     { key: 'stepSize', label: 'Step size', type: 'range', min: 0.2, max: 5, step: 0.1, unit: 'mm', default: 1.5 },
     { key: 'fieldScale', label: 'Field scale', type: 'range', min: 5, max: 100, step: 1, unit: 'mm', default: 35 },
+    { key: 'trailStyle', label: 'Trail style', type: 'select', options: [
+      { value: 'continuous', label: 'Continuous lines' },
+      { value: 'dashes', label: 'Broken particle trails' },
+    ], default: 'dashes' },
+    { key: 'dashLength', label: 'Stroke length', type: 'range', min: 0.4, max: 12, step: 0.2, unit: 'mm', default: 3.2, visibleWhen: { key: 'trailStyle', value: 'dashes' } },
+    { key: 'dashGap', label: 'Gap between strokes', type: 'range', min: 0.2, max: 12, step: 0.2, unit: 'mm', default: 1.2, visibleWhen: { key: 'trailStyle', value: 'dashes' } },
+    { key: 'colourMode', label: 'Colour arrangement', type: 'select', options: [
+      { value: 'cycle', label: 'Cycle pen passes' },
+      { value: 'random', label: 'Random per trail' },
+      { value: 'single', label: 'Single pen' },
+    ], default: 'cycle' },
   ] },
   { id: 'generative.truchet', name: 'Truchet tiles', group: 'generative', controls: [
     { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 999999, step: 1, default: 33881 },
@@ -248,10 +284,26 @@ export const ALGORITHMS: AlgorithmDefinition[] = [
     { key: 'variation', label: 'Orientation variation', type: 'range', min: 0, max: 1, step: 0.05, default: 1 },
   ] },
   { id: 'generative.guilloche', name: 'Guilloché', group: 'generative', controls: [
+    { key: 'design', label: 'Pattern design', type: 'select', options: [
+      { value: 'rose', label: 'Rose engine' },
+      { value: 'barleycorn', label: 'Barleycorn weave' },
+      { value: 'moire', label: 'Moiré rosette' },
+      { value: 'petal', label: 'Petal wheel' },
+      { value: 'spirograph', label: 'Spirograph' },
+      { value: 'spiral', label: 'Spiral vortex' },
+    ], default: 'rose' },
     { key: 'frequency', label: 'Frequency', type: 'range', min: 2, max: 32, step: 1, default: 11 },
     { key: 'lobes', label: 'Lobes', type: 'range', min: 2, max: 24, step: 1, default: 7 },
     { key: 'amplitude', label: 'Amplitude', type: 'range', min: 1, max: 30, step: 0.5, unit: 'mm', default: 12 },
-    { key: 'rings', label: 'Rings', type: 'range', min: 1, max: 20, step: 1, default: 7 },
+    { key: 'rings', label: 'Pattern lines', type: 'range', min: 1, max: 32, step: 1, default: 10 },
+    { key: 'lineCount', label: 'Parallel lines per curve', type: 'range', min: 1, max: 8, step: 1, default: 2 },
+    { key: 'lineSpacing', label: 'Parallel line spacing', type: 'range', min: 0.2, max: 3, step: 0.1, unit: 'mm', default: 0.7 },
+    { key: 'colourMode', label: 'Colour arrangement', type: 'select', options: [
+      { value: 'rings', label: 'Alternate pattern lines' },
+      { value: 'parallel', label: 'Cycle parallel passes' },
+      { value: 'segments', label: 'Colour curve segments' },
+      { value: 'single', label: 'Single pen' },
+    ], default: 'rings' },
   ] },
   { id: 'generative.turtle', name: 'TurtleToy script', group: 'generative', worker: true, controls: [
     { key: 'script', label: 'TurtleToy code', type: 'textarea', default: "Canvas.setpenopacity(1);\n\nconst turtle = new Turtle();\nturtle.penup();\nturtle.goto(-50, -20);\nturtle.pendown();\n\nfunction walk(i) {\n  turtle.forward(100);\n  turtle.right(144);\n  return i < 4;\n}" },
@@ -297,6 +349,53 @@ function mulberry32(seed: number): () => number {
 const numberSetting = (settings: Record<string, number | string | boolean>, key: string, fallback: number) => Number(settings[key] ?? fallback);
 const path = (id: string, points: Point[], passId: string, channel?: string, closed = false): PlotPath => ({ id, points, passId, layerId: 'layer-1', channel, closed });
 const geometry = (generator: string, paths: PlotPath[]): PlotGeometry => ({ generator, paths, generatedAt: new Date().toISOString() });
+
+function dashPolyline(points: Point[], dashLength: number, gapLength: number): Point[][] {
+  if (points.length < 2) return [];
+  const dash = Math.max(0.05, dashLength);
+  const cycle = dash + Math.max(0, gapLength);
+  const segments: Point[][] = [];
+  let segment: Point[] = [];
+  let distance = 0;
+  const flush = () => {
+    if (segment.length > 1) segments.push(segment);
+    segment = [];
+  };
+  for (let index = 1; index < points.length; index += 1) {
+    const start = points[index - 1]!;
+    const end = points[index]!;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length <= 1e-8) continue;
+    let along = 0;
+    while (along < length - 1e-8) {
+      const phase = (distance + along) % cycle;
+      const drawing = phase < dash;
+      const boundary = drawing ? dash - phase : cycle - phase;
+      const amount = Math.min(length - along, Math.max(1e-6, boundary));
+      const from = along / length;
+      const to = (along + amount) / length;
+      const first = { x: start.x + dx * from, y: start.y + dy * from };
+      const last = { x: start.x + dx * to, y: start.y + dy * to };
+      if (drawing) {
+        if (!segment.length) segment.push(first);
+        segment.push(last);
+      } else flush();
+      along += amount;
+    }
+    distance += length;
+  }
+  flush();
+  return segments;
+}
+
+function greatestCommonDivisor(first: number, second: number): number {
+  let a = Math.abs(Math.trunc(first));
+  let b = Math.abs(Math.trunc(second));
+  while (b) [a, b] = [b, a % b];
+  return Math.max(1, a);
+}
 
 /** Attach normalised, tone-driven brush pressure without changing XY geometry. */
 export function addPaintPressure(
@@ -708,6 +807,7 @@ function stippleMarkPaths(point: Point, size: number, style: string): Point[][] 
 }
 
 export function generateAlgorithm(id: string, canvas: CanvasSettings, settings: Record<string, number | string | boolean>, passIds: string[]): PlotGeometry {
+  if (id === ISOMETRIC_MAZE.id) return generateIsometricMaze(canvas, settings, passIds);
   const bounds = drawableBounds(canvas.widthMm, canvas.heightMm, canvas.marginMm);
   const primary = passIds[0] ?? 'pass-1';
   const secondary = passIds[1] ?? primary;
@@ -722,22 +822,60 @@ export function generateAlgorithm(id: string, canvas: CanvasSettings, settings: 
     for (let r = 5; r < Math.min(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 0.25; r += 5) paths.push(path(`circle-${r}`, arc(cx, cy, r, 0, Math.PI * 2, 48), primary, 'primary', true));
   } else if (id === 'generative.flow-field') {
     const random = mulberry32(numberSetting(settings, 'seed', 7421));
-    const particles = numberSetting(settings, 'particles', 280);
-    const steps = numberSetting(settings, 'steps', 70);
-    const stepSize = numberSetting(settings, 'stepSize', 1.5);
-    const scale = numberSetting(settings, 'fieldScale', 35);
+    const seed = numberSetting(settings, 'seed', 7421);
+    const particles = Math.max(1, Math.min(1200, Math.round(numberSetting(settings, 'particles', 280))));
+    const steps = Math.max(1, Math.min(250, Math.round(numberSetting(settings, 'steps', 70))));
+    const stepSize = Math.max(0.05, numberSetting(settings, 'stepSize', 1.5));
+    const scale = Math.max(1, numberSetting(settings, 'fieldScale', 35));
+    const fieldStyle = String(settings.fieldStyle ?? 'organic');
+    const trailStyle = String(settings.trailStyle ?? 'dashes');
+    const colourMode = String(settings.colourMode ?? 'cycle');
+    const dashLength = Math.max(0.1, numberSetting(settings, 'dashLength', 3.2));
+    const dashGap = Math.max(0, numberSetting(settings, 'dashGap', 1.2));
+    const colours = passIds.length ? passIds : [primary];
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+    const fieldAngle = (x: number, y: number) => {
+      const dx = x - cx;
+      const dy = y - cy;
+      const radiusSquared = dx * dx + dy * dy + scale * scale * 0.04;
+      if (fieldStyle === 'rain') return Math.PI / 2 + Math.sin(dx / scale + seed * 0.013) * 0.045;
+      if (fieldStyle === 'waterfall') return Math.PI / 2 + Math.sin(dx / scale + dy / scale * 0.22) * 0.42 + Math.sin(dx / scale * 1.7) * 0.12;
+      if (fieldStyle === 'radial') return Math.atan2(dy, dx);
+      if (fieldStyle === 'vortex') return Math.atan2(dy, dx) + Math.PI / 2 + 0.55 * Math.tanh((Math.hypot(dx, dy) - scale * 0.45) / scale);
+      if (fieldStyle === 'four-vortex') {
+        const px = Math.PI * dx / scale;
+        const py = Math.PI * dy / scale;
+        return Math.atan2(-Math.cos(px) * Math.sin(py), Math.sin(px) * Math.cos(py));
+      }
+      if (fieldStyle === 'diamond') return Math.atan2(-dy, dx);
+      if (fieldStyle === 'magnetic') {
+        const vx = 3 * dx * dy / radiusSquared;
+        const vy = (2 * dy * dy - dx * dx) / radiusSquared;
+        return Math.atan2(vy, vx);
+      }
+      return Math.sin(x / scale + seed * 0.013) * Math.PI + Math.cos(y / scale) * Math.PI;
+    };
     for (let i = 0; i < particles; i += 1) {
       let x = bounds.minX + random() * (bounds.maxX - bounds.minX);
       let y = bounds.minY + random() * (bounds.maxY - bounds.minY);
       const points: Point[] = [{ x, y }];
       for (let step = 0; step < steps; step += 1) {
-        const angle = Math.sin(x / scale + numberSetting(settings, 'seed', 1)) * Math.PI + Math.cos(y / scale) * Math.PI;
+        const angle = fieldAngle(x, y);
         x += Math.cos(angle) * stepSize;
         y += Math.sin(angle) * stepSize;
         if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) break;
         points.push({ x, y });
       }
-      if (points.length > 2) paths.push(path(`flow-${i}`, points, i % 5 === 0 ? secondary : primary, i % 5 === 0 ? 'accent' : 'primary'));
+      if (points.length < 2) continue;
+      const passIndex = colourMode === 'single'
+        ? 0
+        : colourMode === 'random'
+          ? Math.floor(truchetRandom(seed, i, 0, 9) * colours.length)
+          : i % colours.length;
+      const trailPass = colours[passIndex] ?? primary;
+      const trails = trailStyle === 'dashes' ? dashPolyline(points, dashLength, dashGap) : [points];
+      trails.forEach((trail, segment) => paths.push(path(`flow-${i}-${segment}`, trail, trailPass, `flow-${fieldStyle}`)));
     }
   } else if (id === 'generative.truchet') {
     const size = Math.max(1, numberSetting(settings, 'tileSize', 14));
@@ -798,18 +936,73 @@ export function generateAlgorithm(id: string, canvas: CanvasSettings, settings: 
     const cx = (bounds.minX + bounds.maxX) / 2;
     const cy = (bounds.minY + bounds.maxY) / 2;
     const maximum = Math.min(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) / 2;
-    const frequency = numberSetting(settings, 'frequency', 11);
-    const lobes = numberSetting(settings, 'lobes', 7);
-    const amplitude = numberSetting(settings, 'amplitude', 12);
-    const rings = numberSetting(settings, 'rings', 7);
+    const frequency = Math.max(2, Math.min(32, Math.round(numberSetting(settings, 'frequency', 11))));
+    const lobes = Math.max(2, Math.min(24, Math.round(numberSetting(settings, 'lobes', 7))));
+    const amplitude = Math.min(maximum * 0.3, Math.max(0.1, numberSetting(settings, 'amplitude', 12)));
+    const rings = Math.max(1, Math.min(32, Math.round(numberSetting(settings, 'rings', 10))));
+    const lineCount = Math.max(1, Math.min(8, Math.round(numberSetting(settings, 'lineCount', 2))));
+    const lineSpacing = Math.max(0.05, Math.min(3, numberSetting(settings, 'lineSpacing', 0.7)));
+    const design = String(settings.design ?? 'rose');
+    const colourMode = String(settings.colourMode ?? 'rings');
+    const colours = passIds.length ? passIds : [primary];
+    const parallelHalfWidth = ((lineCount - 1) * lineSpacing) / 2;
+    const outerBase = Math.max(2, maximum - amplitude - parallelHalfWidth - 0.2);
+    const innerBase = Math.min(outerBase, Math.max(2, amplitude * 0.6 + parallelHalfWidth));
+    const samples = 721 + Math.max(0, frequency - 10) * 32;
     for (let ring = 0; ring < rings; ring += 1) {
-      const base = Math.max(5, maximum - amplitude - ring * (maximum / Math.max(rings, 1)) * 0.45);
-      const points = Array.from({ length: 721 }, (_, i) => {
-        const t = (i / 720) * Math.PI * 2;
-        const radius = base + Math.sin(t * frequency + ring * 0.37) * amplitude * Math.cos(t * lobes);
-        return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
-      });
-      paths.push(path(`guilloche-${ring}`, points, ring % 2 ? secondary : primary, ring % 2 ? 'secondary' : 'primary', true));
+      const ringBase = rings === 1 ? (outerBase + innerBase) / 2 : outerBase - ring * (outerBase - innerBase) / (rings - 1);
+      for (let line = 0; line < lineCount; line += 1) {
+        const lineOffset = (line - (lineCount - 1) / 2) * lineSpacing;
+        const base = Math.max(1, ringBase + lineOffset);
+        const points = Array.from({ length: samples + 1 }, (_, i) => {
+          const u = i / samples;
+          const phase = ring * Math.PI * 2 / Math.max(1, rings);
+          const t = u * Math.PI * 2;
+          if (design === 'spiral') {
+            const minimumRadius = Math.max(1, innerBase + lineOffset);
+            const maximumRadius = Math.max(minimumRadius + 1, outerBase + lineOffset);
+            const theta = u * Math.PI * 2 * frequency + phase;
+            const radius = minimumRadius + (maximumRadius - minimumRadius) * u + amplitude * 0.12 * Math.sin(u * Math.PI * 2 * lobes + phase);
+            return { x: cx + Math.cos(theta) * radius, y: cy + Math.sin(theta) * radius };
+          }
+          if (design === 'spirograph') {
+            const divisor = greatestCommonDivisor(frequency, lobes);
+            const turns = lobes / divisor;
+            const theta = u * Math.PI * 2 * turns + phase;
+            const fixedRadius = frequency;
+            const rollingRadius = lobes;
+            const drawRadius = rollingRadius * Math.min(0.95, Math.max(0.1, amplitude / Math.max(maximum, 1) * 1.7));
+            const extent = Math.max(0.01, Math.abs(fixedRadius - rollingRadius) + drawRadius);
+            const x = (fixedRadius - rollingRadius) * Math.cos(theta) + drawRadius * Math.cos((fixedRadius - rollingRadius) / rollingRadius * theta);
+            const y = (fixedRadius - rollingRadius) * Math.sin(theta) - drawRadius * Math.sin((fixedRadius - rollingRadius) / rollingRadius * theta);
+            const targetRadius = Math.max(1, base + amplitude * 0.45);
+            return { x: cx + x / extent * targetRadius, y: cy + y / extent * targetRadius };
+          }
+          let wave: number;
+          if (design === 'barleycorn') {
+            wave = (Math.sin(t * frequency + phase) + 0.68 * Math.cos(t * lobes - phase)) / 1.68;
+          } else if (design === 'moire') {
+            wave = (Math.sin(t * frequency + phase) * Math.cos(t * lobes) + 0.42 * Math.sin(t * (frequency + 1) - phase)) / 1.42;
+          } else if (design === 'petal') {
+            wave = Math.cos(t * lobes + phase);
+          } else {
+            wave = Math.sin(t * frequency + phase) * Math.cos(t * lobes);
+          }
+          const radius = base + amplitude * wave;
+          return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
+        });
+        if (colourMode === 'segments' && colours.length > 1) {
+          for (let segment = 0; segment < colours.length; segment += 1) {
+            const first = Math.floor(segment * points.length / colours.length);
+            const last = Math.floor((segment + 1) * points.length / colours.length);
+            const colouredCurve = points.slice(first, last + 1);
+            if (colouredCurve.length > 1) paths.push(path(`guilloche-${ring}-${line}-segment-${segment}`, colouredCurve, colours[segment]!, `ring-${ring + 1}-line-${line + 1}-segment-${segment + 1}`));
+          }
+        } else {
+          const passIndex = colourMode === 'single' ? 0 : colourMode === 'parallel' ? (ring * lineCount + line) % colours.length : ring % colours.length;
+          paths.push(path(`guilloche-${ring}-${line}`, points, colours[passIndex] ?? primary, `ring-${ring + 1}-line-${line + 1}`, design !== 'spiral'));
+        }
+      }
     }
   }
   return geometry(id, paths);
@@ -873,3 +1066,5 @@ export function generateVectorLayers(layers: PlotLayer[]): PlotGeometry {
   return geometry('vector.layers', output);
 }
 export { generateIsometric, buildIsometricScene, moveIsometricTile, planIsometricCells, matchRoadGlyph, isometricSettings, ISOMETRIC_ALGORITHMS } from './isometric';
+
+export { generateRelief } from './relief';

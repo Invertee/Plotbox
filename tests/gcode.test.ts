@@ -18,6 +18,25 @@ const geometry: PlotGeometry = { generator: 'test', generatedAt: '', paths: [
 const settings: GCodeSettings = { origin: 'bottom-left', travelFeed: 5000, parkX: 0, parkY: 0, pauseBetweenPasses: true, pauseCommand: 'M0', includeComments: true };
 
 describe('G-code output', () => {
+  it('pauses for manual rotary power only while safely lifted', () => {
+    const rotary: PenProfile = { ...pens[0]!, mediaType: 'rotary', name: 'Dremel', zUp: 3, zDown: -0.1, xyFeed: 300, rotaryControl: 'manual' };
+    const [document] = generateGCode('Tile', { ...geometry, paths: [geometry.paths[0]!] }, [passes[0]!], [rotary], settings, 100);
+    const content = document!.content;
+    expect(content).toContain('G0 Z3 F600\n; Switch on rotary tool, then resume\nM0');
+    expect(content).toContain('G1 Z-0.1 F600');
+    expect(content).toContain('G0 Z3 F600\n; Switch off rotary tool, then resume\nM0\nG0 X0 Y0');
+    expect(content).not.toContain('M3');
+  });
+
+  it('starts and stops a controller-driven rotary pass with spindle dwell', () => {
+    const rotary: PenProfile = { ...pens[0]!, mediaType: 'rotary', name: 'Dremel', zUp: 3, zDown: -0.1, xyFeed: 300, rotaryControl: 'gcode', rotaryRpm: 12000, rotarySpinupSeconds: 2 };
+    const [document] = generateGCode('Tile', { ...geometry, paths: [geometry.paths[0]!] }, [passes[0]!], [rotary], settings, 100);
+    const content = document!.content;
+    expect(content).toContain('G0 Z3 F600\nM3 S12000\nG4 P2');
+    expect(content).toContain('G0 Z3 F600\nM5\nG0 X0 Y0');
+    expect(() => generateGCode('Tile', { ...geometry, paths: [geometry.paths[0]!] }, [passes[0]!], [{ ...rotary, zUp: -1 }], settings, 100)).toThrow('clearance Z');
+  });
+
   it('parks, lifts and pauses between combined passes', () => {
     const [document] = generateGCode('Demo', geometry, passes, pens, settings, 297, false);
     expect(document?.content).toContain('G21');
