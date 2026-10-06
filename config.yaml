@@ -1,5 +1,5 @@
 name: Plotbox
-version: 0.3.10
+version: 0.3.11
 slug: plotbox
 description: Local-first pen-plotter artwork editor and G-code generator
 arch:
